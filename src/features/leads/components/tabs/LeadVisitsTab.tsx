@@ -44,6 +44,7 @@ export const LeadVisitsTab = ({
   const { getRmLabel, getEmLabel, getProjectLabel } = useMasterDataLookup();
 
   const [openDialog, setOpenDialog] = React.useState(false);
+  const [dialogType, setDialogType] = React.useState<"Appointment" | "Surgery">("Appointment");
   const [selectedVisit, setSelectedVisit] = React.useState<LeadVisit | null>(null);
   const { data: rms = [] } = useGetAllUsersByRoleIdQuery({
     role_id: 3,
@@ -53,34 +54,63 @@ export const LeadVisitsTab = ({
   return (
     <div className="mt-4 space-y-4">
       {!visits || visits.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[300px] border border-zinc-100 rounded-2xl bg-white/50 backdrop-blur-sm mt-4">
-          <p className="text-sm text-zinc-400 font-medium italic">No visit history scheduled for this lead.</p>
+        <div className="flex flex-col items-center justify-center min-h-[300px] border border-zinc-100 rounded-2xl bg-white/50 backdrop-blur-sm mt-4 p-6">
+          <p className="text-sm text-zinc-400 font-medium italic mb-4">No appointments scheduled for this lead.</p>
           {!isSADMIN && (
-            <button
-              onClick={() => setOpenDialog(true)}
-              className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-semibold"
-            >
-              + Schedule First Visit
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => {
+                  setDialogType("Appointment");
+                  setSelectedVisit(null);
+                  setOpenDialog(true);
+                }}
+                className="px-4 py-2 rounded-xl text-sm bg-[#0f3d6b] hover:bg-[#0b2e52] text-white font-semibold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                + Schedule Appointment
+              </button>
+              <button
+                onClick={() => {
+                  setDialogType("Surgery");
+                  setSelectedVisit(null);
+                  setOpenDialog(true);
+                }}
+                className="px-4 py-2 rounded-xl text-sm bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                + Schedule Surgery
+              </button>
+            </div>
           )}
         </div>
       ) : (
         <>
           {/* HEADER */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-              Scheduled Visits
+              Appointments
             </h3>
             {!isSADMIN && (
-              <button
-                onClick={() => {
-                  setSelectedVisit(null);
-                  setOpenDialog(true);
-                }}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                + Schedule New
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setDialogType("Appointment");
+                    setSelectedVisit(null);
+                    setOpenDialog(true);
+                  }}
+                  className="text-xs font-semibold text-[#0f3d6b] hover:text-[#0b2e52] bg-[#0f3d6b]/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  + Schedule Appointment
+                </button>
+                <button
+                  onClick={() => {
+                    setDialogType("Surgery");
+                    setSelectedVisit(null);
+                    setOpenDialog(true);
+                  }}
+                  className="text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 dark:bg-rose-950/50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  + Schedule Surgery
+                </button>
+              </div>
             )}
           </div>
 
@@ -178,6 +208,7 @@ export const LeadVisitsTab = ({
 
       <ScheduleVisitDialog
         open={!isSADMIN && openDialog}
+        dialogType={dialogType}
         onClose={() => {
           setOpenDialog(false);
           setSelectedVisit(null);

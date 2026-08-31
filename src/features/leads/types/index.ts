@@ -77,6 +77,7 @@ export interface Lead {
   first_name?: string;
   last_name?: string;
   email_address?: string;
+  email?: string;
   occupation?: string;
   address?: string;
   city?: string;

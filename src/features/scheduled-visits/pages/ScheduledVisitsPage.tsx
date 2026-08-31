@@ -295,7 +295,7 @@ export const ScheduledVisitsPage = () => {
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-primary tracking-tight">
-          Scheduled Site Visits
+          Appointments
         </h1>
         <div className="flex items-center gap-4">
           {/* EM Selection Dropdown */}
@@ -471,7 +471,7 @@ export const ScheduledVisitsPage = () => {
                 : "text-zinc-500 hover:text-zinc-700",
             )}
           >
-            Scheduled Visits
+            Appointments
             {activeTab === "SCHD" && (
               <span className="bg-[#0f3d6b]/10 text-[#0f3d6b] px-2 py-0.5 rounded-full text-xs">
                 {filteredVisits.length}

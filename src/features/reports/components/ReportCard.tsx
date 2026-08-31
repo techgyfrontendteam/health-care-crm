@@ -34,7 +34,9 @@ export const ReportCard = ({ report }: ReportCardProps) => {
   const iconConfig = iconMap[report.id] || { src: "", fallback: BarChart3 };
 
   const handleClick = () => {
-    if (report.id === 1) {
+    if (report.path) {
+      navigate(report.path);
+    } else if (report.id === 1) {
       navigate("/reports/daily-sales");
     } else if (report.id === 2) {
       navigate("/reports/project-objections");

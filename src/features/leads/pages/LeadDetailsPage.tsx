@@ -318,9 +318,26 @@ export const LeadDetailsPage = () => {
                       color: "#64748B",
                     }}
                   >
-                    <Calendar className="h-3.5 w-3.5" />
-                    Added: {formatDate(lead.created_on)}
+                    <Phone className="h-3.5 w-3.5 text-[#0f3d6b]" />
+                    {lead.phone_number || (lead as any).phone || "N/A"}
                   </span>
+                  {(lead.email_address || lead.email) && (
+                    <>
+                      <span style={{ color: "#CBD5E1" }}>·</span>
+                      <span
+                        className="flex items-center gap-1.5"
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 500,
+                          fontSize: "13px",
+                          color: "#64748B",
+                        }}
+                      >
+                        <Mail className="h-3.5 w-3.5 text-[#0f3d6b]" />
+                        {lead.email_address || lead.email}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -368,6 +385,20 @@ export const LeadDetailsPage = () => {
             {/* Fields */}
             <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
               <DetailField
+                label="Source"
+                value={getSourceLabel(lead.source_id)}
+              />
+              {isInternalEmployeeSource && (
+                <DetailField
+                  label="Source Employee"
+                  value={getSourceEmployeeName()}
+                />
+              )}
+              <DetailField
+                label="Lead Type"
+                value="OPD Leads / IPD Leads"
+              />
+              <DetailField
                 label="Creation Date"
                 value={formatDate(lead.created_on)}
               />
@@ -389,10 +420,6 @@ export const LeadDetailsPage = () => {
                 value={getProjectLabel(lead.project_id)}
               />
               <DetailField
-                label="Source"
-                value={getSourceLabel(lead.source_id)}
-              />
-              <DetailField
                 label="Assigned RM"
                 value={
                   lead.assigned_to_rm ? (
@@ -409,12 +436,6 @@ export const LeadDetailsPage = () => {
                   ) : null
                 }
               />
-              {isInternalEmployeeSource && (
-                <DetailField
-                  label="Source Employee"
-                  value={getSourceEmployeeName()}
-                />
-              )}
               <DetailField
                 label="Assigned EM"
                 value={
@@ -442,7 +463,7 @@ export const LeadDetailsPage = () => {
               />
               <DetailField
                 label="Email Address"
-                value={lead.email_address}
+                value={lead.email_address || lead.email}
                 icon={<Mail className="h-4 w-4 text-[#64748B]" />}
               />
             </dl>
@@ -504,7 +525,7 @@ export const LeadDetailsPage = () => {
                           flex items-center justify-center gap-1
                         "
                       >
-                        {tab === "followups" ? "Follow Ups" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                        {tab === "followups" ? "Follow Ups" : tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
                       </TabsTrigger>
                     );
                   })}

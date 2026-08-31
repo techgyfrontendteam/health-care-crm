@@ -118,11 +118,11 @@ export const NotificationHandler: React.FC = () => {
         }
       }
 
-      const detail = { 
+      const detail = {
         id: Date.now(),
-        title, 
-        body, 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        title,
+        body,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       window.dispatchEvent(new CustomEvent("push_notification_received", { detail }));
       window.dispatchEvent(new Event("new_message_received"));

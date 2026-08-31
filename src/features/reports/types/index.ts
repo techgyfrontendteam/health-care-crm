@@ -2,6 +2,7 @@ export interface Report {
   id: number;
   title: string;
   description: string;
+  path?: string;
 }
 
 export interface ExecutiveRow {

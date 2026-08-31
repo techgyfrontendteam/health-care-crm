@@ -50,6 +50,7 @@ interface ScheduleVisitDialogProps {
   // ems is unused now as we fetch reportees directly
   onSubmit: (data: ScheduleVisitRequest) => Promise<void>;
   isLoading: boolean;
+  dialogType?: "Appointment" | "Surgery";
 }
 
 export const ScheduleVisitDialog = ({
@@ -60,6 +61,7 @@ export const ScheduleVisitDialog = ({
   rms,
   onSubmit,
   isLoading,
+  dialogType = "Appointment",
 }: ScheduleVisitDialogProps) => {
   const { user: currentUser, roleCode } = usePermissions();
   const isRM = roleCode === "RELMNG";
@@ -230,8 +232,13 @@ export const ScheduleVisitDialog = ({
     const s = String(selectedDateTime.getSeconds()).padStart(2, '0');
     const localFormatted = `${year}-${month}-${day} ${h}:${m}:${s}`;
 
+    const finalRemarks = dialogType === "Surgery"
+      ? (data.visit_remarks ? (data.visit_remarks.includes("[Surgery]") ? data.visit_remarks : `[Surgery] ${data.visit_remarks}`) : "[Surgery]")
+      : data.visit_remarks;
+
     await onSubmit({
       ...data,
+      visit_remarks: finalRemarks,
       visit_status: scheduledStatusId,
       visit_date_time: localFormatted,
       lead_uuid: lead ? (lead as Lead).uuid : selectedLeadUuid,
@@ -244,11 +251,13 @@ export const ScheduleVisitDialog = ({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-zinc-950 w-full max-w-lg rounded-3xl shadow-2xl border border-zinc-100 flex flex-col max-h-[85vh] relative overflow-hidden">
         <div className="px-6 py-4 border-b bg-zinc-50/50">
-          <h2 className="text-lg font-bold">Schedule Visit</h2>
+          <h2 className="text-lg font-bold">
+            {dialogType === "Surgery" ? "Schedule Surgery" : "Schedule Appointment"}
+          </h2>
           <p className="text-sm text-zinc-500">
             {lead
-              ? `Schedule a site visit for ${lead.first_name} ${lead.last_name}`
-              : "Schedule a site visit for a lead"}
+              ? `Schedule ${dialogType === "Surgery" ? "a surgery" : "an appointment"} for ${lead.first_name} ${lead.last_name}`
+              : `Schedule ${dialogType === "Surgery" ? "a surgery" : "an appointment"} for a lead`}
           </p>
         </div>
 
@@ -656,7 +665,7 @@ export const ScheduleVisitDialog = ({
               className="gap-2"
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Schedule Visit
+              {dialogType === "Surgery" ? "Schedule Surgery" : "Schedule Appointment"}
             </Button>
           </div>
         </div>
