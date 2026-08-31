@@ -4,7 +4,7 @@ import {
   PhoneCall,
   Users,
   AlertTriangle,
-  Share2,
+  Layers,
   Building,
   MapPin,
   TrendingUp,
@@ -112,7 +112,7 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
               Lead Source
             </span>
             <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Share2 className="h-4 w-4" />
+              <Layers className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">

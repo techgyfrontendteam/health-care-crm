@@ -14,7 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { PhoneCall, Share2, Building, BarChart3, PieChart as PieIcon } from "lucide-react";
+import { PhoneCall, Layers, Building, BarChart3, PieChart as PieIcon } from "lucide-react";
 
 interface SalesChartsProps {
   dailyTrends: DailySalesTrend[];
@@ -129,7 +129,7 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
       <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between space-y-4">
         <div>
           <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-purple-600" />
+            <Layers className="h-5 w-5 text-purple-600" />
             Lead Source Breakdown
           </h3>
           <p className="text-xs text-zinc-500 mt-0.5">

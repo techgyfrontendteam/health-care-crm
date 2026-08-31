@@ -540,10 +540,12 @@ export const LeadDetailsPage = () => {
                 value={upcomingVisitText}
                 icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
               />
+              {/* Project field commented out as requested
               <DetailField
                 label="Project"
                 value={getProjectLabel(lead.project_id)}
               />
+              */}
               <DetailField
                 label="Assigned RM"
                 value={
