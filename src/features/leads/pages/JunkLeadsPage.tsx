@@ -1,0 +1,304 @@
+import React, { useState } from 'react';
+import { DataTable } from '../../../shared/components/DataTable/DataTable';
+import type { ColumnDef } from '../../../shared/components/DataTable/DataTable';
+import { Button } from '../../../components/ui/button';
+import type { Lead } from '../types';
+import { useMasterDataLookup } from '../../../shared/hooks/useMasterDataLookup';
+import { Link } from 'react-router-dom';
+import { useGetLeadsQuery } from '../api/leadsApi';
+import { SearchInput } from '../../../shared/components/FilterBar/FilterBar';
+import { useDebounce } from '../../../shared/hooks/useDebounce';
+import { Loader2 } from 'lucide-react';
+
+interface JunkLeadsPageProps {
+  onVerify: (lead: Lead) => void;
+  canVerify: boolean;
+}
+
+export const InitialsAvatar = ({ firstName, lastName }: { firstName?: string; lastName?: string }) => {
+  const initials = `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase() || '?';
+  return (
+    <div className="h-6 w-6 rounded-4xl bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-bold shrink-0 text-[10px]">
+      {initials}
+    </div>
+  );
+};
+
+export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
+  onVerify,
+  canVerify
+}) => {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 500);
+
+  const {
+    getStatusLabel,
+    getProjectLabel,
+    getRmLabel,
+    getSourceLabel,
+    getEmLabel,
+    getProjectLeadStatusLabel,
+    masterData,
+    projectLeadStatuses
+  } = useMasterDataLookup();
+
+  const allJunkStatusIds = React.useMemo(() => {
+    const globalJunkIds = (masterData?.lead_statuses || [])
+      .filter((s: any) => s.code === "JUNKPE" || s.code === "JUNKCM")
+      .map((s: any) => Number(s.id));
+
+    const statusIdSet = new Set<number>(globalJunkIds);
+
+    (projectLeadStatuses || []).forEach((proj: any) => {
+      if (Array.isArray(proj.status)) {
+        proj.status.forEach((st: any) => {
+          if (globalJunkIds.includes(Number(st.lead_status_id))) {
+            statusIdSet.add(Number(st.id));
+          }
+        });
+      }
+    });
+
+    return Array.from(statusIdSet);
+  }, [masterData, projectLeadStatuses]);
+
+  const {
+    data: leadsData,
+    isLoading,
+    isFetching
+  } = useGetLeadsQuery({
+    offset: (page - 1) * limit,
+    search_text: debouncedSearch || undefined,
+    status: allJunkStatusIds.length > 0 ? allJunkStatusIds : undefined,
+  }, {
+    skip: allJunkStatusIds.length === 0
+  });
+
+  const leads = React.useMemo(() => {
+    return Array.isArray(leadsData) ? leadsData : (leadsData?.data || []);
+  }, [leadsData]);
+
+  const total = React.useMemo(() => {
+    if (!Array.isArray(leadsData) && leadsData && typeof leadsData === 'object') {
+      if (leadsData.filtered_count !== undefined && leadsData.filtered_count !== null) {
+        return leadsData.filtered_count;
+      }
+      if (leadsData.total_count !== undefined && leadsData.total_count !== null) {
+        return leadsData.total_count;
+      }
+    }
+    return leads.length < limit ? (page - 1) * limit + leads.length : (page - 1) * limit + limit + 1;
+  }, [leadsData, leads.length, page, limit]);
+
+  const fallback = (value: React.ReactNode) => value ?? '--';
+
+  const columns: ColumnDef<Lead>[] = React.useMemo(() => {
+    const baseColumns: ColumnDef<Lead>[] = [
+      {
+        key: 'lead_id',
+        header: 'LEAD ID',
+        width: '110px',
+        render: (l: Lead) => (
+          <Link
+            to={`/leads/${l.uuid}`}
+            className="text-secondary-foreground font-semibold hover:text-primary transition-colors text-xs"
+          >
+            #{fallback(l.lead_id)}
+          </Link>
+        ),
+      },
+      {
+        key: 'customer_name',
+        header: 'CUSTOMER NAME',
+        width: '150px',
+        render: (l: Lead) => (
+          <span className="font-bold text-primary text-xs">
+            {fallback(l.first_name)} {l.last_name || ''}
+          </span>
+        ),
+      },
+      {
+        key: 'contact_details',
+        header: 'CONTACT DETAILS',
+        width: '150px',
+        render: (l: Lead) => (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-zinc-800 dark:text-zinc-100 font-medium text-xs">{fallback(l.phone_number)}</span>
+            <span className="text-zinc-400 text-[11px] truncate">{l.email_address || '--'}</span>
+          </div>
+        ),
+      },
+      {
+        key: 'source_id',
+        header: 'SOURCE',
+        width: '140px',
+        render: (l: Lead) => {
+          const sourceText = (l as any).source_name || (l as any).source || getSourceLabel(l.source_id);
+          return (
+            <span className="inline-block px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+              {sourceText && sourceText !== '--' ? sourceText.split(' ')[0] : '--'}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'project_id',
+        header: 'PROJECT',
+        width: '150px',
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {getProjectLabel(l.project_id)}
+          </span>
+        ),
+      },
+      {
+        key: 'lead_status_id',
+        header: 'STATUS',
+        width: '130px',
+        render: (l: Lead) => {
+          const projStatus = getProjectLeadStatusLabel(l.project_lead_status_id);
+          const statusText = (l as any).status || (projStatus && projStatus !== '--' ? projStatus : getStatusLabel(l.lead_status_id));
+          return (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200/50">
+              {statusText}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'assigned_to_rm',
+        header: 'ASSIGNED RM',
+        width: '180px',
+        render: (l: Lead) => {
+          const label = getRmLabel(l.assigned_to_rm);
+          if (label === '--') return <span className="text-zinc-400 text-xs italic">Unassigned</span>;
+          return (
+            <div className="flex items-center gap-2">
+              <InitialsAvatar firstName={label.split(' ')[0]} lastName={label.split(' ')[1]} />
+              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+            </div>
+          );
+        },
+      },
+
+      {
+        key: 'assigned_to_em',
+        header: 'EM NAME',
+        width: '180px',
+        render: (l: Lead) => {
+          let label = getEmLabel(l.assigned_to_em);
+          if (label === '--' && (l as any).em_name) {
+            label = (l as any).em_name;
+          } else if (label === '--' && (l as any).em_first_name) {
+            label = `${(l as any).em_first_name} ${(l as any).em_last_name || ''}`.trim();
+          }
+          if (label === '--') {
+            return <span className="text-zinc-400 text-xs italic">Unassigned</span>;
+          }
+          return (
+            <div className="flex items-center gap-2">
+              <InitialsAvatar
+                firstName={label.split(' ')[0]}
+                lastName={label.split(' ')[1]}
+              />
+              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                {label}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'junk_reason',
+        header: 'JUNK REASON',
+        width: '200px',
+        render: (l: Lead) => {
+          const text = l.junk_reason || '--';
+
+          const shortText =
+            text.length > 10 ? text.slice(0, 10) + '...' : text;
+
+          return (
+            <div className="max-w-[120px]">
+              <span
+                title={text}
+                className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium cursor-pointer"
+              >
+                {shortText}
+              </span>
+            </div>
+          );
+        },
+      },
+    ];
+
+    if (canVerify) {
+      baseColumns.push({
+        key: 'actions',
+        header: 'ACTIONS',
+        width: '120px',
+        render: (l: Lead) => (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            className="bg-[#0f3d6b] hover:bg-[#0c3156] text-white font-extrabold h-8 px-4 rounded-lg shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-wider"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onVerify(l);
+            }}
+          >
+            Verify Lead
+          </Button>
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [canVerify, onVerify, getStatusLabel, getProjectLabel, getRmLabel, getSourceLabel, getEmLabel]);
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+
+      <div className="bg-white dark:bg-zinc-950 rounded-4xl border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+        <div className="px-8 py-5 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-50/30 dark:bg-zinc-900/10">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Active Junk Leads Queue</h2>
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            {(isLoading || isFetching) && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
+          </div>
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(1);
+              }}
+              placeholder="Search by name..."
+            />
+          </div>
+        </div>
+        <div className="p-4">
+          <DataTable
+            columns={columns}
+            data={leads}
+            isLoading={isLoading}
+            page={page}
+            limit={limit}
+            total={total}
+            onPageChange={setPage}
+            onLimitChange={(v) => {
+              setLimit(v);
+              setPage(1);
+            }}
+            rowKey={(l) => l.uuid}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

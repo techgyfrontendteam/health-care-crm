@@ -1,0 +1,103 @@
+// All permission keys used throughout the CRM
+export const PERMISSIONS = {
+  // Leads
+  LEAD_VIEW: 'lead.view',
+  LEAD_CREATE: 'lead.create',
+  LEAD_EDIT: 'lead.edit',
+  LEAD_DELETE: 'lead.delete',
+  LEAD_ASSIGN: 'lead.assign',
+  LEAD_STATUS_UPDATE: 'lead.status.update',
+  LEAD_SCHEDULE_VISIT: 'lead.schedule_visit',
+  LEAD_BULK_ACTIONS: 'lead.bulk_actions',
+
+  // Agents (EXPMNG)
+  AGENT_VIEW: 'agent.view',
+  AGENT_CREATE: 'agent.create',
+  AGENT_EDIT: 'agent.edit',
+  AGENT_DELETE: 'agent.delete',
+  AGENT_ASSIGN: 'agent.assign',
+
+  // Managers (RELMNG)
+  MANAGER_VIEW: 'manager.view',
+  MANAGER_CREATE: 'manager.create',
+  MANAGER_EDIT: 'manager.edit',
+  MANAGER_DELETE: 'manager.delete',
+  MANAGER_ASSIGN: 'manager.assign',
+
+  // Customers
+  CUSTOMER_VIEW: 'customer.view',
+  CUSTOMER_EDIT: 'customer.edit',
+
+  // Followups
+  FOLLOWUP_VIEW: 'followup.view',
+  FOLLOWUP_CREATE: 'followup.create',
+} as const;
+
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+
+/**
+ * Maps role codes (from API) to their allowed permissions.
+ * To change what a role can do, update ONLY this map — nothing else changes.
+ */
+export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  // SADMIN — Read-only overview
+  SADMIN: [
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.AGENT_VIEW,
+    PERMISSIONS.MANAGER_VIEW,
+    PERMISSIONS.CUSTOMER_VIEW,
+    PERMISSIONS.FOLLOWUP_VIEW,
+  ],
+
+  // ADMIN — Full control
+  ADMIN: [
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.LEAD_ASSIGN,
+    PERMISSIONS.LEAD_STATUS_UPDATE,
+    PERMISSIONS.LEAD_SCHEDULE_VISIT, 
+    PERMISSIONS.LEAD_BULK_ACTIONS,
+    PERMISSIONS.AGENT_VIEW,
+    PERMISSIONS.AGENT_CREATE,
+    PERMISSIONS.AGENT_EDIT,
+    PERMISSIONS.AGENT_DELETE,
+    PERMISSIONS.AGENT_ASSIGN,
+    PERMISSIONS.MANAGER_VIEW,
+    PERMISSIONS.MANAGER_CREATE,
+    PERMISSIONS.MANAGER_EDIT,
+    PERMISSIONS.MANAGER_DELETE,
+    PERMISSIONS.MANAGER_ASSIGN,
+    PERMISSIONS.CUSTOMER_VIEW,
+    PERMISSIONS.CUSTOMER_EDIT,
+    PERMISSIONS.FOLLOWUP_VIEW,
+  ],
+
+  // RELMNG — Relationship Manager: controls agents, manages leads
+  RELMNG: [
+    PERMISSIONS.LEAD_VIEW,
+    // PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_ASSIGN,
+    PERMISSIONS.LEAD_STATUS_UPDATE,
+    PERMISSIONS.LEAD_BULK_ACTIONS,
+    PERMISSIONS.LEAD_SCHEDULE_VISIT,
+    PERMISSIONS.AGENT_VIEW,
+    PERMISSIONS.AGENT_CREATE,
+    PERMISSIONS.AGENT_EDIT,
+    PERMISSIONS.AGENT_DELETE,
+    PERMISSIONS.AGENT_ASSIGN,
+    PERMISSIONS.FOLLOWUP_VIEW,
+    PERMISSIONS.FOLLOWUP_CREATE,
+  ],
+
+  // EXPMNG — Site Experience Manager (Agent): minimal access
+  EXPMNG: [
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_STATUS_UPDATE,
+    PERMISSIONS.FOLLOWUP_VIEW,
+    PERMISSIONS.FOLLOWUP_CREATE,
+  ],
+};
