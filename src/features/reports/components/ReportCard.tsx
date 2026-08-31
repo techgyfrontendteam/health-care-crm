@@ -5,7 +5,9 @@ import {
   Building2, 
   Users, 
   Star, 
-  Gauge
+  Gauge,
+  IndianRupee,
+  Stethoscope,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Report } from "../types";
@@ -26,6 +28,9 @@ const iconMap: Record<number, IconConfig> = {
   3: { src: "/icons/persona.png", fallback: Users },
   4: { src: "/icons/lead-quality.png", fallback: Star },
   5: { src: "/icons/campaign-perf.png", fallback: Gauge },
+  100: { src: "", fallback: IndianRupee },
+  101: { src: "", fallback: Stethoscope },
+  102: { src: "", fallback: Building2 },
 };
 
 export const ReportCard = ({ report }: ReportCardProps) => {

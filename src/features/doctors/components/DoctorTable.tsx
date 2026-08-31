@@ -1,5 +1,5 @@
 import React from "react";
-import { Doctor } from "../types";
+import type { Doctor } from "../types";
 import { Star, Phone, Mail, Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../utils";

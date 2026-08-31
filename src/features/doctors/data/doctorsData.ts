@@ -1,4 +1,4 @@
-import { Doctor } from "../types";
+import type { Doctor } from "../types";
 
 export const mockDoctors: Doctor[] = [
   {
@@ -20,7 +20,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "09:00 AM - 04:00 PM",
     room_number: "OPD-204",
     bio: "Senior Interventional Cardiologist with expertise in coronary angioplasty, heart failure management, and preventive cardiac care.",
-    hospital_branch: "Main Wing - 2nd Floor",
+    hospital_branch: "Hyderabad",
     is_active: 1,
     created_at: "2024-01-15T08:30:00Z",
   },
@@ -43,7 +43,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "10:00 AM - 05:00 PM",
     room_number: "IPD-Neurology Wing-301",
     bio: "Leading Neurophysician specializing in acute stroke care, epilepsy management, movement disorders, and neuro-rehabilitation.",
-    hospital_branch: "Super Specialty Block - 3rd Floor",
+    hospital_branch: "Bengaluru",
     is_active: 1,
     created_at: "2024-02-01T09:15:00Z",
   },
@@ -66,7 +66,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "08:30 AM - 02:30 PM",
     room_number: "OPD-108",
     bio: "Compassionate Pediatrician dedicated to child growth monitoring, vaccinations, pediatric nutrition, and adolescent medicine.",
-    hospital_branch: "Children & Maternity Block - 1st Floor",
+    hospital_branch: "Mumbai",
     is_active: 1,
     created_at: "2024-02-10T10:00:00Z",
   },
@@ -89,7 +89,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "11:00 AM - 06:00 PM",
     room_number: "OPD-305 / OT-2",
     bio: "Renowned Orthopedic Surgeon specializing in robotic knee and hip replacements, arthroscopy, and complex trauma surgeries.",
-    hospital_branch: "Orthopedic & Trauma Care Wing",
+    hospital_branch: "Delhi",
     is_active: 1,
     created_at: "2023-11-20T11:45:00Z",
   },
@@ -112,7 +112,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "09:30 AM - 03:30 PM",
     room_number: "OPD-112",
     bio: "Expert Gynaecologist and Fetal Medicine Specialist experienced in high-risk pregnancy care, laparoscopic gynaec surgeries, and infertility care.",
-    hospital_branch: "Women's Health Block - 2nd Floor",
+    hospital_branch: "Hyderabad",
     is_active: 1,
     created_at: "2024-03-01T08:00:00Z",
   },
@@ -135,7 +135,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "10:00 AM - 04:00 PM",
     room_number: "IPD-Onco Wing-402",
     bio: "Medical Oncologist specializing in targeted immunotherapy, chemotherapy protocols, and comprehensive solid tumor management.",
-    hospital_branch: "Oncology Care Center - 4th Floor",
+    hospital_branch: "Chennai",
     is_active: 1,
     created_at: "2023-12-15T09:30:00Z",
   },
@@ -158,7 +158,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "02:00 PM - 07:00 PM",
     room_number: "OPD-210",
     bio: "Consultant Dermatologist focusing on clinical dermatology, laser procedures, hair restoration therapies, and anti-aging treatments.",
-    hospital_branch: "Outpatient Clinic Block - 2nd Floor",
+    hospital_branch: "Pune",
     is_active: 1,
     created_at: "2024-03-12T14:00:00Z",
   },
@@ -181,7 +181,7 @@ export const mockDoctors: Doctor[] = [
     working_hours: "09:00 AM - 03:00 PM",
     room_number: "OPD-315 / Endoscopy Suite",
     bio: "Expert Gastroenterologist & Endoscopist specializing in ERCP, liver disorders, inflammatory bowel disease (IBD), and GI motility studies.",
-    hospital_branch: "Gastro Sciences Wing - 3rd Floor",
+    hospital_branch: "Bengaluru",
     is_active: 1,
     created_at: "2024-01-20T10:15:00Z",
   }
@@ -189,4 +189,14 @@ export const mockDoctors: Doctor[] = [
 
 export const getSpecializationOptions = (): string[] => {
   return Array.from(new Set(mockDoctors.map((d) => d.specialization)));
+};
+
+export const getBranchOptions = (): string[] => {
+  return Array.from(
+    new Set(
+      mockDoctors
+        .map((d) => d.hospital_branch)
+        .filter((b): b is string => Boolean(b))
+    )
+  );
 };

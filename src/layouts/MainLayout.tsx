@@ -24,7 +24,9 @@ import {
   Eye,
   EyeOff,
   UserStar,
-  Contact
+  Contact,
+  IndianRupee,
+  TrendingUp,
 } from "lucide-react";
 import { SidebarNotifications } from "./components/SidebarNotifications";
 import { usePermissions } from "../hooks/usePermissions";
@@ -240,6 +242,8 @@ export const MainLayout = () => {
     SADMIN: [
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
+      { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
+      { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
       { label: 'Sales Heads', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
@@ -248,6 +252,8 @@ export const MainLayout = () => {
     ADMIN: [
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
+      { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
+      { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
       { label: 'Sales Heads', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
@@ -257,11 +263,9 @@ export const MainLayout = () => {
     RELMNG: [
       { label: 'Dashboard', path: '/relationship-managers/dashboard', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Leads Dashboard', path: '/leads', icon: <NavIcon name="manage" /> },
-<<<<<<< Updated upstream
-      // { label: 'Sales Executives', path: '/agents', icon: <NavIcon name="experience" /> },
-=======
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
->>>>>>> Stashed changes
+      { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
+      { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
     ],
@@ -269,11 +273,9 @@ export const MainLayout = () => {
     EXPMNG: [
       { label: 'Dashboard', path: '/agents/dashboard', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Leads', path: '/leads', icon: <NavIcon name="manage" /> },
-<<<<<<< Updated upstream
-      // { label: 'Customers', path: '/customers', icon: <NavIcon name="customers" /> },
-=======
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
->>>>>>> Stashed changes
+      { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
+      { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
     ],

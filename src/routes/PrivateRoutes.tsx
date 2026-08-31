@@ -58,6 +58,12 @@ const MarketingDashboardPage = React.lazy(() =>
 const DoctorsPage = React.lazy(() =>
   import("../features/doctors/pages/DoctorsPage").then((m) => ({ default: m.DoctorsPage }))
 );
+const RevenueDashboardPage = React.lazy(() =>
+  import("../features/revenue/pages/RevenueDashboardPage").then((m) => ({ default: m.RevenueDashboardPage }))
+);
+const SalesDashboardPage = React.lazy(() =>
+  import("../features/sales/pages/SalesDashboardPage").then((m) => ({ default: m.SalesDashboardPage }))
+);
 
 
 const ComingSoonReportPage = React.lazy(() => import('../features/reports/pages/ComingSoonReportPage').then(m => ({ default: m.ComingSoonReportPage })));
@@ -66,6 +72,9 @@ export const PrivateRoutes = (
   <Route element={<MainLayout />}>
     <Route path="/" element={<Navigate to="/leads" replace />} />
     <Route path="/doctors" element={<DoctorsPage />} />
+    <Route path="/revenue" element={<RevenueDashboardPage />} />
+    <Route path="/reports/revenue" element={<RevenueDashboardPage />} />
+    <Route path="/sales" element={<SalesDashboardPage />} />
     {/* <Route path="/project-analytics" element={<ProjectAnalyticsPage />} /> */}
     {/* <Route path="/master-data" element={<MasterDataPage />} /> */}
     {/* <Route path="/master-data/lead-statuses" element={<LeadStatusesPage />} /> */}

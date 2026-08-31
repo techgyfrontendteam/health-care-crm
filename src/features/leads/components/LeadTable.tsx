@@ -518,6 +518,7 @@ export const LeadTable = ({
           );
         },
       },
+      /* Income column commented out as requested
       {
         key: 'income',
         header: 'INCOME',
@@ -528,6 +529,7 @@ export const LeadTable = ({
           </span>
         ),
       },
+      */
       {
         key: 'created_on',
         header: 'CREATION DATE',
@@ -564,9 +566,13 @@ export const LeadTable = ({
       },
       {
         key: 'project_id',
-        header: 'PROJECT',
+        header: 'BRANCH',
         width: '150px',
-        render: (l: Lead) => <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{getProjectLabel(l.project_id)}</span>,
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {l.hospital_branch || l.branch || l.branch_name || getProjectLabel(l.project_id) || "Hyderabad"}
+          </span>
+        ),
       },
       {
         key: 'enquiries',
@@ -640,7 +646,7 @@ export const LeadTable = ({
           ),
         }
       ] : []),
-      // Conditional: EM for Admin/Super/RM (SADMIN, ADMIN, RELMNG)
+      /* Assigned Sales Executive column commented out as requested
       ...((roleCode === 'SADMIN' || roleCode === 'ADMIN' || roleCode === 'RELMNG') ? [
         {
           key: 'assigned_to_em',
@@ -657,12 +663,14 @@ export const LeadTable = ({
           ),
         }
       ] : []),
+      */
       {
         key: 'actions',
         header: 'ACTIONS',
         width: '120px',
         render: (lead: Lead) => (
           <div className="flex items-center gap-1">
+            {/* Inline Edit Lead button commented out as requested
             {can(PERMISSIONS.LEAD_EDIT) && (
               <Button
                 variant="outline"
@@ -673,6 +681,7 @@ export const LeadTable = ({
                 Edit Lead
               </Button>
             )}
+            */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -689,6 +698,16 @@ export const LeadTable = ({
                     <span>View Details</span>
                   </DropdownMenuItem>
                 </Link>
+
+                {can(PERMISSIONS.LEAD_EDIT) && (
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2 py-2"
+                    onClick={() => onEdit(lead)}
+                  >
+                    <Pencil className="h-4 w-4 text-zinc-500" />
+                    <span>Edit Lead</span>
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

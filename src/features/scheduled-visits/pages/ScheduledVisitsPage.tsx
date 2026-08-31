@@ -48,6 +48,8 @@ const formatWithoutTimezone = (dateTime: string) => {
   }
 };
 
+const BRANCH_CITIES = ["All", "Hyderabad", "Bengaluru", "Mumbai", "Delhi", "Chennai", "Pune"];
+
 export const ScheduledVisitsPage = () => {
   const { emId: paramEmId } = useParams();
 
@@ -60,6 +62,7 @@ export const ScheduledVisitsPage = () => {
   const isEM = roleCode === "EXPMNG";
 
   const [date, setDate] = useState<Date>(new Date());
+  const [branchFilter, setBranchFilter] = useState("All");
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>(
     new Date(),
   );
@@ -235,13 +238,13 @@ export const ScheduledVisitsPage = () => {
 
   const visits = visitsData || [];
 
-  // Local Search Filter
+  // Local Search & Branch Filter
   const filteredVisits = useMemo(() => {
     let filtered = visits;
 
     // Search filter
     if (searchTerm) {
-      filtered = visits.filter((v: any) => {
+      filtered = filtered.filter((v: any) => {
         const name =
           `${v.c_first_name || ""} ${v.c_last_name || ""}`.toLowerCase();
 
@@ -251,6 +254,21 @@ export const ScheduledVisitsPage = () => {
           name.includes(searchTerm.toLowerCase()) ||
           location.includes(searchTerm.toLowerCase())
         );
+      });
+    }
+
+    // Branch filter
+    if (branchFilter !== "All") {
+      filtered = filtered.filter((v: any) => {
+        const branchStr = (
+          v.hospital_branch ||
+          v.branch_name ||
+          v.branch ||
+          v.visit_location_url ||
+          v.project_name ||
+          ""
+        ).toLowerCase();
+        return branchStr.includes(branchFilter.toLowerCase());
       });
     }
 
@@ -275,11 +293,11 @@ export const ScheduledVisitsPage = () => {
 
       return getMinutes(a.visit_date_time) - getMinutes(b.visit_date_time);
     });
-  }, [visits, searchTerm]);
+  }, [visits, searchTerm, branchFilter]);
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeTab, date]);
+  }, [searchTerm, activeTab, date, branchFilter]);
 
   const totalPages = Math.max(
     1,
@@ -293,11 +311,24 @@ export const ScheduledVisitsPage = () => {
   return (
     <div className="flex flex-col h-full bg-transparent pt-8 pb-20 px-4 space-y-8">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-extrabold text-primary tracking-tight">
           Appointments
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Branch Filter Dropdown */}
+          <select
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="h-11 px-4 rounded-[16px] border border-search-border bg-white dark:bg-zinc-900 shadow-sm font-bold text-xs text-primary outline-none focus:ring-2 focus:ring-[#0f3d6b]"
+          >
+            {BRANCH_CITIES.map((branch) => (
+              <option key={branch} value={branch}>
+                {branch === "All" ? "All Branches" : branch}
+              </option>
+            ))}
+          </select>
+
           {/* EM Selection Dropdown */}
           {(isAdmin || isRM) && emOptions.length > 0 && (
             <div className="flex items-center gap-2 min-w-[320px] max-w-[420px]">

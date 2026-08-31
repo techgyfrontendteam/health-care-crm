@@ -89,6 +89,13 @@ export interface Lead {
   income?: number;
   junk_reason?: string;
   customer_status_id?: number;
+  hospital_branch?: string;
+  branch?: string;
+  branch_name?: string;
+  followup_date?: string;
+  next_followup_date?: string;
+  appointment_date?: string;
+  specialization?: string;
   remarks?: LeadRemark[];
   calls?: LeadCall[];
   visits?: LeadVisit[];
@@ -150,6 +157,11 @@ export interface CreateLeadRequest {
   junk_reason?: string;
   dob?: string;
   income?: number;
+  department?: string;
+  doctor_id?: number | null;
+  appointment_date?: string;
+  appointment_time?: string;
+  appointment_note?: string;
 }
 
 export interface UpdateLeadRequest extends CreateLeadRequest {

@@ -45,4 +45,11 @@ export const reports: Report[] = [
       "In-Patient admission metrics, bed occupancy, and discharge analytics.",
     path: "/reports/ip-reports",
   },
+  {
+    id: 103,
+    title: "Revenue Reports (OP & IP Combined)",
+    description:
+      "Comprehensive revenue analytics combining Out-Patient (OP) and In-Patient (IP) billing, consultation fees, and doctor earnings.",
+    path: "/revenue",
+  },
 ];

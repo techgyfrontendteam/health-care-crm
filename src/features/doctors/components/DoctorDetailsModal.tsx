@@ -1,5 +1,5 @@
 import React from "react";
-import { Doctor } from "../types";
+import type { Doctor } from "../types";
 import {
   X,
   Phone,
@@ -37,12 +37,6 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
       <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
         {/* Banner / Header */}
         <div className="bg-gradient-to-r from-[#063669] to-[#0f3d6b] p-6 text-white relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
 
           <div className="flex items-center gap-5">
             <img

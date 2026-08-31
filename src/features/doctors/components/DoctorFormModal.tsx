@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Doctor, DepartmentType, DoctorStatus, CreateDoctorRequest } from "../types";
-import { X, User, Phone, Mail, Award, Clock, MapPin, Building2 } from "lucide-react";
+import type { Doctor, DepartmentType, DoctorStatus, CreateDoctorRequest } from "../types";
+import { X, User, Phone, Mail, Award, Clock, MapPin, Building2, Upload } from "lucide-react";
 import { Dialog, DialogContent } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -38,6 +38,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
     working_hours: "09:00 AM - 04:00 PM",
     room_number: "OPD-101",
     bio: "",
+    hospital_branch: "Hyderabad",
   });
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         working_hours: doctor.working_hours || "09:00 AM - 04:00 PM",
         room_number: doctor.room_number || "OPD-101",
         bio: doctor.bio || "",
+        hospital_branch: doctor.hospital_branch || "Hyderabad",
       });
     } else {
       setFormData({
@@ -74,6 +76,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         working_hours: "09:00 AM - 04:00 PM",
         room_number: "OPD-101",
         bio: "",
+        hospital_branch: "Hyderabad",
       });
     }
   }, [doctor, open]);
@@ -91,7 +94,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between pr-12">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
               {isEdit ? "Edit Doctor Profile" : "Register New Doctor"}
@@ -100,12 +103,6 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               {isEdit ? "Update doctor credentials and schedule details." : "Add a new healthcare practitioner to TechGy CRM."}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {/* Form Body */}
@@ -255,15 +252,78 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             </div>
           </div>
 
-          {/* Image URL */}
+          {/* Hospital Branch City */}
           <div>
-            <Label className="text-xs font-bold">Profile Image URL</Label>
-            <Input
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://images.unsplash.com/..."
-              className="mt-1 rounded-xl h-10 text-xs"
-            />
+            <Label className="text-xs font-bold">Hospital Branch City</Label>
+            <select
+              value={formData.hospital_branch || "Hyderabad"}
+              onChange={(e) => setFormData({ ...formData, hospital_branch: e.target.value })}
+              className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="Hyderabad">Hyderabad</option>
+              <option value="Bengaluru">Bengaluru</option>
+              <option value="Mumbai">Mumbai</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Chennai">Chennai</option>
+              <option value="Pune">Pune</option>
+            </select>
+          </div>
+
+          {/* Profile Image Upload & URL */}
+          <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800">
+            <div className="relative group shrink-0">
+              <img
+                src={formData.image_url || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop"}
+                alt="Doctor Avatar Preview"
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-white dark:border-zinc-800 shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop";
+                }}
+              />
+              <label
+                htmlFor="doctor-avatar-upload"
+                className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white"
+                title="Upload Profile Picture"
+              >
+                <Upload className="h-5 w-5" />
+              </label>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Profile Picture</Label>
+              <p className="text-[11px] text-zinc-500 mb-2">Upload a photo from your computer or provide an image URL.</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  id="doctor-avatar-upload"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setFormData((prev) => ({ ...prev, image_url: reader.result as string }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="doctor-avatar-upload"
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer inline-flex items-center gap-1.5 shadow-sm shrink-0"
+                >
+                  <Upload className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
+                  Upload Photo
+                </label>
+                <Input
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="Or paste Image URL..."
+                  className="rounded-xl h-8 text-xs flex-1"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Bio */}

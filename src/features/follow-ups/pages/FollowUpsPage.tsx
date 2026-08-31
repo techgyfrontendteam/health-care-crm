@@ -715,7 +715,8 @@ export const FollowUpsPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Experience Manager Dropdown */}
+              {/* Experience Manager / Sales Executive Dropdown commented out as requested */}
+              {/*
               <div className="relative">
                 <span className="text-[9px] font-black text-slate-400 block mb-1 uppercase tracking-wider">
                   SALES EXECUTIVE
@@ -747,6 +748,7 @@ export const FollowUpsPage: React.FC = () => {
                   </div>
                 )}
               </div>
+              */}
             </>
           )}
 

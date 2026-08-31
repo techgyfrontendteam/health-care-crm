@@ -15,7 +15,7 @@ import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
-import { formatDate } from "../../../utils";
+import { formatDate, getProjectStatusOptions } from "../../../utils";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 import { useGetAllUsersQuery } from "../../users/api/usersApi";
 import {
@@ -24,6 +24,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import { LeadRemarksTab } from "../components/tabs/LeadRemarksTab";
 import { LeadCallsTab } from "../components/tabs/LeadCallsTab";
 import LeadCalls from "../components/tabs/LeadCalls";
@@ -177,6 +184,94 @@ export const LeadDetailsPage = () => {
     ? getProjectLeadStatusLabel(lead.project_lead_status_id)
     : getStatusLabel(lead?.lead_status_id);
 
+  const statusOptions = React.useMemo(() => {
+    if (lead?.project_id && projectLeadStatuses) {
+      const opts = getProjectStatusOptions(lead.project_id, projectLeadStatuses);
+      if (opts && opts.length > 0) return opts;
+    }
+    return (masterData?.lead_statuses || []).map((s: any) => ({
+      id: s.id,
+      value: s.id,
+      label: s.description || s.status_name || s.name || `Status ${s.id}`,
+      lead_status_id: s.id,
+    }));
+  }, [lead?.project_id, projectLeadStatuses, masterData?.lead_statuses]);
+
+  const currentStatusValue = React.useMemo(() => {
+    if (projectLeadStatusId) {
+      const match = statusOptions.find((opt: any) => Number(opt.id) === Number(projectLeadStatusId));
+      if (match) return String(match.id);
+    }
+    if (lead?.lead_status_id) {
+      const match = statusOptions.find((opt: any) => Number(opt.lead_status_id || opt.value) === Number(lead.lead_status_id));
+      if (match) return String(match.id || match.value);
+    }
+    return statusOptions[0] ? String(statusOptions[0].id || statusOptions[0].value) : "";
+  }, [projectLeadStatusId, lead?.lead_status_id, statusOptions]);
+
+  const handleStatusChange = async (newVal: string) => {
+    if (!lead) return;
+    const selectedOpt = statusOptions.find((opt: any) => String(opt.id || opt.value) === newVal);
+
+    const updatedPayload: any = {
+      ...lead,
+      uuid: lead.uuid,
+      source_id: Number(lead.source_id || 1),
+      project_id: lead.project_id,
+      lead_priority_id: lead.lead_priority_id || 1,
+      first_name: lead.first_name || '',
+      last_name: lead.last_name || '',
+      phone_number: lead.phone_number,
+      email_address: lead.email_address || lead.email || '',
+      source_employee_user_id: lead.source_employee_user_id ?? null,
+      assigned_to_rm: lead.assigned_to_rm ?? null,
+      assigned_to_em: lead.assigned_to_em ?? null,
+      occupation: lead.occupation || '',
+      address: lead.address || '',
+      city: lead.city || '',
+      state: lead.state || '',
+      country: lead.country || '',
+      zip: lead.zip || '',
+    };
+
+    if (selectedOpt) {
+      if (selectedOpt.id) {
+        updatedPayload.project_lead_status_id = Number(selectedOpt.id);
+      }
+      if (selectedOpt.lead_status_id || selectedOpt.value) {
+        updatedPayload.lead_status_id = Number(selectedOpt.lead_status_id || selectedOpt.value);
+      }
+    } else {
+      updatedPayload.lead_status_id = Number(newVal);
+    }
+
+    try {
+      await updateLead(updatedPayload).unwrap();
+      toast.success("Lead status updated successfully");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update lead status");
+    }
+  };
+
+  const upcomingVisitText = React.useMemo(() => {
+    if (lead?.visits && Array.isArray(lead.visits) && lead.visits.length > 0) {
+      const now = new Date();
+      const upcoming = lead.visits.filter((v: any) => {
+        if (!v.visit_date_time) return false;
+        const vDate = new Date(v.visit_date_time.replace(/Z/g, '').split('+')[0].replace(' ', 'T'));
+        return vDate >= now || v.visit_status === 1;
+      });
+      if (upcoming.length > 0 && upcoming[0].visit_date_time) {
+        return `${upcoming.length} Scheduled (${formatDate(upcoming[0].visit_date_time)})`;
+      }
+    }
+    const leadAny = lead as any;
+    if (leadAny?.appointment_date) {
+      return `${leadAny.appointment_date} ${leadAny.appointment_time || ''}`.trim();
+    }
+    return "No Upcoming Visits";
+  }, [lead]);
+
   const sourceObj = masterData?.sources?.find((s) => s.id === lead?.source_id);
   const isInternalEmployeeSource =
     lead?.source_id === 4 || sourceObj?.code === "INTEMP";
@@ -275,8 +370,8 @@ export const LeadDetailsPage = () => {
             <div className="flex items-center gap-5">
               {/* Avatar */}
               <div
-                className="shrink-0 flex items-center justify-center rounded-2xl text-white font-bold text-2xl"
-                style={{ width: 56, height: 56, backgroundColor: "#0f3d6b" }}
+                className="shrink-0 flex items-center justify-center rounded-2xl text-white font-black text-3xl shadow-sm"
+                style={{ width: 64, height: 64, backgroundColor: "#0f3d6b" }}
               >
                 {initials}
               </div>
@@ -286,9 +381,9 @@ export const LeadDetailsPage = () => {
                 <h2
                   style={{
                     fontFamily: "Inter, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "22px",
-                    lineHeight: "28px",
+                    fontWeight: 800,
+                    fontSize: "28px",
+                    lineHeight: "36px",
                     color: "#191C1E",
                   }}
                 >
@@ -395,25 +490,55 @@ export const LeadDetailsPage = () => {
                 />
               )}
               <DetailField
-                label="Lead Type"
-                value="OPD Leads / IPD Leads"
-              />
-              <DetailField
                 label="Creation Date"
                 value={formatDate(lead.created_on)}
               />
-              <DetailField
-                label="Lead Status"
-                value={
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    {displayStatusLabel}
-                  </span>
-                }
-              />
+              <div className="space-y-2">
+                <Select
+                  value={currentStatusValue}
+                  onValueChange={handleStatusChange}
+                  disabled={isUpdating}
+                >
+                  <SelectTrigger className="w-full text-left bg-transparent border-none p-0 shadow-none focus:ring-0 focus:outline-none group cursor-pointer h-auto [&>svg]:hidden">
+                    <div className="space-y-2">
+                      <dt style={labelStyle} className="flex items-center gap-1.5">
+                        <span>LEAD STATUS</span>
+                        <Pencil className="h-3.5 w-3.5 text-zinc-400 group-hover:text-[#0f3d6b] shrink-0 transition-colors" />
+                      </dt>
+                      <dd style={valueStyle} className="flex items-center gap-2">
+                        <span style={valueStyle} className="truncate max-w-[200px] block" title={displayStatusLabel}>
+                          {displayStatusLabel}
+                        </span>
+                      </dd>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="w-[260px] max-h-[240px] overflow-y-auto p-1 shadow-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl">
+                    {statusOptions.map((opt: any) => (
+                      <SelectItem
+                        key={opt.id || opt.value}
+                        value={String(opt.id || opt.value)}
+                        className="py-1.5 px-2 text-xs font-medium cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                      >
+                        <div className="w-full max-w-[200px] truncate" title={opt.label}>
+                          <span className="truncate text-xs text-zinc-800 dark:text-zinc-200">
+                            {opt.label}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Customer Status commented out as requested
               <DetailField
                 label="Customer Status"
                 value={getCustomerStatusLabel(lead.customer_status_id)}
+              />
+              */}
+              <DetailField
+                label="Upcoming Visits"
+                value={upcomingVisitText}
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
               />
               <DetailField
                 label="Project"
@@ -436,6 +561,7 @@ export const LeadDetailsPage = () => {
                   ) : null
                 }
               />
+              {/* Assigned EM commented out as requested
               <DetailField
                 label="Assigned EM"
                 value={
@@ -455,6 +581,9 @@ export const LeadDetailsPage = () => {
                   )
                 }
               />
+              */}
+              {/* Occupation, Phone Number, Email Address commented out as requested */}
+              {/*
               <DetailField label="Occupation" value={lead.occupation} />
               <DetailField
                 label="Phone Number"
@@ -465,6 +594,39 @@ export const LeadDetailsPage = () => {
                 label="Email Address"
                 value={lead.email_address || lead.email}
                 icon={<Mail className="h-4 w-4 text-[#64748B]" />}
+              />
+              */}
+              <DetailField
+                label="Branch"
+                value={lead.hospital_branch || lead.branch || lead.branch_name || "Hyderabad"}
+              />
+              <DetailField
+                label="Follow Up Date"
+                value={
+                  lead.followup_date || lead.next_followup_date
+                    ? formatDate(lead.followup_date || lead.next_followup_date)
+                    : (lead.follow_ups && lead.follow_ups.length > 0
+                        ? formatDate(lead.follow_ups[0].date_time)
+                        : (lead.followups && lead.followups.length > 0
+                            ? formatDate(lead.followups[0].date_time)
+                            : "--"))
+                }
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
+              />
+              <DetailField
+                label="Appointment Date"
+                value={
+                  lead.appointment_date
+                    ? formatDate(lead.appointment_date)
+                    : (lead.visits && lead.visits.length > 0 && lead.visits[0].visit_date_time
+                        ? formatDate(lead.visits[0].visit_date_time)
+                        : "--")
+                }
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
+              />
+              <DetailField
+                label="Specialization"
+                value={lead.specialization || getProjectLabel(lead.project_id) || "--"}
               />
             </dl>
           </div>

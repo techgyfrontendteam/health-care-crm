@@ -30,6 +30,7 @@ export interface DoctorFilterState {
   department: "All" | DepartmentType;
   status: "All" | DoctorStatus;
   specialization: string;
+  branch: string;
   page: number;
   limit: number;
 }
@@ -49,6 +50,7 @@ export interface CreateDoctorRequest {
   working_hours: string;
   room_number: string;
   bio?: string;
+  hospital_branch?: string;
 }
 
 export type UpdateDoctorRequest = Partial<CreateDoctorRequest> & { id: number };
