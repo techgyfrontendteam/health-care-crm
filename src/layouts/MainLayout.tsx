@@ -238,36 +238,30 @@ export const MainLayout = () => {
   const navItemsByRole: Record<string, { label: string; path: string; icon: React.ReactNode }[]> = {
     // Super Admin & Admin — full set, in spec order
     SADMIN: [
-      // { label: 'Project Analytics Hub', path: '/project-analytics', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
-      // { label: 'Customers', path: '/customers', icon: <NavIcon name="customers" /> },
+      { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       { label: 'Sales Heads', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
-      // { label: 'Sales Executives', path: '/agents', icon: <NavIcon name="experience" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
-      // { label: 'War Room', path: '/war-room', icon: <NavIcon name="war-room" /> },
-      // { label: 'Master Data', path: '/master-data', icon: <NavIcon name="master-data" /> },
-      // { label: 'Marketing Dashboard', path: '/marketing-dashboard', icon: <NavIcon name="marketing" /> },
     ],
     ADMIN: [
-      // { label: 'Project Analytics Hub', path: '/project-analytics', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
-      // { label: 'Customers', path: '/customers', icon: <NavIcon name="customers" /> },
+      { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       { label: 'Sales Heads', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
-      // { label: 'Sales Executives', path: '/agents', icon: <NavIcon name="experience" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
-      // { label: 'War Room', path: '/war-room', icon: <NavIcon name="war-room" /> },
-      // { label: 'Master Data', path: '/master-data', icon: <NavIcon name="master-data" /> },
-      // { label: 'Marketing Dashboard', path: '/marketing-dashboard', icon: <NavIcon name="marketing" /> },
     ],
     // Relationship Manager — scoped set, their dashboard first
     RELMNG: [
       { label: 'Dashboard', path: '/relationship-managers/dashboard', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Leads Dashboard', path: '/leads', icon: <NavIcon name="manage" /> },
+<<<<<<< Updated upstream
       // { label: 'Sales Executives', path: '/agents', icon: <NavIcon name="experience" /> },
+=======
+      { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
+>>>>>>> Stashed changes
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
     ],
@@ -275,7 +269,11 @@ export const MainLayout = () => {
     EXPMNG: [
       { label: 'Dashboard', path: '/agents/dashboard', icon: <LayoutDashboard size={22} fill="currentColor" /> },
       { label: 'Leads', path: '/leads', icon: <NavIcon name="manage" /> },
+<<<<<<< Updated upstream
       // { label: 'Customers', path: '/customers', icon: <NavIcon name="customers" /> },
+=======
+      { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
+>>>>>>> Stashed changes
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
     ],

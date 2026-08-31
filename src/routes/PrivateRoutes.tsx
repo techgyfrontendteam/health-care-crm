@@ -55,6 +55,9 @@ const WarRoomPage = React.lazy(() =>
 const MarketingDashboardPage = React.lazy(() =>
   import("../features/marketing-dashboard/pages/MarketingDashboardPage").then((m) => ({ default: m.MarketingDashboardPage }))
 );
+const DoctorsPage = React.lazy(() =>
+  import("../features/doctors/pages/DoctorsPage").then((m) => ({ default: m.DoctorsPage }))
+);
 
 
 const ComingSoonReportPage = React.lazy(() => import('../features/reports/pages/ComingSoonReportPage').then(m => ({ default: m.ComingSoonReportPage })));
@@ -62,6 +65,7 @@ const ComingSoonReportPage = React.lazy(() => import('../features/reports/pages/
 export const PrivateRoutes = (
   <Route element={<MainLayout />}>
     <Route path="/" element={<Navigate to="/leads" replace />} />
+    <Route path="/doctors" element={<DoctorsPage />} />
     {/* <Route path="/project-analytics" element={<ProjectAnalyticsPage />} /> */}
     {/* <Route path="/master-data" element={<MasterDataPage />} /> */}
     {/* <Route path="/master-data/lead-statuses" element={<LeadStatusesPage />} /> */}
