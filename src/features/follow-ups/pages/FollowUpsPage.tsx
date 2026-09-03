@@ -674,6 +674,17 @@ export const FollowUpsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#002d62] tracking-tight">Followups</h1>
           <p className="text-xs text-slate-400 font-medium">Track and manage lead follow-ups efficiently.</p>
         </div>
+        <button
+          onClick={() => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            setCreateFormDate(todayStr);
+            setIsGeneralCreateModalOpen(true);
+          }}
+          className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          Create Follow-Up
+        </button>
       </div>
 
       {/* Filters & Navigation Row */}
@@ -804,8 +815,19 @@ export const FollowUpsPage: React.FC = () => {
       {/* List cards section */}
       <div className="space-y-4 pt-2">
         {filteredFollowUps.length === 0 ? (
-          <div className="bg-white border border-dashed border-slate-200 rounded-[20px] p-12 text-center text-xs font-bold text-slate-400 shadow-sm">
-            No {activeTab.toLowerCase()} follow-ups found for your selection.
+          <div className="bg-white border border-dashed border-slate-200 rounded-[20px] p-12 text-center text-xs font-bold text-slate-400 shadow-sm flex flex-col items-center justify-center gap-3">
+            <span>No {activeTab.toLowerCase()} follow-ups found for your selection.</span>
+            <button
+              onClick={() => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                setCreateFormDate(todayStr);
+                setIsGeneralCreateModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Follow-Up
+            </button>
           </div>
         ) : (
           filteredFollowUps.map((item) => (

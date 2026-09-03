@@ -75,7 +75,10 @@ export const leadsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Leads"],
+      invalidatesTags: (result, error, arg) => [
+        "Leads",
+        { type: "Leads", id: arg.uuid },
+      ],
       async onQueryStarted(arg, { dispatch, queryFulfilled, getState }) {
         try {
           await queryFulfilled;
@@ -116,8 +119,12 @@ export const leadsApi = baseApi.injectEndpoints({
                 leadsApi.util.updateQueryData(
                   "getLeadById",
                   queries[key].originalArgs,
-                  (draft) => {
-                    if (draft.uuid === arg.uuid) Object.assign(draft, arg);
+                  (draft: any) => {
+                    if (draft?.uuid === arg.uuid) {
+                      Object.assign(draft, arg);
+                    } else if (draft?.data?.uuid === arg.uuid) {
+                      Object.assign(draft.data, arg);
+                    }
                   },
                 ),
               );

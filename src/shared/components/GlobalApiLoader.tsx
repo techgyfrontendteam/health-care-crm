@@ -12,7 +12,10 @@ export const GlobalApiLoader = () => {
       (query: any) => query?.status === "pending" && query?.endpointName !== "getLeadById"
     );
     const isAnyMutationPending = Object.values(mutations).some(
-      (mutation: any) => mutation?.status === "pending"
+      (mutation: any) =>
+        mutation?.status === "pending" &&
+        mutation?.endpointName !== "deviceHeartbeat" &&
+        mutation?.endpointName !== "registerDevice"
     );
 
     return isAnyQueryPending || isAnyMutationPending;

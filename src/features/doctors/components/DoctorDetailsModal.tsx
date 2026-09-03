@@ -51,7 +51,7 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-white/20 text-white tracking-wider">
-                  {doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`}
+                  {doctor.service_type || (doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`)}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300">
                   {doctor.availability_status}
@@ -94,15 +94,17 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-bold text-zinc-400">Working Hours & OPD/IPD Room</p>
-                <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  {doctor.working_hours} · <span className="text-primary">{doctor.room_number}</span>
-                </p>
+            {(doctor.working_hours || doctor.room_number) && (
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-zinc-400">Working Hours & OPD/IPD Room</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {doctor.working_hours || "Regular Hours"} {doctor.room_number ? `· ${doctor.room_number}` : ""}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex items-start gap-3">
               <Building2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />

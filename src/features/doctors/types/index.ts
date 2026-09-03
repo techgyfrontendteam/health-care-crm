@@ -5,9 +5,12 @@ export interface Doctor {
   id: number;
   uuid: string;
   name: string;
-  title: string; // e.g. "Dr."
+  first_name?: string;
+  last_name?: string;
+  title?: string; // e.g. "Dr."
   specialization: string;
   department: DepartmentType;
+  service_type?: string;
   qualification: string;
   experience_years: number;
   email: string;
@@ -17,9 +20,9 @@ export interface Doctor {
   patients_count: number;
   availability_status: DoctorStatus;
   consultation_fee: number;
-  working_hours: string;
-  room_number: string;
-  bio: string;
+  working_hours?: string;
+  room_number?: string;
+  bio?: string;
   hospital_branch?: string;
   is_active: number;
   created_at: string;
@@ -37,18 +40,21 @@ export interface DoctorFilterState {
 
 export interface CreateDoctorRequest {
   name: string;
+  first_name?: string;
+  last_name?: string;
   title?: string;
   specialization: string;
   department: DepartmentType;
+  service_type?: string;
   qualification: string;
   experience_years: number;
   email: string;
   phone_number: string;
   image_url?: string;
-  availability_status: DoctorStatus;
+  availability_status?: DoctorStatus;
   consultation_fee: number;
-  working_hours: string;
-  room_number: string;
+  working_hours?: string;
+  room_number?: string;
   bio?: string;
   hospital_branch?: string;
 }

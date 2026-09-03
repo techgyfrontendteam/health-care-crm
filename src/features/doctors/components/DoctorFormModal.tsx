@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type { Doctor, DepartmentType, DoctorStatus, CreateDoctorRequest } from "../types";
 import { X, User, Phone, Mail, Award, Clock, MapPin, Building2, Upload } from "lucide-react";
 import { Dialog, DialogContent } from "../../../components/ui/dialog";
@@ -23,11 +23,48 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
 }) => {
   const isEdit = !!doctor;
 
+  const departmentOptions = useMemo(() => {
+    const defaultDepts = [
+      "Cardiology",
+      "Neurology",
+      "Pediatrics",
+      "Orthopedics",
+      "Oncology",
+      "Dermatology",
+      "Gastroenterology",
+      "General Medicine",
+      "Gynecology & Obstetrics",
+      "Nephrology",
+      "Urology",
+      "Pulmonology",
+      "ENT",
+      "Ophthalmology",
+      "Psychiatry",
+      "General Surgery",
+    ];
+    if (doctor?.specialization && !defaultDepts.includes(doctor.specialization)) {
+      return [doctor.specialization, ...defaultDepts];
+    }
+    return defaultDepts;
+  }, [doctor]);
+
+  const serviceTypeOptions = [
+    "Both OPD & IPD",
+    "OPD",
+    "IPD",
+    "Consultation",
+    "Daycare",
+    "Emergency",
+  ];
+
   const [formData, setFormData] = useState<CreateDoctorRequest>({
+    first_name: "",
+    last_name: "",
     name: "",
     title: "Dr.",
     specialization: "Cardiology",
     department: "Both",
+    service_type: "Both OPD & IPD",
     qualification: "",
     experience_years: 5,
     email: "",
@@ -35,19 +72,42 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
     image_url: "",
     availability_status: "Available",
     consultation_fee: 1000,
-    working_hours: "09:00 AM - 04:00 PM",
-    room_number: "OPD-101",
+    working_hours: "",
+    room_number: "",
     bio: "",
     hospital_branch: "Hyderabad",
   });
 
   useEffect(() => {
     if (doctor) {
+      let fName = doctor.first_name || "";
+      let lName = doctor.last_name || "";
+
+      if (!fName && doctor.name) {
+        const cleaned = doctor.name.replace(/^Dr\.?\s+/i, "").trim();
+        const parts = cleaned.split(" ");
+        fName = parts[0] || "";
+        lName = parts.slice(1).join(" ") || "";
+      }
+
+      const initialServiceType =
+        doctor.service_type ||
+        (doctor.department === "Both"
+          ? "Both OPD & IPD"
+          : doctor.department === "OPD"
+          ? "OPD"
+          : doctor.department === "IPD"
+          ? "IPD"
+          : "Both OPD & IPD");
+
       setFormData({
-        name: doctor.name || "",
+        first_name: fName,
+        last_name: lName,
+        name: doctor.name || `${fName} ${lName}`.trim(),
         title: doctor.title || "Dr.",
-        specialization: doctor.specialization || "",
+        specialization: doctor.specialization || "Cardiology",
         department: doctor.department || "Both",
+        service_type: initialServiceType,
         qualification: doctor.qualification || "",
         experience_years: doctor.experience_years || 5,
         email: doctor.email || "",
@@ -55,17 +115,20 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         image_url: doctor.image_url || "",
         availability_status: doctor.availability_status || "Available",
         consultation_fee: doctor.consultation_fee || 1000,
-        working_hours: doctor.working_hours || "09:00 AM - 04:00 PM",
-        room_number: doctor.room_number || "OPD-101",
+        working_hours: doctor.working_hours || "",
+        room_number: doctor.room_number || "",
         bio: doctor.bio || "",
         hospital_branch: doctor.hospital_branch || "Hyderabad",
       });
     } else {
       setFormData({
+        first_name: "",
+        last_name: "",
         name: "",
         title: "Dr.",
         specialization: "Cardiology",
         department: "Both",
+        service_type: "Both OPD & IPD",
         qualification: "MBBS, MD",
         experience_years: 5,
         email: "",
@@ -73,8 +136,8 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         image_url: "",
         availability_status: "Available",
         consultation_fee: 1000,
-        working_hours: "09:00 AM - 04:00 PM",
-        room_number: "OPD-101",
+        working_hours: "",
+        room_number: "",
         bio: "",
         hospital_branch: "Hyderabad",
       });
@@ -83,10 +146,29 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const fullName = formData.name || `${formData.first_name || ""} ${formData.last_name || ""}`.trim();
+    const serviceType = formData.service_type || "Both OPD & IPD";
+    const mappedDept: DepartmentType =
+      serviceType.toUpperCase().includes("IPD") && !serviceType.toUpperCase().includes("OPD")
+        ? "IPD"
+        : serviceType.toUpperCase().includes("OPD") && !serviceType.toUpperCase().includes("IPD")
+        ? "OPD"
+        : "Both";
+
+    const payload = {
+      ...formData,
+      name: fullName,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      title: formData.title || "Dr.",
+      department: mappedDept,
+      service_type: serviceType,
+    };
+
     if (isEdit && doctor) {
-      onSubmit({ ...formData, id: doctor.id });
+      onSubmit({ ...payload, id: doctor.id });
     } else {
-      onSubmit(formData);
+      onSubmit(payload);
     }
   };
 
@@ -100,58 +182,81 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               {isEdit ? "Edit Doctor Profile" : "Register New Doctor"}
             </h2>
             <p className="text-xs text-zinc-500">
-              {isEdit ? "Update doctor credentials and schedule details." : "Add a new healthcare practitioner to TechGy CRM."}
+              {isEdit ? "Update doctor credentials and department details." : "Add a new healthcare practitioner to TechGy CRM."}
             </p>
           </div>
         </div>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-sm">
-          {/* Full Name & Title */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="col-span-1">
-              <Label className="text-xs font-bold">Title</Label>
+          {/* First Name & Last Name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-bold">First Name *</Label>
               <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Dr."
+                required
+                value={formData.first_name || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    first_name: val,
+                    name: `${val} ${prev.last_name || ""}`.trim(),
+                  }));
+                }}
+                placeholder="e.g. Ananya"
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
-            <div className="col-span-3">
-              <Label className="text-xs font-bold">Doctor Full Name *</Label>
+            <div>
+              <Label className="text-xs font-bold">Last Name *</Label>
               <Input
                 required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Dr. Ananya Rao"
+                value={formData.last_name || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    last_name: val,
+                    name: `${prev.first_name || ""} ${val}`.trim(),
+                  }));
+                }}
+                placeholder="e.g. Rao"
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
           </div>
 
-          {/* Specialization & Department */}
+          {/* Department & Service Type */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-bold">Specialization *</Label>
-              <Input
-                required
-                value={formData.specialization}
-                onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                placeholder="e.g. Cardiology, Neurology"
-                className="mt-1 rounded-xl h-10 text-xs"
-              />
-            </div>
             <div>
               <Label className="text-xs font-bold">Department *</Label>
               <select
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value as DepartmentType })}
+                required
+                value={formData.specialization}
+                onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                 className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
               >
-                <option value="Both">Both OPD & IPD</option>
-                <option value="OPD">OPD Outpatient Only</option>
-                <option value="IPD">IPD In-Patient Only</option>
+                {departmentOptions.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs font-bold">Service Type *</Label>
+              <select
+                required
+                value={formData.service_type || "Both OPD & IPD"}
+                onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+              >
+                {serviceTypeOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -204,7 +309,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             </div>
           </div>
 
-          {/* Fee & Availability */}
+          {/* Fee & Hospital Branch */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-bold">Consultation Fee (₹)</Label>
@@ -216,57 +321,20 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-bold">Status</Label>
+              <Label className="text-xs font-bold">Hospital Branch City</Label>
               <select
-                value={formData.availability_status}
-                onChange={(e) => setFormData({ ...formData, availability_status: e.target.value as DoctorStatus })}
+                value={formData.hospital_branch || "Hyderabad"}
+                onChange={(e) => setFormData({ ...formData, hospital_branch: e.target.value })}
                 className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
               >
-                <option value="Available">Available</option>
-                <option value="In Consultation">In Consultation</option>
-                <option value="Emergency Only">Emergency Only</option>
-                <option value="On Leave">On Leave</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Bengaluru">Bengaluru</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Pune">Pune</option>
               </select>
             </div>
-          </div>
-
-          {/* Hours & Room */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-bold">Working Hours</Label>
-              <Input
-                value={formData.working_hours}
-                onChange={(e) => setFormData({ ...formData, working_hours: e.target.value })}
-                placeholder="09:00 AM - 04:00 PM"
-                className="mt-1 rounded-xl h-10 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">Room / Chamber No.</Label>
-              <Input
-                value={formData.room_number}
-                onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
-                placeholder="OPD-204"
-                className="mt-1 rounded-xl h-10 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Hospital Branch City */}
-          <div>
-            <Label className="text-xs font-bold">Hospital Branch City</Label>
-            <select
-              value={formData.hospital_branch || "Hyderabad"}
-              onChange={(e) => setFormData({ ...formData, hospital_branch: e.target.value })}
-              className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
-            >
-              <option value="Hyderabad">Hyderabad</option>
-              <option value="Bengaluru">Bengaluru</option>
-              <option value="Mumbai">Mumbai</option>
-              <option value="Delhi">Delhi</option>
-              <option value="Chennai">Chennai</option>
-              <option value="Pune">Pune</option>
-            </select>
           </div>
 
           {/* Profile Image Upload & URL */}
@@ -324,18 +392,6 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Bio */}
-          <div>
-            <Label className="text-xs font-bold">Bio & Clinical Summary</Label>
-            <textarea
-              rows={3}
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              placeholder="Enter brief description of doctor's clinical achievements..."
-              className="mt-1 w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
-            />
           </div>
 
           {/* Footer Actions */}

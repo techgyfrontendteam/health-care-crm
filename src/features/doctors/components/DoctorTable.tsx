@@ -55,8 +55,8 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
         <thead className="bg-slate-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
           <tr>
             <th className="py-3.5 px-4">Doctor</th>
-            <th className="py-3.5 px-4">Specialization</th>
-            <th className="py-3.5 px-4">Dept</th>
+            <th className="py-3.5 px-4">Department</th>
+            <th className="py-3.5 px-4">Service Type</th>
             <th className="py-3.5 px-4">Status</th>
             <th className="py-3.5 px-4">Fee</th>
             <th className="py-3.5 px-4">Hours / Room</th>
@@ -98,7 +98,7 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
                 </p>
               </td>
 
-              {/* Department */}
+              {/* Service Type */}
               <td className="py-3.5 px-4 whitespace-nowrap">
                 <span
                   className={cn(
@@ -106,7 +106,7 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
                     getDeptBadge(doc.department)
                   )}
                 >
-                  {doc.department === "Both" ? "OPD & IPD" : doc.department}
+                  {doc.service_type || (doc.department === "Both" ? "OPD & IPD" : doc.department)}
                 </span>
               </td>
 
@@ -129,10 +129,12 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
 
               {/* Hours / Room */}
               <td className="py-3.5 px-4 text-xs">
-                <p className="font-medium text-zinc-700 dark:text-zinc-300">
-                  {doc.working_hours}
-                </p>
-                <p className="text-[11px] text-zinc-400">{doc.room_number}</p>
+                {doc.working_hours && (
+                  <p className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {doc.working_hours}
+                  </p>
+                )}
+                <p className="text-[11px] text-zinc-400">{doc.room_number || "--"}</p>
               </td>
 
               {/* Actions */}

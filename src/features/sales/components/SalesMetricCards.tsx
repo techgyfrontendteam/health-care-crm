@@ -4,7 +4,6 @@ import {
   PhoneCall,
   Users,
   AlertTriangle,
-  Layers,
   Building,
   MapPin,
   TrendingUp,
@@ -19,7 +18,7 @@ interface SalesMetricCardsProps {
 
 export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {/* 1. Number of Calls */}
       <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-900 transition-all group flex flex-col justify-between">
         <div>
@@ -104,33 +103,7 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
         </div>
       </div>
 
-      {/* 4. Lead Source */}
-      <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-900 transition-all group flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              Lead Source
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Layers className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 truncate">
-              WhatsApp (33%)
-            </h3>
-            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 mt-0.5">
-              Top Channel (480 Leads)
-            </p>
-          </div>
-        </div>
-        <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
-          <span className="text-zinc-400 font-medium">Active Channels</span>
-          <span className="font-extrabold text-purple-600">6 Sources</span>
-        </div>
-      </div>
-
-      {/* 5. Department Leads */}
+      {/* 4. Department Leads */}
       <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:shadow-md hover:border-teal-300 dark:hover:border-teal-900 transition-all group flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">
@@ -156,7 +129,7 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
         </div>
       </div>
 
-      {/* 6. Branch Leads */}
+      {/* 5. Branch Leads */}
       <div className="bg-gradient-to-br from-[#063669] to-[#0b4b8c] p-4 rounded-2xl text-white shadow-sm hover:shadow-md transition-all group flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">

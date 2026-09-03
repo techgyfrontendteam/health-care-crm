@@ -8,7 +8,11 @@ import {
   Calendar,
   Info,
   Pencil,
+  Plus,
+  Clock,
+  Trash2,
   MessageSquare,
+  FileText,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
@@ -83,6 +87,102 @@ const DetailField = ({
   </div>
 );
 
+interface ParsedNote {
+  id: string;
+  text: string;
+  date?: string;
+}
+
+const formatNoteDate = (d = new Date()) => {
+  return (
+    d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) +
+    ", " +
+    d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  );
+};
+
+const parseNotes = (rawNotes: string): ParsedNote[] => {
+  if (!rawNotes || !rawNotes.trim()) return [];
+  const trimmed = rawNotes.trim();
+
+  // 1. Check if stored as JSON
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.every((p) => typeof p === "object" && p !== null && "text" in p)) {
+        return parsed.map((item, idx) => ({
+          id: item.id || String(idx + 1),
+          text: String(item.text).trim(),
+          date: item.date || item.createdAt || undefined,
+        }));
+      }
+    } catch {
+      // Fall through to other formats
+    }
+  }
+
+  // 2. Check for delimiter `---`
+  const delimiterRegex = /[\r\n]+---[\r\n]+/;
+  if (delimiterRegex.test(trimmed)) {
+    const chunks = trimmed.split(delimiterRegex);
+    return chunks
+      .map((chunk, idx) => {
+        const cTrim = chunk.trim();
+        const dateMatch = cTrim.match(/^\[(.*?)\]\s*[\r\n]+([\s\S]*)$/);
+        if (dateMatch) {
+          return {
+            id: String(idx + 1),
+            date: dateMatch[1],
+            text: dateMatch[2].trim(),
+          };
+        }
+        return {
+          id: String(idx + 1),
+          text: cTrim,
+        };
+      })
+      .filter((n) => n.text.length > 0);
+  }
+
+  // 3. Single note starting with [Date]
+  const singleDateMatch = trimmed.match(/^\[(.*?)\]\s*[\r\n]+([\s\S]*)$/);
+  if (singleDateMatch) {
+    return [
+      {
+        id: "1",
+        date: singleDateMatch[1],
+        text: singleDateMatch[2].trim(),
+      },
+    ];
+  }
+
+  // 4. Default plain note
+  return [
+    {
+      id: "1",
+      text: trimmed,
+    },
+  ];
+};
+
+const serializeNotes = (notes: ParsedNote[]): string => {
+  if (notes.length === 0) return "";
+  return notes
+    .map((n) => {
+      const header = n.date ? `[${n.date}]\n` : "";
+      return `${header}${n.text.trim()}`;
+    })
+    .join("\n\n---\n\n");
+};
+
 export const LeadDetailsPage = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
@@ -121,21 +221,6 @@ export const LeadDetailsPage = () => {
     setSearchParams({ tab: value });
   };
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
-
-  const handleEditSubmit = async (values: any) => {
-    try {
-      if (lead) {
-        await updateLead({ ...values, uuid: lead.uuid }).unwrap();
-        toast.success("Lead updated successfully");
-      }
-      setIsDrawerOpen(false);
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to update lead");
-    }
-  };
-
   const {
     data: lead,
     isLoading,
@@ -143,6 +228,132 @@ export const LeadDetailsPage = () => {
     error,
     refetch,
   } = useGetLeadByIdQuery({ uuid: leadId || "" }, { skip: !leadId, refetchOnMountOrArgChange: true });
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
+  const [localNote, setLocalNote] = useState<string | null>(null);
+
+  const cleanLeadNote = React.useMemo(() => {
+    if (localNote !== null) return localNote;
+    if (!lead) return "";
+    const note = (lead.appointment_note || lead.lead_note || lead.notes || (lead as any).note || "").trim();
+    // Exclude address and accidental Kukatpally fallback
+    if (note && lead.address && note.toLowerCase() === lead.address.trim().toLowerCase()) {
+      return "";
+    }
+    if (note.toLowerCase() === "kukatpally") {
+      return "";
+    }
+    return note;
+  }, [lead, localNote]);
+
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  const parsedNotes = React.useMemo<ParsedNote[]>(() => {
+    if (!cleanLeadNote) return [];
+    return parseNotes(cleanLeadNote);
+  }, [cleanLeadNote]);
+
+  const saveNotesPayload = async (updatedNotes: ParsedNote[]) => {
+    if (!lead?.uuid) return false;
+    setIsSavingNote(true);
+    const serialized = serializeNotes(updatedNotes);
+    try {
+      const payload: any = {
+        ...lead,
+        uuid: lead.uuid,
+        appointment_note: serialized,
+        lead_note: serialized,
+        notes: serialized,
+        source_id: Number(lead.source_id || 1),
+        project_id: lead.project_id,
+        lead_priority_id: lead.lead_priority_id || 1,
+        lead_status_id: lead.lead_status_id || 1,
+        first_name: lead.first_name || "",
+        last_name: lead.last_name || "",
+        phone_number: lead.phone_number || "",
+        email_address: lead.email_address || lead.email || "",
+        source_employee_user_id: lead.source_employee_user_id ?? null,
+        assigned_to_rm: lead.assigned_to_rm ?? null,
+        assigned_to_em: lead.assigned_to_em ?? null,
+        occupation: lead.occupation || "",
+        address: lead.address || "",
+        city: lead.city || "",
+        state: lead.state || "",
+        country: lead.country || "",
+        zip: lead.zip || "",
+      };
+
+      await updateLead(payload).unwrap();
+      setLocalNote(serialized);
+      refetch();
+      return true;
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to save note");
+      return false;
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    const trimmed = newNoteText.trim();
+    if (!trimmed) return;
+    const newNote: ParsedNote = {
+      id: String(Date.now()),
+      text: trimmed,
+      date: formatNoteDate(new Date()),
+    };
+    const updated = [newNote, ...parsedNotes];
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note added successfully");
+      setIsAddingNote(false);
+      setNewNoteText("");
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    const trimmed = editingNoteText.trim();
+    if (!trimmed) return;
+    const updated = parsedNotes.map((n) =>
+      n.id === noteId ? { ...n, text: trimmed } : n
+    );
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note updated successfully");
+      setEditingNoteId(null);
+      setEditingNoteText("");
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    const updated = parsedNotes.filter((n) => n.id !== noteId);
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note deleted successfully");
+    }
+  };
+
+  const handleEditSubmit = async (values: any) => {
+    try {
+      if (lead) {
+        await updateLead({ ...values, uuid: lead.uuid }).unwrap();
+        if (values.appointment_note !== undefined) {
+          setLocalNote(values.appointment_note.trim());
+        }
+        toast.success("Lead updated successfully");
+        refetch();
+      }
+      setIsDrawerOpen(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update lead");
+    }
+  };
 
   const handleViewLead = (uuid: string) => {
     navigate(`/leads/${uuid}`);
@@ -446,7 +657,7 @@ export const LeadDetailsPage = () => {
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
-          {/* CARD 2: General Details                         */}
+          {/* CARD 2: Patient Details                         */}
           {/* ═══════════════════════════════════════════════ */}
           <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
             {/* Section heading */}
@@ -464,7 +675,7 @@ export const LeadDetailsPage = () => {
                     color: "#191C1E",
                   }}
                 >
-                  General Details
+                  Patient Details
                 </h3>
               </div>
               {roleCode !== 'EXPMNG' && (
@@ -608,10 +819,10 @@ export const LeadDetailsPage = () => {
                   lead.followup_date || lead.next_followup_date
                     ? formatDate(lead.followup_date || lead.next_followup_date)
                     : (lead.follow_ups && lead.follow_ups.length > 0
-                        ? formatDate(lead.follow_ups[0].date_time)
-                        : (lead.followups && lead.followups.length > 0
-                            ? formatDate(lead.followups[0].date_time)
-                            : "--"))
+                      ? formatDate(lead.follow_ups[0].date_time)
+                      : (lead.followups && lead.followups.length > 0
+                        ? formatDate(lead.followups[0].date_time)
+                        : "--"))
                 }
                 icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
               />
@@ -621,23 +832,23 @@ export const LeadDetailsPage = () => {
                   lead.appointment_date
                     ? formatDate(lead.appointment_date)
                     : (lead.visits && lead.visits.length > 0 && lead.visits[0].visit_date_time
-                        ? formatDate(lead.visits[0].visit_date_time)
-                        : "--")
+                      ? formatDate(lead.visits[0].visit_date_time)
+                      : "--")
                 }
                 icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
               />
               <DetailField
-                label="Specialization"
-                value={lead.specialization || getProjectLabel(lead.project_id) || "--"}
+                label="Department"
+                value={lead.department || lead.specialization || getProjectLabel(lead.project_id) || "--"}
               />
             </dl>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
-          {/* CARD 3: Address Details                         */}
+          {/* CARD 3: Address Details (Commented)             */}
           {/* ═══════════════════════════════════════════════ */}
+          {/*
           <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            {/* Section heading */}
             <div className="flex items-center gap-2.5 px-8 pt-7 pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center">
                 <MapPin className="h-4 w-4 text-[#0f3d6b]" />
@@ -655,7 +866,6 @@ export const LeadDetailsPage = () => {
               </h3>
             </div>
 
-            {/* Fields */}
             <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
               <DetailField label="State" value={masterData?.states?.find((s: any) => s.id === lead.state_id)?.description || lead.state} />
               <DetailField label="Country" value={lead.country} />
@@ -663,6 +873,202 @@ export const LeadDetailsPage = () => {
               <DetailField label="Zip Code" value={lead.zip} />
               <DetailField label="Street" value={lead.address} />
             </dl>
+          </div>
+          */}
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* ═══════════════════════════════════════════════ */}
+          {/* CARD 3: Lead Notes                              */}
+          {/* ═══════════════════════════════════════════════ */}
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            {/* Section heading */}
+            <div className="flex items-center justify-between px-8 pt-7 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-[#0f3d6b]" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <h3
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "18px",
+                      lineHeight: "24px",
+                      color: "#191C1E",
+                    }}
+                  >
+                    Lead Notes
+                  </h3>
+                  {parsedNotes.length > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0f3d6b] border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50">
+                      {parsedNotes.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {roleCode !== 'EXPMNG' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingNote(true);
+                      setNewNoteText("");
+                    }}
+                    className="h-8 text-xs px-3 rounded-lg border-zinc-200 dark:border-zinc-700 flex items-center gap-1.5 font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    title="Add Note"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-zinc-500" />
+                    <span>Add Note</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Note Content / Notes List */}
+            <div className="px-8 py-7">
+              {/* New Note Composer */}
+              {isAddingNote && (
+                <div className="p-4 rounded-xl bg-zinc-50/70 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3 mb-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                      New Note
+                    </span>
+                  </div>
+                  <textarea
+                    value={newNoteText}
+                    onChange={(e) => setNewNoteText(e.target.value)}
+                    placeholder="Enter free text note..."
+                    rows={3}
+                    className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-medium focus:ring-1 focus:ring-[#0f3d6b] outline-none transition-all placeholder:text-[#94A3B8] resize-y"
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddingNote(false);
+                        setNewNoteText("");
+                      }}
+                      disabled={isSavingNote}
+                      className="h-8 text-xs px-3 rounded-lg"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleAddNote}
+                      disabled={isSavingNote || !newNoteText.trim()}
+                      className="bg-[#0f3d6b] hover:bg-[#0c3156] text-white h-8 text-xs px-3 rounded-lg"
+                    >
+                      {isSavingNote ? "Saving..." : "Save Note"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes List */}
+              {parsedNotes.length > 0 ? (
+                <div className="space-y-3">
+                  {parsedNotes.map((note, index) => {
+                    const isEditing = editingNoteId === note.id;
+                    return (
+                      <div
+                        key={note.id}
+                        className="p-4 rounded-xl bg-zinc-50/60 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-2.5 transition-all hover:border-zinc-300 dark:hover:border-zinc-700 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                            <Clock className="h-3.5 w-3.5 text-zinc-400" />
+                            <span>{note.date || `Note ${parsedNotes.length - index}`}</span>
+                          </div>
+                          {roleCode !== 'EXPMNG' && !isEditing && (
+                            <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => {
+                                  setEditingNoteId(note.id);
+                                  setEditingNoteText(note.text);
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                                title="Edit note"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteNote(note.id)}
+                                disabled={isSavingNote}
+                                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-zinc-400 hover:text-red-600 transition-colors"
+                                title="Delete note"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <div className="space-y-2.5 pt-1">
+                            <textarea
+                              value={editingNoteText}
+                              onChange={(e) => setEditingNoteText(e.target.value)}
+                              rows={3}
+                              className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm font-medium focus:ring-1 focus:ring-[#0f3d6b] outline-none transition-all resize-y"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingNoteId(null);
+                                  setEditingNoteText("");
+                                }}
+                                disabled={isSavingNote}
+                                className="h-7 text-xs px-3 rounded-lg"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateNote(note.id)}
+                                disabled={isSavingNote || !editingNoteText.trim()}
+                                className="bg-[#0f3d6b] hover:bg-[#0c3156] text-white h-7 text-xs px-3 rounded-lg"
+                              >
+                                {isSavingNote ? "Saving..." : "Update"}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p
+                            className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200 text-sm font-medium leading-relaxed"
+                            style={{ fontFamily: "Inter, sans-serif" }}
+                          >
+                            {note.text}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                !isAddingNote && (
+                  <div
+                    onClick={() => {
+                      if (roleCode !== 'EXPMNG') {
+                        setIsAddingNote(true);
+                        setNewNoteText("");
+                      }
+                    }}
+                    className={roleCode !== 'EXPMNG' ? "cursor-pointer group py-2" : "py-2"}
+                  >
+                    <span style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif", fontSize: "14px" }}>
+                      --
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
@@ -703,9 +1109,9 @@ export const LeadDetailsPage = () => {
                 </TabsContent>
 
                 <TabsContent value="calls" className="mt-0">
-                  <LeadCallsTab 
-                    calls={lead?.calls} 
-                    leadPhoneNumber={lead?.phone_number} 
+                  <LeadCallsTab
+                    calls={lead?.calls}
+                    leadPhoneNumber={lead?.phone_number}
                     objections={lead?.objections}
                     masterObjections={masterData?.objections}
                   />

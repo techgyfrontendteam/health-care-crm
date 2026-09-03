@@ -33,6 +33,20 @@ export interface MonthlyRevenueTrend {
   ipd_count: number;
 }
 
+export interface BranchInfo {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  location: string;
+  phone: string;
+  totalBeds: number;
+  activeDoctors: number;
+  monthlyRevenue: number;
+  opdShare: number; // percentage
+  ipdShare: number; // percentage
+}
+
 export interface DoctorRevenueItem {
   id: number;
   doctor_name: string;
@@ -43,6 +57,8 @@ export interface DoctorRevenueItem {
   opd_revenue: number;
   ipd_revenue: number;
   total_revenue: number;
+  branch_id?: string;
+  city?: string;
 }
 
 export interface RevenueTransaction {
@@ -55,4 +71,6 @@ export interface RevenueTransaction {
   payment_status: 'Paid' | 'Pending' | 'Insurance Claim';
   payment_method: 'UPI / Card' | 'Cash' | 'Insurance' | 'Net Banking';
   date: string;
+  branch_id?: string;
+  city?: string;
 }

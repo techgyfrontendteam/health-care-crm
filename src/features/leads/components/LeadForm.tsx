@@ -117,7 +117,7 @@ export const LeadForm = ({
       doctor_id: initialValues?.doctor_id || null,
       appointment_date: initialValues?.appointment_date || '',
       appointment_time: initialValues?.appointment_time || '',
-      appointment_note: initialValues?.appointment_note || initialValues?.address || '',
+      appointment_note: (initialValues?.appointment_note && initialValues?.appointment_note.toLowerCase() !== 'kukatpally' && initialValues?.appointment_note !== initialValues?.address) ? initialValues.appointment_note : '',
       assigned_to_rm: initialValues?.assigned_to_rm || null,
       assigned_to_em: initialValues?.assigned_to_em || null,
       occupation: initialValues?.occupation || '',
@@ -219,7 +219,7 @@ export const LeadForm = ({
       lead_status_id: initialValues?.lead_status_id || 1,
       lead_priority_id: initialValues?.lead_priority_id || 1,
       occupation: values.occupation || '',
-      address: values.appointment_note || values.address || '',
+      address: values.address || '',
       city: values.city || '',
       state: values.state || '',
       country: values.country || '',
@@ -598,10 +598,10 @@ export const LeadForm = ({
               name="appointment_note"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Type Appointment Note</FormLabel>
+                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Lead Note</FormLabel>
                   <FormControl>
                     <textarea
-                      placeholder="Type Appointment Note"
+                      placeholder="Type Lead Note"
                       {...field}
                       disabled={isLoading || isEM}
                       rows={3}

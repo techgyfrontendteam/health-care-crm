@@ -47,6 +47,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.MANAGER_VIEW,
     PERMISSIONS.CUSTOMER_VIEW,
     PERMISSIONS.FOLLOWUP_VIEW,
+    PERMISSIONS.FOLLOWUP_CREATE,
   ],
 
   // ADMIN — Full control
@@ -72,6 +73,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.CUSTOMER_VIEW,
     PERMISSIONS.CUSTOMER_EDIT,
     PERMISSIONS.FOLLOWUP_VIEW,
+    PERMISSIONS.FOLLOWUP_CREATE,
   ],
 
   // RELMNG — Relationship Manager: controls agents, manages leads

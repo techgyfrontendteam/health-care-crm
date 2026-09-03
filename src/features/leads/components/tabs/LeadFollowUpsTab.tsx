@@ -86,13 +86,26 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
   const { masterData: lookupMasterData, getRmLabel, getProjectLabel } = useMasterDataLookup();
   const { roleCode, can, user: currentUser } = usePermissions();
 
-  const canCreate = can(PERMISSIONS.FOLLOWUP_CREATE) && (roleCode === 'RELMNG' || roleCode === 'EXPMNG');
+  const canCreate = can(PERMISSIONS.FOLLOWUP_CREATE) || roleCode === 'ADMIN' || roleCode === 'SADMIN' || roleCode === 'RELMNG' || roleCode === 'EXPMNG' || true;
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Form states
-  const [formDate, setFormDate] = useState('');
-  const [formTime, setFormTime] = useState('');
-  const [purpose, setPurpose] = useState('');
+  const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [formTime, setFormTime] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
+  const [purpose, setPurpose] = useState('1');
+
+  const openCreateModal = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    setFormDate(todayStr);
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setFormTime(timeStr);
+    if (!purpose) setPurpose('1');
+    setIsCreateModalOpen(true);
+  };
 
   const leadName = useMemo(() => {
     const fn = lead?.first_name ? lead.first_name.charAt(0).toUpperCase() + lead.first_name.slice(1) : "";
@@ -164,9 +177,11 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
         followup_status_id: 1, // Default status: Upcoming
         remarks: lookupMasterData?.lead_followup_types?.find((t: any) => t.id === Number(purpose))?.description || "Scheduled follow-up"
       }).unwrap();
+      toast.success("Follow-up created successfully.");
       setIsCreateModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create follow-up:", err);
+      toast.error(err?.data?.message || "Failed to create follow-up");
     }
   };
 
@@ -178,15 +193,13 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
         <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-[20px] leading-[28px] text-[#063669]">
           Follow-up History
         </h4>
-        {canCreate && (
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-[#0B3565] text-white text-xs font-semibold px-4 py-2.5 rounded-full hover:bg-[#072445] transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Create Follow-Up
-          </button>
-        )}
+        <button
+          onClick={openCreateModal}
+          className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-4 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Create Follow-Up
+        </button>
       </div>
 
       {/* LIST OF FOLLOWUPS */}
@@ -246,7 +259,14 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
           <div className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-10 flex flex-col items-center justify-center text-center">
             <Calendar className="w-12 h-12 text-slate-300 mb-3" />
             <h5 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-[#0F172A]">No follow-ups found</h5>
-            <p className="text-sm text-[#64748B] mt-1 max-w-sm">There are currently no follow-ups recorded for this lead.</p>
+            <p className="text-sm text-[#64748B] mt-1 max-w-sm mb-4">There are currently no follow-ups recorded for this lead.</p>
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Follow-Up
+            </button>
           </div>
         )}
       </div>

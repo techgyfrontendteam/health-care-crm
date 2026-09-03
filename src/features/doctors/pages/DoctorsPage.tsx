@@ -55,7 +55,8 @@ export const DoctorsPage = () => {
         search === "" ||
         doc.name.toLowerCase().includes(search.toLowerCase()) ||
         doc.specialization.toLowerCase().includes(search.toLowerCase()) ||
-        doc.room_number.toLowerCase().includes(search.toLowerCase()) ||
+        (doc.service_type && doc.service_type.toLowerCase().includes(search.toLowerCase())) ||
+        (doc.room_number ? doc.room_number.toLowerCase().includes(search.toLowerCase()) : false) ||
         doc.phone_number.includes(search);
 
       const matchDept =
@@ -237,7 +238,7 @@ export const DoctorsPage = () => {
               ))}
             </select>
 
-            {/* Specialization Select */}
+            {/* Department Select */}
             <select
               value={specializationFilter}
               onChange={(e) => setSpecializationFilter(e.target.value)}
@@ -245,22 +246,9 @@ export const DoctorsPage = () => {
             >
               {specializations.map((spec) => (
                 <option key={spec} value={spec}>
-                  {spec === "All" ? "All Specializations" : spec}
+                  {spec === "All" ? "All Departments" : spec}
                 </option>
               ))}
-            </select>
-
-            {/* Availability Status Select */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Available">Available</option>
-              <option value="In Consultation">In Consultation</option>
-              <option value="Emergency Only">Emergency Only</option>
-              <option value="On Leave">On Leave</option>
             </select>
 
             {/* View Mode Toggle */}

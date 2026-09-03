@@ -84,14 +84,14 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
             </div>
           </div>
 
-          {/* Department Badge */}
+          {/* Department / Service Type Badge */}
           <span
             className={cn(
               "px-2.5 py-1 rounded-lg text-[10px] font-bold border shrink-0 uppercase tracking-wide",
               getDeptBadge(doctor.department)
             )}
           >
-            {doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`}
+            {doctor.service_type || (doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`)}
           </span>
         </div>
 
@@ -138,12 +138,12 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
 
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 truncate">
             <Clock className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400 shrink-0" />
-            <span className="truncate text-[11px] font-medium">{doctor.working_hours}</span>
+            <span className="truncate text-[11px] font-medium">{doctor.working_hours || "Regular Hours"}</span>
           </div>
 
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 truncate">
             <MapPin className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400 shrink-0" />
-            <span className="truncate text-[11px] font-bold text-zinc-800 dark:text-zinc-200">{doctor.room_number}</span>
+            <span className="truncate text-[11px] font-bold text-zinc-800 dark:text-zinc-200">{doctor.room_number || doctor.hospital_branch || "Main OPD"}</span>
           </div>
         </div>
 

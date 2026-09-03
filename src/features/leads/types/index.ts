@@ -96,6 +96,10 @@ export interface Lead {
   next_followup_date?: string;
   appointment_date?: string;
   specialization?: string;
+  department?: string;
+  appointment_note?: string;
+  lead_note?: string;
+  notes?: string;
   remarks?: LeadRemark[];
   calls?: LeadCall[];
   visits?: LeadVisit[];
