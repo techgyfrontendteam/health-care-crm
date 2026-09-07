@@ -162,6 +162,7 @@ export interface CreateLeadRequest {
   dob?: string;
   income?: number;
   department?: string;
+  specialisation_id?: number;
   doctor_id?: number | null;
   appointment_date?: string;
   appointment_time?: string;

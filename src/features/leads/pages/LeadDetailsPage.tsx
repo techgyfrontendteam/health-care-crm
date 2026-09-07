@@ -15,7 +15,9 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
+import { useInitiateClickToCallMutation } from "../api/callsApi";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
@@ -231,6 +233,7 @@ export const LeadDetailsPage = () => {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
+  const [initiateClickToCall] = useInitiateClickToCallMutation();
   const [localNote, setLocalNote] = useState<string | null>(null);
 
   const cleanLeadNote = React.useMemo(() => {
@@ -615,18 +618,28 @@ export const LeadDetailsPage = () => {
                     </span>
                   </span>
                   <span style={{ color: "#CBD5E1" }}>·</span>
-                  <span
-                    className="flex items-center gap-1.5"
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                      fontSize: "13px",
-                      color: "#64748B",
-                    }}
-                  >
-                    <Phone className="h-3.5 w-3.5 text-[#0f3d6b]" />
-                    {lead.phone_number || (lead as any).phone || "N/A"}
-                  </span>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => console.log("call is clicked")}
+                          style={{
+                            fontFamily: "Inter, sans-serif",
+                            fontWeight: 500,
+                            fontSize: "13px",
+                            color: "#64748B",
+                          }}
+                        >
+                          <Phone className="h-3.5 w-3.5 text-[#0f3d6b]" />
+                          {lead.phone_number || (lead as any).phone || "N/A"}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Call</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   {(lead.email_address || lead.email) && (
                     <>
                       <span style={{ color: "#CBD5E1" }}>·</span>
@@ -648,12 +661,46 @@ export const LeadDetailsPage = () => {
               </div>
             </div>
 
-            {/* Points to Talk Dialog */}
-            <PointsToTalkDialog
-              project={getProjectLabel(lead.project_id)}
-              status={displayStatusLabel}
-              projectLeadStatusId={projectLeadStatusId}
-            />
+            <div className="flex items-center gap-3">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        console.log("call is clicked");
+                        const leadNumber = lead.phone_number || (lead as any).phone;
+                        if (leadNumber) {
+                          try {
+                            await initiateClickToCall({ lead_number: leadNumber }).unwrap();
+                            toast.success("Call initiated successfully");
+                          } catch (err) {
+                            console.error("Call failed", err);
+                            toast.error("Failed to initiate call");
+                          }
+                        } else {
+                          toast.error("Lead phone number not available");
+                        }
+                      }}
+                      className="h-[42px] w-[42px] rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 shadow-sm transition-all hover:scale-105"
+                    >
+                      <Phone className="h-[18px] w-[18px]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Call</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Points to Talk Dialog */}
+              <PointsToTalkDialog
+                project={getProjectLabel(lead.project_id)}
+                status={displayStatusLabel}
+                projectLeadStatusId={projectLeadStatusId}
+              />
+            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}

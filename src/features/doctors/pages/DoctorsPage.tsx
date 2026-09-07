@@ -112,12 +112,9 @@ export const DoctorsPage = () => {
         patients_count: 0,
         is_active: 1,
         created_at: new Date().toISOString(),
-        image_url:
-          data.image_url ||
-          "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop",
+        image_url: data.image_url || "",
       };
       setDoctors((prev) => [newDoc, ...prev]);
-      toast.success("New doctor registered successfully");
     }
     setIsFormOpen(false);
     setEditingDoctor(null);

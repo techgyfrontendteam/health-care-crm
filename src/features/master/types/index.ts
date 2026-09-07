@@ -16,6 +16,10 @@ export interface State extends MasterDataItem {
   country_id: number;
 }
 
+export interface Branch extends MasterDataItem {
+  location_id: number;
+}
+
 export interface ProjectLeadStatus {
   project_id: number;
   status: (string | number)[][];
@@ -41,4 +45,8 @@ export interface MasterDataResponse {
   leadActivityEnum: string[];
   countries: MasterDataItem[];
   states: State[];
+  locations: MasterDataItem[];
+  branches: Branch[];
+  specialisations: MasterDataItem[];
+  services: MasterDataItem[];
 }

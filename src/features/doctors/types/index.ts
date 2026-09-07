@@ -39,24 +39,20 @@ export interface DoctorFilterState {
 }
 
 export interface CreateDoctorRequest {
-  name: string;
-  first_name?: string;
-  last_name?: string;
-  title?: string;
-  specialization: string;
-  department: DepartmentType;
-  service_type?: string;
-  qualification: string;
-  experience_years: number;
+  branch_id: number;
+  first_name: string;
+  last_name: string;
   email: string;
+  profile_img: string;
+  education: string;
+  specialization_id: number;
+  service_id: number;
+  country_code: string;
   phone_number: string;
-  image_url?: string;
-  availability_status?: DoctorStatus;
   consultation_fee: number;
-  working_hours?: string;
-  room_number?: string;
-  bio?: string;
-  hospital_branch?: string;
+  experience: number;
+  available_start_time: string;
+  available_end_time: string;
 }
 
 export type UpdateDoctorRequest = Partial<CreateDoctorRequest> & { id: number };

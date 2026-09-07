@@ -47,7 +47,9 @@ const formSchema = z.object({
   email_address: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
   source_id: z.number({ error: 'Source is required' }).optional(),
   source_employee_user_id: z.number({ error: 'Invalid employee selection' }).nullable().optional(),
-  project_id: z.number({ error: 'Project is required' }).min(1, 'Location / Project is required'),
+  project_id: z.number({ error: 'Project is required' }).nullable().optional(),
+  location_id: z.number({ error: 'Location is required' }).min(1, 'Location is required'),
+  branch_id: z.number({ error: 'Branch is required' }).nullable().optional(),
   department: z.string().optional().or(z.literal('')),
   doctor_id: z.number().nullable().optional(),
   appointment_date: z.string().optional().or(z.literal('')),
@@ -113,6 +115,8 @@ export const LeadForm = ({
       source_id: initialValues?.source_id || undefined,
       source_employee_user_id: initialValues?.source_employee_user_id || (isEdit ? null : Number(currentUser?.id)),
       project_id: initialValues?.project_id || undefined,
+      location_id: initialValues?.location_id || null,
+      branch_id: initialValues?.branch_id || null,
       department: initialValues?.department || '',
       doctor_id: initialValues?.doctor_id || null,
       appointment_date: initialValues?.appointment_date || '',
@@ -143,8 +147,26 @@ export const LeadForm = ({
   }, [availableProjects, isEdit, form, initialValues]);
 
   const selectedProjectId = form.watch('project_id');
+  const selectedLocationId = form.watch('location_id');
   const selectedRmId = form.watch('assigned_to_rm');
   const selectedDepartment = form.watch('department');
+
+  React.useEffect(() => {
+    const currentBranchId = form.getValues('branch_id');
+    if (selectedLocationId && currentBranchId) {
+      const branchExists = masterData?.branches?.some(
+        (b: any) => b.id === currentBranchId && b.location_id === selectedLocationId
+      );
+      if (!branchExists) {
+        form.setValue('branch_id', null);
+      }
+    }
+  }, [selectedLocationId, masterData?.branches, form]);
+
+  const filteredBranches = React.useMemo(() => {
+    if (!masterData?.branches || !selectedLocationId) return [];
+    return masterData.branches.filter((b: any) => b.location_id === selectedLocationId);
+  }, [masterData?.branches, selectedLocationId]);
 
   const filteredDoctorsList = React.useMemo(() => {
     if (!selectedDepartment || selectedDepartment === 'All') return mockDoctors;
@@ -209,6 +231,7 @@ export const LeadForm = ({
 
     const payload: CreateLeadRequest = {
       ...values,
+      specialisation_id: 1, // Hardcoded for now until master data integration
       source_id: Number(values.source_id || initialValues?.source_id || 1),
       first_name: values.first_name || '',
       last_name: values.last_name || '',
@@ -469,7 +492,7 @@ export const LeadForm = ({
 
             <FormField
               control={form.control}
-              name="project_id"
+              name="location_id"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
                   <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Select Location <span className="text-red-500">*</span></FormLabel>
@@ -484,9 +507,9 @@ export const LeadForm = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-white text-black z-[99999]">
-                      {availableProjects.map((project) => (
-                        <SelectItem key={project.id} value={String(project.id)} className="text-black cursor-pointer font-medium">
-                          {project.description}
+                      {masterData?.locations?.map((loc: any) => (
+                        <SelectItem key={loc.id} value={String(loc.id)} className="text-black cursor-pointer font-medium">
+                          {loc.description}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -495,6 +518,37 @@ export const LeadForm = ({
                 </FormItem>
               )}
             />
+
+            {selectedLocationId && (
+              <FormField
+                control={form.control}
+                name="branch_id"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Branch</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={field.value ? String(field.value) : ""}
+                      disabled={isLoading || isEM}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
+                          <SelectValue placeholder="-- Select Branch --" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white text-black z-[99999]">
+                        {filteredBranches.map((b: any) => (
+                          <SelectItem key={b.id} value={String(b.id)} className="text-black cursor-pointer font-medium">
+                            {b.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
