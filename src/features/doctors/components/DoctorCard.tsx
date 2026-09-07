@@ -15,20 +15,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
   onViewDetails,
   onEdit,
 }) => {
-  const getStatusBadge = (status: Doctor["availability_status"]) => {
-    switch (status) {
-      case "Available":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800";
-      case "In Consultation":
-        return "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800";
-      case "Emergency Only":
-        return "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800";
-      case "On Leave":
-        return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700";
-      default:
-        return "bg-blue-50 text-blue-700 border-blue-200";
-    }
-  };
+
 
   const getDeptBadge = (dept: Doctor["department"]) => {
     switch (dept) {
@@ -57,18 +44,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
                     "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop";
                 }}
               />
-              <span
-                className={cn(
-                  "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-zinc-950",
-                  doctor.availability_status === "Available"
-                    ? "bg-emerald-500"
-                    : doctor.availability_status === "In Consultation"
-                    ? "bg-amber-500"
-                    : doctor.availability_status === "Emergency Only"
-                    ? "bg-rose-500"
-                    : "bg-slate-400"
-                )}
-              />
+
             </div>
 
             <div className="min-w-0 flex-1">
@@ -95,28 +71,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
           </span>
         </div>
 
-        {/* Status Pill Strip */}
-        <div className="mt-3.5 flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "px-2.5 py-0.5 rounded-full text-[11px] font-bold border inline-flex items-center gap-1.5",
-              getStatusBadge(doctor.availability_status)
-            )}
-          >
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full shrink-0",
-                doctor.availability_status === "Available"
-                  ? "bg-emerald-500"
-                  : doctor.availability_status === "In Consultation"
-                  ? "bg-amber-500 font-bold"
-                  : doctor.availability_status === "Emergency Only"
-                  ? "bg-rose-500"
-                  : "bg-slate-400"
-              )}
-            />
-            {doctor.availability_status}
-          </span>
+        <div className="mt-3.5 flex items-center justify-end gap-2">
 
           <span className="text-xs font-extrabold text-zinc-900 dark:text-zinc-100 bg-slate-100 dark:bg-zinc-900 px-2.5 py-0.5 rounded-lg border border-slate-200/60 dark:border-zinc-800">
             ₹{doctor.consultation_fee} <span className="text-[10px] font-normal text-zinc-400">/ visit</span>
@@ -130,11 +85,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
             <span className="truncate text-[11px] font-semibold">{doctor.experience_years} Yrs Exp</span>
           </div>
 
-          <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 truncate">
-            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />
-            <span className="font-extrabold text-zinc-900 dark:text-zinc-100 text-[11px]">{doctor.rating}</span>
-            <span className="text-[10px] text-zinc-400">({doctor.patients_count}+)</span>
-          </div>
+
 
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 truncate">
             <Clock className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400 shrink-0" />

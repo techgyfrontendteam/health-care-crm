@@ -53,9 +53,6 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-white/20 text-white tracking-wider">
                   {doctor.service_type || (doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`)}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300">
-                  {doctor.availability_status}
-                </span>
               </div>
               <h2 className="text-xl font-black mt-1 leading-tight">{doctor.name}</h2>
               <p className="text-xs text-blue-200 font-semibold">{doctor.specialization}</p>
@@ -66,7 +63,7 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
         {/* Modal Body */}
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 text-center">
               <p className="text-[10px] font-bold text-zinc-400 uppercase">Experience</p>
               <p className="text-base font-extrabold text-primary mt-0.5">{doctor.experience_years} Years</p>
@@ -74,13 +71,6 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
             <div className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 text-center">
               <p className="text-[10px] font-bold text-zinc-400 uppercase">Fee</p>
               <p className="text-base font-extrabold text-emerald-600 mt-0.5">₹{doctor.consultation_fee}</p>
-            </div>
-            <div className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 text-center">
-              <p className="text-[10px] font-bold text-zinc-400 uppercase">Rating</p>
-              <p className="text-base font-extrabold text-amber-500 mt-0.5 flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 fill-amber-500" />
-                {doctor.rating}
-              </p>
             </div>
           </div>
 

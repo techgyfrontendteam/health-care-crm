@@ -67,6 +67,7 @@ const SalesDashboardPage = React.lazy(() =>
 
 
 const ComingSoonReportPage = React.lazy(() => import('../features/reports/pages/ComingSoonReportPage').then(m => ({ default: m.ComingSoonReportPage })));
+const CallAnalyzerPage = React.lazy(() => import('../features/call-analyzer/pages/CallAnalyzerPage').then(m => ({ default: m.CallAnalyzerPage })));
 
 export const PrivateRoutes = (
   <Route element={<MainLayout />}>
@@ -112,6 +113,7 @@ export const PrivateRoutes = (
     {/* <Route path="/reports/campaigns" element={<CampaignPerformancePage />} /> */}
     <Route path="/reports/op-reports" element={<ComingSoonReportPage title="OP Reports" />} />
     <Route path="/reports/ip-reports" element={<ComingSoonReportPage title="IP Reports" />} />
+    <Route path="/analyse/call-recording" element={<CallAnalyzerPage />} />
     {/* <Route path="/war-room" element={<WarRoomPage />} /> */}
     {/* <Route path="/marketing-dashboard" element={<MarketingDashboardPage />} /> */}
   </Route>

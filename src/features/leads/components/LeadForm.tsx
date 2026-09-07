@@ -38,7 +38,8 @@ import { usePermissions } from '../../../hooks/usePermissions';
 import { useGetAllMasterDataQuery } from '../../master/api/masterApi';
 import { cn } from '../../../utils';
 import type { CreateLeadRequest } from '../types';
-import { mockDoctors } from '../../doctors/data/doctorsData';
+import { useGetAllDoctorsQuery } from '../../doctors/api/doctorsApiSlice';
+import type { ApiDoctor } from '../../doctors/types';
 
 const formSchema = z.object({
   first_name: z.string().max(30, 'First name must be less than 30 characters').optional().or(z.literal('')),
@@ -148,6 +149,7 @@ export const LeadForm = ({
 
   const selectedProjectId = form.watch('project_id');
   const selectedLocationId = form.watch('location_id');
+  const selectedBranchId = form.watch('branch_id');
   const selectedRmId = form.watch('assigned_to_rm');
   const selectedDepartment = form.watch('department');
 
@@ -168,15 +170,43 @@ export const LeadForm = ({
     return masterData.branches.filter((b: any) => b.location_id === selectedLocationId);
   }, [masterData?.branches, selectedLocationId]);
 
-  const filteredDoctorsList = React.useMemo(() => {
-    if (!selectedDepartment || selectedDepartment === 'All') return mockDoctors;
-    return mockDoctors.filter(
-      (d) =>
-        d.department === selectedDepartment ||
-        d.department === 'Both' ||
-        d.specialization.toLowerCase().includes(selectedDepartment.toLowerCase())
+  const selectedSpecId = React.useMemo(() => {
+    if (!selectedDepartment) return 0;
+    if (!isNaN(Number(selectedDepartment)) && Number(selectedDepartment) > 0) {
+      return Number(selectedDepartment);
+    }
+    const found = masterData?.specialisations?.find(
+      (s: any) => s.description.toLowerCase() === selectedDepartment.toLowerCase() || s.code.toLowerCase() === selectedDepartment.toLowerCase()
     );
-  }, [selectedDepartment]);
+    return found ? found.id : 0;
+  }, [selectedDepartment, masterData?.specialisations]);
+
+  const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({
+    branch_id: selectedBranchId ? Number(selectedBranchId) : 0,
+    specialization_id: selectedSpecId ? Number(selectedSpecId) : 0,
+  });
+
+  const doctorsList: ApiDoctor[] = React.useMemo(() => {
+    return doctorsResp?.data || [];
+  }, [doctorsResp]);
+
+  const departmentOptions = React.useMemo(() => {
+    if (masterData?.specialisations && masterData.specialisations.length > 0) {
+      return masterData.specialisations.map((spec: any) => ({
+        id: spec.id,
+        value: String(spec.id),
+        label: spec.description,
+      }));
+    }
+    return [
+      "OPD", "IPD", "Cardiology", "Neurology", "Orthopedics & Joint Replacement",
+      "Pediatrics", "Oncology", "Dermatology & Cosmetology", "Gastroenterology", "Obstetrics & Gynaecology"
+    ].map((dept, index) => ({
+      id: index + 1,
+      value: dept,
+      label: dept,
+    }));
+  }, [masterData?.specialisations]);
 
   const filteredManagers = React.useMemo(() => {
     if (!selectedProjectId) return managers;
@@ -229,9 +259,16 @@ export const LeadForm = ({
     const internalSource = masterData?.sources.find(s => s.code === 'INTERNAL' || s.description.toLowerCase().includes('internal'));
     const isInternal = values.source_id === internalSource?.id;
 
+    const matchedSpec = masterData?.specialisations?.find(
+      (s: any) => String(s.id) === String(values.department) || s.description.toLowerCase() === (values.department || '').toLowerCase()
+    );
+    const specialisationId = matchedSpec ? matchedSpec.id : (selectedSpecId || 1);
+    const departmentName = matchedSpec ? matchedSpec.description : (values.department || '');
+
     const payload: CreateLeadRequest = {
       ...values,
-      specialisation_id: 1, // Hardcoded for now until master data integration
+      specialisation_id: specialisationId,
+      department: departmentName,
       source_id: Number(values.source_id || initialValues?.source_id || 1),
       first_name: values.first_name || '',
       last_name: values.last_name || '',
@@ -249,7 +286,6 @@ export const LeadForm = ({
       zip: values.zip || '',
       dob: values.dob || '',
       income: values.income || undefined,
-      department: values.department || '',
       doctor_id: values.doctor_id || null,
       appointment_date: values.appointment_date || '',
       appointment_time: values.appointment_time || '',
@@ -553,30 +589,42 @@ export const LeadForm = ({
             <FormField
               control={form.control}
               name="department"
-              render={({ field }) => (
-                <FormItem className="space-y-1.5">
-                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Select Department <span className="text-red-500">*</span></FormLabel>
-                  <Select
-                    onValueChange={(v) => field.onChange(v)}
-                    value={field.value || ""}
-                    disabled={isLoading || isEM}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
-                        <SelectValue placeholder="-- Select Department * --" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white text-black z-[99999]">
-                      {["OPD", "IPD", "Cardiology", "Neurology", "Orthopedics & Joint Replacement", "Pediatrics", "Oncology", "Dermatology & Cosmetology", "Gastroenterology", "Obstetrics & Gynaecology"].map((dept) => (
-                        <SelectItem key={dept} value={dept} className="text-black cursor-pointer font-medium">
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const currentDeptValue = (() => {
+                  if (!field.value) return "";
+                  const found = departmentOptions.find(
+                    (o) => String(o.id) === String(field.value) || o.value === String(field.value) || o.label.toLowerCase() === String(field.value).toLowerCase()
+                  );
+                  return found ? found.value : String(field.value);
+                })();
+
+                return (
+                  <FormItem className="space-y-1.5">
+                    <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
+                      Select Department <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(v)}
+                      value={currentDeptValue}
+                      disabled={isLoading || isEM}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
+                          <SelectValue placeholder="-- Select Department * --" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white text-black z-[99999]">
+                        {departmentOptions.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.value} className="text-black cursor-pointer font-medium">
+                            {dept.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
@@ -584,23 +632,40 @@ export const LeadForm = ({
               name="doctor_id"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Select Doctor</FormLabel>
+                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
+                    Select Doctor
+                  </FormLabel>
                   <Select
                     onValueChange={(v) => field.onChange(v ? Number(v) : null)}
                     value={field.value ? String(field.value) : ""}
-                    disabled={isLoading || isEM}
+                    disabled={isLoading || isEM || isLoadingDoctors}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
-                        <SelectValue placeholder="-- Select Doctor --" />
+                        <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-white text-black z-[99999]">
-                      {filteredDoctorsList.map((doc) => (
-                        <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
-                          {doc.name} ({doc.specialization}) - {doc.room_number}
-                        </SelectItem>
-                      ))}
+                      {isLoadingDoctors ? (
+                        <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Loading doctors...</span>
+                        </div>
+                      ) : doctorsList.length === 0 ? (
+                        <div className="p-3 text-xs text-zinc-500 text-center">
+                          No doctors available for selected department / branch
+                        </div>
+                      ) : (
+                        doctorsList.map((doc: ApiDoctor) => {
+                          const specName = masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)?.description;
+                          const docName = `Dr. ${doc.first_name || ''} ${doc.last_name || ''}`.trim();
+                          return (
+                            <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
+                              {docName} {specName ? `(${specName})` : ''}
+                            </SelectItem>
+                          );
+                        })
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

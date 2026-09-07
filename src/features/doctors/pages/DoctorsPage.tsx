@@ -7,95 +7,171 @@ import { DoctorTable } from "../components/DoctorTable";
 import { DoctorDetailsModal } from "../components/DoctorDetailsModal";
 import { DoctorFormModal } from "../components/DoctorFormModal";
 import { ConfirmDialog } from "../../../shared/components/ConfirmDialog/ConfirmDialog";
-import type { Doctor, DepartmentType, DoctorStatus } from "../types";
-import { mockDoctors, getSpecializationOptions, getBranchOptions } from "../data/doctorsData";
+import type { Doctor, DepartmentType, ApiDoctor } from "../types";
 import {
   UserPlus,
   LayoutGrid,
   List,
   Stethoscope,
   Building,
-  UserCheck,
   Award,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  Users,
+  Activity,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../../../utils";
+import { useGetAllDoctorsQuery, useGetDoctorStatsQuery } from "../api/doctorsApiSlice";
+import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 
 export const DoctorsPage = () => {
-  const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
 
+  // Filter states
   const [search, setSearch] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState<"All" | DepartmentType>("All");
-  const [statusFilter, setStatusFilter] = useState<"All" | DoctorStatus>("All");
-  const [specializationFilter, setSpecializationFilter] = useState("All");
-  const [branchFilter, setBranchFilter] = useState("All");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState<number>(0);
+  const [selectedSpecId, setSelectedSpecId] = useState<number>(0);
+  const [selectedServiceId, setSelectedServiceId] = useState<number>(0);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+
+  // Debounce search input (350ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Master Data
+  const { data: masterData } = useGetAllMasterDataQuery();
+
+  // RTK Query with all 4 backend parameters
+  const { data: allDoctorsResp, isLoading: isAllDoctorsLoading, isFetching: isAllDoctorsFetching } = useGetAllDoctorsQuery({
+    branch_id: selectedBranchId,
+    specialization_id: selectedSpecId,
+    service_id: selectedServiceId,
+    search_text: debouncedSearch.trim() || undefined,
+  });
+
+  // Doctor Stats Query (Filtered by selectedBranchId)
+  const { data: doctorStatsResp, isLoading: isStatsLoading } = useGetDoctorStatsQuery({
+    branch_id: selectedBranchId || 0,
+  });
+  const stats = doctorStatsResp?.data;
+
+  // Map API doctors to Doctor models using master data descriptions
+  useEffect(() => {
+    if (allDoctorsResp?.data && masterData) {
+      const mappedDocs: Doctor[] = allDoctorsResp.data.map((apiDoc: ApiDoctor) => {
+        const specName =
+          masterData.specialisations?.find((s) => s.id === apiDoc.specialization_id)?.description ||
+          "General Medicine";
+        const branchName =
+          masterData.branches?.find((b) => b.id === apiDoc.branch_id)?.description ||
+          "Main Branch";
+        const serviceName =
+          masterData.services?.find((s) => s.id === apiDoc.service_id)?.description ||
+          "Both";
+
+        let department: DepartmentType = "Both";
+        if (serviceName.toUpperCase().includes("OPD") && !serviceName.toUpperCase().includes("IPD")) {
+          department = "OPD";
+        } else if (serviceName.toUpperCase().includes("IPD") && !serviceName.toUpperCase().includes("OPD")) {
+          department = "IPD";
+        }
+
+        const startT = apiDoc.available_start_time ? apiDoc.available_start_time.slice(0, 5) : "09:00";
+        const endT = apiDoc.available_end_time ? apiDoc.available_end_time.slice(0, 5) : "17:00";
+
+        return {
+          id: apiDoc.id,
+          name: `${apiDoc.first_name || ""} ${apiDoc.last_name || ""}`.trim(),
+          first_name: apiDoc.first_name,
+          last_name: apiDoc.last_name,
+          email: apiDoc.email,
+          phone_number: apiDoc.phone_number,
+          image_url: apiDoc.profile_img,
+          consultation_fee: Number(apiDoc.consultation_fee) || 0,
+          working_hours: `${startT} - ${endT}`,
+          department: department,
+          specialization: specName,
+          service_type: serviceName,
+          hospital_branch: branchName,
+          qualification: apiDoc.education,
+          experience_years: Number(apiDoc.experience) || 0,
+          is_active: apiDoc.is_active,
+          created_at: apiDoc.created_on,
+        };
+      });
+      setDoctors(mappedDocs);
+    } else if (allDoctorsResp?.data && !masterData) {
+      const mappedDocs: Doctor[] = allDoctorsResp.data.map((apiDoc: ApiDoctor) => ({
+        id: apiDoc.id,
+        name: `${apiDoc.first_name || ""} ${apiDoc.last_name || ""}`.trim(),
+        first_name: apiDoc.first_name,
+        last_name: apiDoc.last_name,
+        email: apiDoc.email,
+        phone_number: apiDoc.phone_number,
+        image_url: apiDoc.profile_img,
+        consultation_fee: Number(apiDoc.consultation_fee) || 0,
+        working_hours: "09:00 - 17:00",
+        department: "Both",
+        specialization: "Specialist",
+        service_type: "Both",
+        hospital_branch: "Branch",
+        qualification: apiDoc.education,
+        experience_years: Number(apiDoc.experience) || 0,
+        is_active: apiDoc.is_active,
+        created_at: apiDoc.created_on,
+      }));
+      setDoctors(mappedDocs);
+    }
+  }, [allDoctorsResp, masterData]);
+
+  // Service Tabs definition (OPD = 1, IPD = 2, Both = 6)
+  const serviceTabs = useMemo(() => {
+    return [
+      { id: 0, code: "ALL", label: "All Doctors" },
+      { id: 1, code: "OPD", label: "OP Doctors (OPD)" },
+      { id: 2, code: "IPD", label: "IP Doctors (IPD)" },
+      { id: 6, code: "BTH", label: "Both (IPD & OPD)" },
+    ];
+  }, []);
 
   // Pagination states
   const [page, setPage] = useState(1);
   const limit = 8;
 
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-
-  const specializations = useMemo(() => ["All", ...getSpecializationOptions()], []);
-  const branches = useMemo(() => ["All", ...getBranchOptions()], []);
-
-  // Filtered Doctors list
-  const filteredDoctors = useMemo(() => {
-    return doctors.filter((doc) => {
-      const matchSearch =
-        search === "" ||
-        doc.name.toLowerCase().includes(search.toLowerCase()) ||
-        doc.specialization.toLowerCase().includes(search.toLowerCase()) ||
-        (doc.service_type && doc.service_type.toLowerCase().includes(search.toLowerCase())) ||
-        (doc.room_number ? doc.room_number.toLowerCase().includes(search.toLowerCase()) : false) ||
-        doc.phone_number.includes(search);
-
-      const matchDept =
-        departmentFilter === "All" ||
-        doc.department === departmentFilter ||
-        doc.department === "Both";
-
-      const matchStatus =
-        statusFilter === "All" || doc.availability_status === statusFilter;
-
-      const matchSpec =
-        specializationFilter === "All" ||
-        doc.specialization === specializationFilter;
-
-      const matchBranch =
-        branchFilter === "All" || doc.hospital_branch === branchFilter;
-
-      return matchSearch && matchDept && matchStatus && matchSpec && matchBranch;
-    });
-  }, [doctors, search, departmentFilter, statusFilter, specializationFilter, branchFilter]);
-
-  // Reset page when filters or search change
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, departmentFilter, statusFilter, specializationFilter, branchFilter]);
+  }, [debouncedSearch, selectedBranchId, selectedSpecId, selectedServiceId]);
+
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Pagination Calculations
-  const totalDoctors = filteredDoctors.length;
+  const totalDoctors = doctors.length;
   const totalPages = Math.ceil(totalDoctors / limit);
   const paginatedDoctors = useMemo(() => {
     const start = (page - 1) * limit;
-    return filteredDoctors.slice(start, start + limit);
-  }, [filteredDoctors, page, limit]);
+    return doctors.slice(start, start + limit);
+  }, [doctors, page, limit]);
 
-  // Statistics
-  const totalCount = doctors.length;
-  const opdCount = doctors.filter((d) => d.department === "OPD" || d.department === "Both").length;
-  const ipdCount = doctors.filter((d) => d.department === "IPD" || d.department === "Both").length;
-  const availableCount = doctors.filter((d) => d.availability_status === "Available").length;
+  // Statistics fallbacks
+  const totalCount = stats?.total_doctors ?? doctors.length;
+  const opdCount = stats?.op_doctors ?? doctors.filter((d) => d.department === "OPD" || d.department === "Both" || d.service_type?.includes("OPD")).length;
+  const ipdCount = stats?.ip_doctors ?? doctors.filter((d) => d.department === "IPD" || d.department === "Both" || d.service_type?.includes("IPD")).length;
+  const bothCount = stats?.both_doctors ?? doctors.filter((d) => d.department === "Both" || d.service_type?.toLowerCase().includes("both")).length;
+  const availableCount = stats?.available_doctors ?? doctors.filter((d) => d.is_active === 1).length;
 
   const handleFormSubmit = (data: any) => {
     if (editingDoctor) {
@@ -107,9 +183,6 @@ export const DoctorsPage = () => {
       const newDoc: Doctor = {
         ...data,
         id: Date.now(),
-        uuid: `doc-uuid-${Date.now()}`,
-        rating: 5.0,
-        patients_count: 0,
         is_active: 1,
         created_at: new Date().toISOString(),
         image_url: data.image_url || "",
@@ -147,45 +220,44 @@ export const DoctorsPage = () => {
         }
       />
 
-      {/* Metrics Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* KPI Metrics Cards Banner (from getDoctorStats) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total Doctors */}
         <div className="bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4 group hover:border-blue-200 dark:hover:border-blue-900 transition-all">
           <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#063669] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Stethoscope className="h-6 w-6" />
+            <Users className="h-6 w-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Total Doctors</p>
-            <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{totalCount}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider truncate">Total Doctors</p>
+            <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+              {isStatsLoading ? <Loader2 className="h-5 w-5 animate-spin text-zinc-400 inline" /> : totalCount}
+            </p>
           </div>
         </div>
 
+        {/* OP Doctors (OPD) */}
         <div className="bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4 group hover:border-indigo-200 dark:hover:border-indigo-900 transition-all">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Building className="h-6 w-6" />
+            <Activity className="h-6 w-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">OP Doctors</p>
-            <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{opdCount}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider truncate">OP Doctors</p>
+            <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+              {isStatsLoading ? <Loader2 className="h-5 w-5 animate-spin text-indigo-400 inline" /> : opdCount}
+            </p>
           </div>
         </div>
 
+        {/* IP Doctors (IPD) */}
         <div className="bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4 group hover:border-purple-200 dark:hover:border-purple-900 transition-all">
           <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Award className="h-6 w-6" />
+            <Building className="h-6 w-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">IP Doctors</p>
-            <p className="text-2xl font-black text-purple-600 dark:text-purple-400">{ipdCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4 group hover:border-emerald-200 dark:hover:border-emerald-900 transition-all">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-            <UserCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Available Now</p>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{availableCount}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider truncate">IP Doctors</p>
+            <p className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-0.5">
+              {isStatsLoading ? <Loader2 className="h-5 w-5 animate-spin text-purple-400 inline" /> : ipdCount}
+            </p>
           </div>
         </div>
       </div>
@@ -198,24 +270,24 @@ export const DoctorsPage = () => {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search by doctor name, specialization, or room..."
+              placeholder="Search by doctor name..."
             />
           </div>
 
-          {/* Department Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-            {(["All", "OPD", "IPD"] as const).map((dept) => (
+          {/* Service Tabs (All, OPD, IPD, BTH) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800 overflow-x-auto max-w-full">
+            {serviceTabs.map((tab) => (
               <button
-                key={dept}
-                onClick={() => setDepartmentFilter(dept)}
+                key={tab.id}
+                onClick={() => setSelectedServiceId(tab.id)}
                 className={cn(
-                  "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  departmentFilter === dept
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
+                  selectedServiceId === tab.id
                     ? "bg-white dark:bg-zinc-800 text-[#063669] dark:text-blue-400 shadow-sm"
                     : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                 )}
               >
-                {dept === "All" ? "All Doctors" : dept === "OPD" ? "OP Doctors" : "IP Doctors"}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -224,26 +296,28 @@ export const DoctorsPage = () => {
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
             {/* Branch Select */}
             <select
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
               className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
             >
-              {branches.map((branch) => (
-                <option key={branch} value={branch}>
-                  {branch === "All" ? "All Branches" : branch}
+              <option value={0}>All Branches</option>
+              {masterData?.branches?.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.description}
                 </option>
               ))}
             </select>
 
-            {/* Department Select */}
+            {/* Department / Specialization Select */}
             <select
-              value={specializationFilter}
-              onChange={(e) => setSpecializationFilter(e.target.value)}
+              value={selectedSpecId}
+              onChange={(e) => setSelectedSpecId(Number(e.target.value))}
               className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
             >
-              {specializations.map((spec) => (
-                <option key={spec} value={spec}>
-                  {spec === "All" ? "All Departments" : spec}
+              <option value={0}>All Departments</option>
+              {masterData?.specialisations?.map((spec) => (
+                <option key={spec.id} value={spec.id}>
+                  {spec.description}
                 </option>
               ))}
             </select>
@@ -276,7 +350,13 @@ export const DoctorsPage = () => {
       </div>
 
       {/* Main Content Area */}
-      {totalDoctors === 0 ? (
+      {isAllDoctorsLoading || isAllDoctorsFetching ? (
+        <div className="py-20 text-center bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+          <Loader2 className="h-8 w-8 text-[#063669] animate-spin mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Loading Doctors...</h3>
+          <p className="text-xs text-zinc-500 mt-1">Fetching medical practitioners from registry.</p>
+        </div>
+      ) : totalDoctors === 0 ? (
         <div className="py-20 text-center bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800">
           <Stethoscope className="h-12 w-12 text-zinc-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">No Doctors Found</h3>

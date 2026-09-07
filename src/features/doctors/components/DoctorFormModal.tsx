@@ -140,7 +140,6 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
       experience_years: payload.experience,
       qualification: payload.education,
       service_type: masterData?.services?.find(s => s.id === payload.service_id)?.description || "N/A",
-      availability_status: "Available",
     };
 
     if (isEdit && doctor) {

@@ -3,7 +3,6 @@ export type DoctorStatus = "Available" | "In Consultation" | "On Leave" | "Emerg
 
 export interface Doctor {
   id: number;
-  uuid: string;
   name: string;
   first_name?: string;
   last_name?: string;
@@ -16,9 +15,6 @@ export interface Doctor {
   email: string;
   phone_number: string;
   image_url: string;
-  rating: number;
-  patients_count: number;
-  availability_status: DoctorStatus;
   consultation_fee: number;
   working_hours?: string;
   room_number?: string;
@@ -31,7 +27,6 @@ export interface Doctor {
 export interface DoctorFilterState {
   search: string;
   department: "All" | DepartmentType;
-  status: "All" | DoctorStatus;
   specialization: string;
   branch: string;
   page: number;
@@ -55,4 +50,45 @@ export interface CreateDoctorRequest {
   available_end_time: string;
 }
 
-export type UpdateDoctorRequest = Partial<CreateDoctorRequest> & { id: number };
+export interface GetAllDoctorsRequest {
+  branch_id?: number;
+  specialization_id?: number;
+  service_id?: number;
+  search_text?: string;
+}
+
+export interface ApiDoctor {
+  id: number;
+  branch_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  profile_img: string;
+  education: string;
+  specialization_id: number;
+  service_id: number;
+  country_code: string;
+  phone_number: string;
+  consultation_fee: string;
+  experience: string;
+  available_start_time: string;
+  available_end_time: string;
+  is_active: number;
+  created_on: string;
+}
+
+export interface GetDoctorStatsRequest {
+  branch_id?: number;
+}
+
+export interface DoctorStats {
+  total_doctors: number;
+  op_doctors: number;
+  ip_doctors: number;
+  both_doctors: number;
+  available_doctors: number;
+}
+
+export interface GetDoctorStatsResponse {
+  data: DoctorStats;
+}

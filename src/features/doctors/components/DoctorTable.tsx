@@ -17,19 +17,6 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const getStatusBadge = (status: Doctor["availability_status"]) => {
-    switch (status) {
-      case "Available":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300";
-      case "In Consultation":
-        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300";
-      case "Emergency Only":
-        return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300";
-      case "On Leave":
-        return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400";
-    }
-  };
-
   const getDeptBadge = (dept: Doctor["department"]) => {
     switch (dept) {
       case "OPD":
@@ -57,7 +44,7 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
             <th className="py-3.5 px-4">Doctor</th>
             <th className="py-3.5 px-4">Department</th>
             <th className="py-3.5 px-4">Service Type</th>
-            <th className="py-3.5 px-4">Status</th>
+
             <th className="py-3.5 px-4">Fee</th>
             <th className="py-3.5 px-4">Hours / Room</th>
             <th className="py-3.5 px-4 text-right">Actions</th>
@@ -110,17 +97,7 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
                 </span>
               </td>
 
-              {/* Status */}
-              <td className="py-3.5 px-4 whitespace-nowrap">
-                <span
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-[11px] font-semibold border",
-                    getStatusBadge(doc.availability_status)
-                  )}
-                >
-                  {doc.availability_status}
-                </span>
-              </td>
+
 
               {/* Fee */}
               <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">

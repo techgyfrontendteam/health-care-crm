@@ -49,4 +49,6 @@ export interface MasterDataResponse {
   branches: Branch[];
   specialisations: MasterDataItem[];
   services: MasterDataItem[];
+  appointment_status?: MasterDataItem[];
+  appointment_statuses?: MasterDataItem[];
 }
