@@ -118,7 +118,7 @@ export const LeadForm = ({
       project_id: initialValues?.project_id || undefined,
       location_id: initialValues?.location_id || null,
       branch_id: initialValues?.branch_id || null,
-      department: initialValues?.department || '',
+      department: initialValues?.specialisation_id ? String(initialValues.specialisation_id) : (initialValues?.department || (initialValues as any)?.specialization || ''),
       doctor_id: initialValues?.doctor_id || null,
       appointment_date: initialValues?.appointment_date || '',
       appointment_time: initialValues?.appointment_time || '',

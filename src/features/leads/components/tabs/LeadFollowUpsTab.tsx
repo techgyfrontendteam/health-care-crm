@@ -77,6 +77,7 @@ interface FollowUpListItem {
   time: string;
   rmName: string;
   status: string;
+  remarks?: string;
 }
 
 
@@ -96,6 +97,7 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   });
   const [purpose, setPurpose] = useState('1');
+  const [notes, setNotes] = useState('');
 
   const openCreateModal = () => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -104,6 +106,7 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setFormTime(timeStr);
     if (!purpose) setPurpose('1');
+    setNotes('');
     setIsCreateModalOpen(true);
   };
 
@@ -155,7 +158,8 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
           date: dateDetails.date,
           time: dateDetails.time,
           rmName: assignedLabel === '--' ? rmName : assignedLabel,
-          status: statusLabel
+          status: statusLabel,
+          remarks: item.remarks || '',
         };
       });
     }
@@ -175,10 +179,11 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
         followup_type_id: Number(purpose),
         followup_date_time,
         followup_status_id: 1, // Default status: Upcoming
-        remarks: lookupMasterData?.lead_followup_types?.find((t: any) => t.id === Number(purpose))?.description || "Scheduled follow-up"
+        remarks: notes.trim() || lookupMasterData?.lead_followup_types?.find((t: any) => t.id === Number(purpose))?.description || "Scheduled follow-up"
       }).unwrap();
       toast.success("Follow-up created successfully.");
       setIsCreateModalOpen(false);
+      setNotes('');
     } catch (err: any) {
       console.error("Failed to create follow-up:", err);
       toast.error(err?.data?.message || "Failed to create follow-up");
@@ -240,10 +245,17 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
                     </span>
                   </div>
 
-                  {/* Assigned RM */}
+                  {/* Assigned Sales Executive */}
                   <p className="text-[11px] text-[#64748B] font-medium pt-0.5">
-                    Assigned RM: {item.rmName}
+                    Sales Executive: {item.rmName}
                   </p>
+
+                  {/* Notes / Remarks */}
+                  {item.remarks && (
+                    <p className="text-xs text-[#475569] bg-[#F8FAFC] border border-[#F1F5F9] rounded-xl px-3 py-2 mt-2 leading-relaxed whitespace-pre-wrap">
+                      {item.remarks}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -364,14 +376,30 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
                 </div>
               </div>
 
-              {/* Assigned Sales Head */}
+              {/* Assigned Sales Executive */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Assigned Sales Head</label>
+                <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Assigned Sales Executive</label>
                 <input 
                   type="text"
                   readOnly
                   value={rmName}
                   className="w-full bg-[#F1F5F9] text-[#64748B] font-medium text-xs border-0 rounded-2xl py-3.5 px-4 focus:ring-0 cursor-not-allowed"
+                />
+              </div>
+
+              {/* Notes / Remarks (up to 500 characters) */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Notes</label>
+                  <span className="text-[10px] font-medium text-[#94A3B8]">{notes.length}/500</span>
+                </div>
+                <textarea 
+                  rows={3}
+                  maxLength={500}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Enter notes (up to 500 characters)..."
+                  className="w-full bg-[#F1F5F9] text-[#1E293B] font-medium text-xs border-0 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-blue-500 resize-none outline-none placeholder:text-[#94A3B8]"
                 />
               </div>
             </div>

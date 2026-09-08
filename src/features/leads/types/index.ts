@@ -90,11 +90,13 @@ export interface Lead {
   junk_reason?: string;
   customer_status_id?: number;
   hospital_branch?: string;
+  branch_id?: number;
   branch?: string;
   branch_name?: string;
   followup_date?: string;
   next_followup_date?: string;
   appointment_date?: string;
+  specialisation_id?: number;
   specialization?: string;
   department?: string;
   appointment_note?: string;

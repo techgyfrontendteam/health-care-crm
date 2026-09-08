@@ -62,12 +62,24 @@ export const useMasterDataLookup = () => {
     return em ? `${em.first_name} ${em.last_name}` : '--';
   }, [ems]);
 
+  const getBranchLabel = React.useCallback((id: number | null | undefined) => {
+    if (!id) return '--';
+    return masterData?.branches?.find(b => b.id === id)?.description || `ID: ${id}`;
+  }, [masterData]);
+
+  const getSpecialisationLabel = React.useCallback((id: number | null | undefined) => {
+    if (!id) return '--';
+    return masterData?.specialisations?.find(s => s.id === id)?.description || `ID: ${id}`;
+  }, [masterData]);
+
   return React.useMemo(() => ({
     getStatusLabel,
     getProjectLeadStatusLabel,
     getCustomerStatusLabel,
     getProjectLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
     getEmLabel,
     rms,
@@ -81,6 +93,8 @@ export const useMasterDataLookup = () => {
     getCustomerStatusLabel,
     getProjectLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
     getEmLabel,
     masterData,

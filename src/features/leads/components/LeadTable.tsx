@@ -412,6 +412,8 @@ export const LeadTable = ({
     getProjectLabel,
     getEmLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     masterData,
     projectLeadStatuses,
     isLoading: isLookupLoading
@@ -469,6 +471,7 @@ export const LeadTable = ({
         render: (l: Lead) => (
           <Link
             to={`/leads/${l.uuid}`}
+            state={{ lead: l, branch_id: l.branch_id, branch: l.branch, branch_name: l.branch_name, hospital_branch: l.hospital_branch, specialisation_id: l.specialisation_id, department: l.department }}
             className="text-secondary-foreground font-semibold hover:text-primary transition-colors text-xs"
           >
             #{fallback(l.lead_id)}
@@ -498,26 +501,6 @@ export const LeadTable = ({
         ),
       },
 
-      {
-        key: 'dob',
-        header: 'DOB',
-        width: '120px',
-        render: (l: Lead) => {
-          if (!l.dob) return '--';
-
-          const formatted = new Date(l.dob).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
-
-          return (
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {formatted}
-            </span>
-          );
-        },
-      },
       /* Income column commented out as requested
       {
         key: 'income',
@@ -565,12 +548,22 @@ export const LeadTable = ({
         },
       },
       {
-        key: 'project_id',
+        key: 'branch_id',
         header: 'BRANCH',
         width: '150px',
         render: (l: Lead) => (
           <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            {l.hospital_branch || l.branch || l.branch_name || getProjectLabel(l.project_id) || "Hyderabad"}
+            {l.branch_id ? getBranchLabel(l.branch_id) : (l.hospital_branch || l.branch || l.branch_name || getProjectLabel(l.project_id) || '--')}
+          </span>
+        ),
+      },
+      {
+        key: 'specialisation_id',
+        header: 'DEPARTMENT',
+        width: '160px',
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {l.specialisation_id ? getSpecialisationLabel(l.specialisation_id) : (l.specialization || l.department || '--')}
           </span>
         ),
       },
@@ -582,6 +575,7 @@ export const LeadTable = ({
           <div className="text-center w-full">
             <Link
               to={`/leads/${l.uuid}?tab=enquiries`}
+              state={{ lead: l, branch_id: l.branch_id, branch: l.branch, branch_name: l.branch_name, hospital_branch: l.hospital_branch, specialisation_id: l.specialisation_id, department: l.department }}
               className="font-bold text-xs text-[#0f3d6b] hover:text-[#0f3d6b]/80 underline decoration-[#0f3d6b] transition-colors"
             >
               {l.enquiries ?? l.enquires?.length ?? 0}
@@ -669,19 +663,7 @@ export const LeadTable = ({
         header: 'ACTIONS',
         width: '120px',
         render: (lead: Lead) => (
-          <div className="flex items-center gap-1">
-            {/* Inline Edit Lead button commented out as requested
-            {can(PERMISSIONS.LEAD_EDIT) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(lead)}
-                className="h-8 text-[11px] font-bold uppercase rounded-xl border-zinc-200 dark:border-zinc-800 text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all px-4 shadow-none"
-              >
-                Edit Lead
-              </Button>
-            )}
-            */}
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -692,7 +674,10 @@ export const LeadTable = ({
                 <DropdownMenuLabel className="font-normal text-zinc-500 uppercase px-3 py-2">
                   Lead Actions
                 </DropdownMenuLabel>
-                <Link to={`/leads/${lead.uuid}`}>
+                <Link
+                  to={`/leads/${lead.uuid}`}
+                  state={{ lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }}
+                >
                   <DropdownMenuItem className="cursor-pointer gap-2 py-2">
                     <Eye className="h-4 w-4 text-zinc-500" />
                     <span>View Details</span>
@@ -712,7 +697,9 @@ export const LeadTable = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer gap-2 py-2"
-                  onClick={() => navigate(`/leads/${lead.uuid}?tab=chats&type=CM`)}
+                  onClick={() => navigate(`/leads/${lead.uuid}?tab=chats&type=CM`, {
+                    state: { lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }
+                  })}
                 >
                   <MessageSquare className="h-4 w-4 text-indigo-500" />
                   <span>Initialize Chat</span>

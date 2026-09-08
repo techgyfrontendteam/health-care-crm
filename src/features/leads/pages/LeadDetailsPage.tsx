@@ -191,6 +191,10 @@ export const LeadDetailsPage = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const fromCustomer = location.state?.fromCustomer;
+  const stateLead = location.state?.lead as Lead | undefined;
+  const stateBranchId = location.state?.branch_id ?? stateLead?.branch_id;
+  const stateBranchName = location.state?.branch ?? location.state?.branch_name ?? location.state?.hospital_branch ?? stateLead?.branch ?? stateLead?.branch_name ?? stateLead?.hospital_branch;
+  const stateSpecialisationId = location.state?.specialisation_id ?? stateLead?.specialisation_id;
   const initialTab = searchParams.get('tab') || 'activity';
   const [activeTab, setActiveTab] = useState(initialTab);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -371,6 +375,8 @@ export const LeadDetailsPage = () => {
     getCustomerStatusLabel,
     getProjectLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
     getEmLabel,
     masterData,
@@ -580,58 +586,37 @@ export const LeadDetailsPage = () => {
           {/* ═══════════════════════════════════════════════ */}
           {/* CARD 1: Name, Lead ID, Added Date              */}
           {/* ═══════════════════════════════════════════════ */}
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-8 py-6 flex items-center justify-between">
-            <div className="flex items-center gap-5">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3.5">
               {/* Avatar */}
               <div
-                className="shrink-0 flex items-center justify-center rounded-2xl text-white font-black text-3xl shadow-sm"
-                style={{ width: 64, height: 64, backgroundColor: "#0f3d6b" }}
+                className="shrink-0 flex items-center justify-center rounded-xl text-white font-bold text-base shadow-xs"
+                style={{ width: 44, height: 44, backgroundColor: "#0f3d6b" }}
               >
                 {initials}
               </div>
 
               {/* Name + meta */}
               <div>
-                <h2
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: 800,
-                    fontSize: "28px",
-                    lineHeight: "36px",
-                    color: "#191C1E",
-                  }}
-                >
+                <h2 className="font-bold text-lg text-[#191C1E] dark:text-zinc-100 font-['Plus_Jakarta_Sans'] capitalize leading-tight">
                   {lead.first_name || ""} {lead.last_name || ""}
                 </h2>
-                <div className="flex items-center gap-3 mt-1">
-                  <span
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                      fontSize: "13px",
-                      color: "#64748B",
-                    }}
-                  >
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-1 text-xs text-[#64748B] font-medium">
+                  <span>
                     Lead ID:{" "}
-                    <span style={{ fontWeight: 700, color: "#0f3d6b" }}>
+                    <span className="font-bold text-[#0f3d6b] dark:text-blue-400">
                       #{lead.lead_id}
                     </span>
                   </span>
-                  <span style={{ color: "#CBD5E1" }}>·</span>
+                  <span className="text-[#CBD5E1]">·</span>
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span
-                          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                          className="flex items-center gap-1.5 cursor-pointer hover:text-[#0f3d6b] transition-colors"
                           onClick={() => console.log("call is clicked")}
-                          style={{
-                            fontFamily: "Inter, sans-serif",
-                            fontWeight: 500,
-                            fontSize: "13px",
-                            color: "#64748B",
-                          }}
                         >
-                          <Phone className="h-3.5 w-3.5 text-[#0f3d6b]" />
+                          <Phone className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
                           {lead.phone_number || (lead as any).phone || "N/A"}
                         </span>
                       </TooltipTrigger>
@@ -642,17 +627,9 @@ export const LeadDetailsPage = () => {
                   </TooltipProvider>
                   {(lead.email_address || lead.email) && (
                     <>
-                      <span style={{ color: "#CBD5E1" }}>·</span>
-                      <span
-                        className="flex items-center gap-1.5"
-                        style={{
-                          fontFamily: "Inter, sans-serif",
-                          fontWeight: 500,
-                          fontSize: "13px",
-                          color: "#64748B",
-                        }}
-                      >
-                        <Mail className="h-3.5 w-3.5 text-[#0f3d6b]" />
+                      <span className="text-[#CBD5E1]">·</span>
+                      <span className="flex items-center gap-1.5">
+                        <Mail className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
                         {lead.email_address || lead.email}
                       </span>
                     </>
@@ -661,7 +638,7 @@ export const LeadDetailsPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -683,9 +660,9 @@ export const LeadDetailsPage = () => {
                           toast.error("Lead phone number not available");
                         }
                       }}
-                      className="h-[42px] w-[42px] rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 shadow-sm transition-all hover:scale-105"
+                      className="h-9 w-9 rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 shadow-xs transition-all"
                     >
-                      <Phone className="h-[18px] w-[18px]" />
+                      <Phone className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -736,7 +713,7 @@ export const LeadDetailsPage = () => {
             </div>
 
             {/* Fields */}
-            <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 xl:gap-x-12 gap-y-7 px-8 py-7">
               <DetailField
                 label="Source"
                 value={getSourceLabel(lead.source_id)}
@@ -858,17 +835,21 @@ export const LeadDetailsPage = () => {
               */}
               <DetailField
                 label="Branch"
-                value={lead.hospital_branch || lead.branch || lead.branch_name || "Hyderabad"}
+                value={
+                  (lead?.branch_id ?? stateBranchId)
+                    ? getBranchLabel(lead?.branch_id ?? stateBranchId)
+                    : (lead?.hospital_branch || lead?.branch || lead?.branch_name || stateBranchName || getProjectLabel(lead?.project_id) || "--")
+                }
               />
               <DetailField
                 label="Follow Up Date"
                 value={
-                  lead.followup_date || lead.next_followup_date
-                    ? formatDate(lead.followup_date || lead.next_followup_date)
-                    : (lead.follow_ups && lead.follow_ups.length > 0
-                      ? formatDate(lead.follow_ups[0].date_time)
-                      : (lead.followups && lead.followups.length > 0
-                        ? formatDate(lead.followups[0].date_time)
+                  lead?.followup_date || lead?.next_followup_date
+                    ? formatDate(lead?.followup_date || lead?.next_followup_date)
+                    : (lead?.follow_ups && lead?.follow_ups.length > 0
+                      ? formatDate(lead?.follow_ups[0].date_time)
+                      : (lead?.followups && lead?.followups.length > 0
+                        ? formatDate(lead?.followups[0].date_time)
                         : "--"))
                 }
                 icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
@@ -876,17 +857,21 @@ export const LeadDetailsPage = () => {
               <DetailField
                 label="Appointment Date"
                 value={
-                  lead.appointment_date
-                    ? formatDate(lead.appointment_date)
-                    : (lead.visits && lead.visits.length > 0 && lead.visits[0].visit_date_time
-                      ? formatDate(lead.visits[0].visit_date_time)
+                  lead?.appointment_date
+                    ? formatDate(lead?.appointment_date)
+                    : (lead?.visits && lead?.visits.length > 0 && lead?.visits[0].visit_date_time
+                      ? formatDate(lead?.visits[0].visit_date_time)
                       : "--")
                 }
                 icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
               />
               <DetailField
                 label="Department"
-                value={lead.department || lead.specialization || getProjectLabel(lead.project_id) || "--"}
+                value={
+                  (lead?.specialisation_id ?? stateSpecialisationId)
+                    ? getSpecialisationLabel(lead?.specialisation_id ?? stateSpecialisationId)
+                    : (lead?.department || lead?.specialization || "--")
+                }
               />
             </dl>
           </div>
@@ -908,31 +893,14 @@ export const LeadDetailsPage = () => {
                   lineHeight: "24px",
                   color: "#191C1E",
                 }}
-              >
-                Address Details
-              </h3>
-            </div>
-
-            <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
-              <DetailField label="State" value={masterData?.states?.find((s: any) => s.id === lead.state_id)?.description || lead.state} />
-              <DetailField label="Country" value={lead.country} />
-              <DetailField label="City" value={lead.city} />
-              <DetailField label="Zip Code" value={lead.zip} />
-              <DetailField label="Street" value={lead.address} />
-            </dl>
-          </div>
-          */}
-
+          {/* CARD 3: Lead Followups & Notes                  */}
           {/* ═══════════════════════════════════════════════ */}
-          {/* ═══════════════════════════════════════════════ */}
-          {/* CARD 3: Lead Notes                              */}
-          {/* ═══════════════════════════════════════════════ */}
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+          <div ref={followupsRef} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
             {/* Section heading */}
             <div className="flex items-center justify-between px-8 pt-7 pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-[#0f3d6b]" />
+                  <Calendar className="h-4 w-4 text-[#0f3d6b]" />
                 </div>
                 <div className="flex items-center gap-2">
                   <h3
@@ -944,177 +912,22 @@ export const LeadDetailsPage = () => {
                       color: "#191C1E",
                     }}
                   >
-                    Lead Notes
+                    Lead Followups &amp; Notes
                   </h3>
-                  {parsedNotes.length > 0 && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0f3d6b] border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50">
-                      {parsedNotes.length}
-                    </span>
-                  )}
                 </div>
               </div>
-              {roleCode !== 'EXPMNG' && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingNote(true);
-                      setNewNoteText("");
-                    }}
-                    className="h-8 text-xs px-3 rounded-lg border-zinc-200 dark:border-zinc-700 flex items-center gap-1.5 font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                    title="Add Note"
-                  >
-                    <Plus className="h-3.5 w-3.5 text-zinc-500" />
-                    <span>Add Note</span>
-                  </Button>
-                </div>
-              )}
             </div>
 
-            {/* Note Content / Notes List */}
-            <div className="px-8 py-7">
-              {/* New Note Composer */}
-              {isAddingNote && (
-                <div className="p-4 rounded-xl bg-zinc-50/70 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3 mb-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
-                      New Note
-                    </span>
-                  </div>
-                  <textarea
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                    placeholder="Enter free text note..."
-                    rows={3}
-                    className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-medium focus:ring-1 focus:ring-[#0f3d6b] outline-none transition-all placeholder:text-[#94A3B8] resize-y"
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsAddingNote(false);
-                        setNewNoteText("");
-                      }}
-                      disabled={isSavingNote}
-                      className="h-8 text-xs px-3 rounded-lg"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleAddNote}
-                      disabled={isSavingNote || !newNoteText.trim()}
-                      className="bg-[#0f3d6b] hover:bg-[#0c3156] text-white h-8 text-xs px-3 rounded-lg"
-                    >
-                      {isSavingNote ? "Saving..." : "Save Note"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes List */}
-              {parsedNotes.length > 0 ? (
-                <div className="space-y-3">
-                  {parsedNotes.map((note, index) => {
-                    const isEditing = editingNoteId === note.id;
-                    return (
-                      <div
-                        key={note.id}
-                        className="p-4 rounded-xl bg-zinc-50/60 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-2.5 transition-all hover:border-zinc-300 dark:hover:border-zinc-700 group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                            <Clock className="h-3.5 w-3.5 text-zinc-400" />
-                            <span>{note.date || `Note ${parsedNotes.length - index}`}</span>
-                          </div>
-                          {roleCode !== 'EXPMNG' && !isEditing && (
-                            <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => {
-                                  setEditingNoteId(note.id);
-                                  setEditingNoteText(note.text);
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                                title="Edit note"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteNote(note.id)}
-                                disabled={isSavingNote}
-                                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-zinc-400 hover:text-red-600 transition-colors"
-                                title="Delete note"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {isEditing ? (
-                          <div className="space-y-2.5 pt-1">
-                            <textarea
-                              value={editingNoteText}
-                              onChange={(e) => setEditingNoteText(e.target.value)}
-                              rows={3}
-                              className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm font-medium focus:ring-1 focus:ring-[#0f3d6b] outline-none transition-all resize-y"
-                              autoFocus
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingNoteId(null);
-                                  setEditingNoteText("");
-                                }}
-                                disabled={isSavingNote}
-                                className="h-7 text-xs px-3 rounded-lg"
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleUpdateNote(note.id)}
-                                disabled={isSavingNote || !editingNoteText.trim()}
-                                className="bg-[#0f3d6b] hover:bg-[#0c3156] text-white h-7 text-xs px-3 rounded-lg"
-                              >
-                                {isSavingNote ? "Saving..." : "Update"}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p
-                            className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200 text-sm font-medium leading-relaxed"
-                            style={{ fontFamily: "Inter, sans-serif" }}
-                          >
-                            {note.text}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                !isAddingNote && (
-                  <div
-                    onClick={() => {
-                      if (roleCode !== 'EXPMNG') {
-                        setIsAddingNote(true);
-                        setNewNoteText("");
-                      }
-                    }}
-                    className={roleCode !== 'EXPMNG' ? "cursor-pointer group py-2" : "py-2"}
-                  >
-                    <span style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif", fontSize: "14px" }}>
-                      --
-                    </span>
-                  </div>
-                )
-              )}
+            {/* Followups & Notes Content */}
+            <div className="px-8 py-6">
+              <LeadFollowUpsTab
+                lead={lead ? {
+                  ...lead,
+                  branch_id: lead.branch_id ?? stateBranchId,
+                  specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+                } : lead}
+                masterData={masterData}
+              />
             </div>
           </div>
 
@@ -1125,8 +938,8 @@ export const LeadDetailsPage = () => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col">
               {/* Tab triggers */}
               <div className="border-b border-zinc-200 dark:border-zinc-800">
-                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6">
-                  {["activity", "calls", "chats", "visits", "enquiries", "followups"].map((tab) => {
+                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-5">
+                  {["activity", "calls", "chats", "visits", "enquiries"].map((tab) => {
                     return (
                       <TabsTrigger
                         key={tab}
@@ -1142,7 +955,7 @@ export const LeadDetailsPage = () => {
                           flex items-center justify-center gap-1
                         "
                       >
-                        {tab === "followups" ? "Follow Ups" : tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                        {tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
                       </TabsTrigger>
                     );
                   })}
@@ -1178,7 +991,11 @@ export const LeadDetailsPage = () => {
                 <TabsContent value="visits" className="mt-0">
                   <LeadVisitsTab
                     visits={lead?.visits}
-                    lead={lead}
+                    lead={lead ? {
+                      ...lead,
+                      branch_id: lead.branch_id ?? stateBranchId,
+                      specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+                    } : lead}
                     siteVisitStatuses={masterData?.site_visit_status || []}
                     getSiteVisitStatusLabel={(id) =>
                       masterData?.site_visit_status?.find(
@@ -1193,12 +1010,6 @@ export const LeadDetailsPage = () => {
                     <LeadEnquiriesTab leadId={leadId} enquiries={lead?.enquires} onView={handleViewLead} />
                   </div>
                 </TabsContent>
-
-                <TabsContent value="followups" className="mt-0">
-                  <div ref={followupsRef}>
-                    <LeadFollowUpsTab lead={lead} masterData={masterData} />
-                  </div>
-                </TabsContent>
               </div>
             </Tabs>
           </div>
@@ -1210,7 +1021,11 @@ export const LeadDetailsPage = () => {
             description="Update the details for this lead"
           >
             <LeadForm
-              initialValues={lead}
+              initialValues={lead ? {
+                ...lead,
+                branch_id: lead.branch_id ?? stateBranchId,
+                specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+              } : undefined}
               onSubmit={handleEditSubmit}
               isLoading={isUpdating}
               isEdit={true}
