@@ -6,6 +6,7 @@ export interface AppointmentDetail {
   visit_date_time: string;
   visit_remarks: string;
   appointment_status_id?: number;
+  appointments_status_id?: number;
   visit_status?: number; // fallback alias
   is_active?: number;
   created_by?: number;

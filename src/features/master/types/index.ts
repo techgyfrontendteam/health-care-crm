@@ -51,4 +51,6 @@ export interface MasterDataResponse {
   services: MasterDataItem[];
   appointment_status?: MasterDataItem[];
   appointment_statuses?: MasterDataItem[];
+  surgery_statuses?: MasterDataItem[];
+  surgery_types?: MasterDataItem[];
 }

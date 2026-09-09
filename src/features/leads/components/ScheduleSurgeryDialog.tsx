@@ -1,7 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Loader2,
   CalendarIcon,
@@ -9,8 +6,9 @@ import {
   Building,
   MapPin,
   Stethoscope,
-  User,
   Sparkles,
+  Activity,
+  UserCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -22,9 +20,8 @@ import {
 import { Calendar } from "../../../components/ui/calendar";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useGetAllDoctorsQuery } from "../../doctors/api/doctorsApiSlice";
-import type { ApiDoctor } from "../../doctors/types";
-import { cn } from "../../../utils";
-
+import { useCreateSurgeryMutation } from "../api/leadsApi";
+import type { Lead } from "../types";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import {
@@ -35,84 +32,83 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 
-import type { Lead } from "../types";
-import { useGetLeadsQuery } from "../api/leadsApi";
-
-const scheduleVisitSchema = z.object({
-  doctor_id: z.number({ error: "Please select a doctor" }).min(1, "Please select a doctor"),
-  visit_date_time: z.string().min(1, "Visit date and time are required"),
-  visit_status: z.number().optional(),
-  visit_remarks: z
-    .string()
-    .max(500, "Remarks cannot exceed 500 characters")
-    .optional()
-    .or(z.literal("")),
-});
-
-type ScheduleVisitFormValues = z.infer<typeof scheduleVisitSchema>;
-
-interface ScheduleVisitDialogProps {
+export interface ScheduleSurgeryDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
   lead: Lead | null;
-  siteVisitStatuses?: { id: number; description: string }[];
-  rms?: { id: number; first_name: string; last_name: string }[];
-  onSubmit: (data: any) => Promise<void>;
-  isLoading: boolean;
-  dialogType?: "Appointment" | "Surgery";
-  appointment?: any;
+  onSuccess?: () => void;
 }
 
-const DEFAULT_APPOINTMENT_STATUSES = [
-  { id: 1, code: "OPDBKD", description: "OPD Booked" },
-  { id: 2, code: "OPDCMP", description: "OPD Completed" },
-  { id: 3, code: "NOTVIS", description: "Not Visited" },
-  { id: 4, code: "CANCEL", description: "Appointment Cancelled" },
-  { id: 5, code: "RESCHD", description: "Appointment Rescheduled" },
-];
-
-export const ScheduleVisitDialog = ({
+export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
   open,
+  onOpenChange,
   onClose,
   lead,
-  siteVisitStatuses = [],
-  onSubmit,
-  isLoading,
-  dialogType = "Appointment",
-  appointment = null,
-}: ScheduleVisitDialogProps) => {
-  const isEdit = !!appointment;
+  onSuccess,
+}) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isTimePopoverOpen, setIsTimePopoverOpen] = useState(false);
-  const { data: masterData } = useGetAllMasterDataQuery();
 
-  const [selectedLeadUuid, setSelectedLeadUuid] = useState<string>("");
-  const { data: leadsData, isLoading: isLoadingLeads } = useGetLeadsQuery(
-    { offset: 0 },
-    { skip: !!lead }
-  );
-  const allLeads = Array.isArray(leadsData) ? leadsData : leadsData?.data || [];
+  // Master Data
+  const { data: masterData, isLoading: isLoadingMasterData } = useGetAllMasterDataQuery();
 
-  const effectiveLead = useMemo(() => {
-    if (lead) return lead;
-    if (selectedLeadUuid) {
-      return allLeads.find((l: Lead) => l.uuid === selectedLeadUuid) || null;
-    }
-    return null;
-  }, [lead, selectedLeadUuid, allLeads]);
+  // Doctors list (fetch all doctors without filter as required)
+  const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({});
+  const [createSurgery, { isLoading: isSubmitting }] = useCreateSurgeryMutation();
 
-  // Derive Location & Branch IDs from Lead
+  const handleClose = () => {
+    if (onOpenChange) onOpenChange(false);
+    if (onClose) onClose();
+  };
+
+  // Doctors list normalization
+  const doctorsList = useMemo(() => {
+    if (!doctorsResp) return [];
+    if (Array.isArray(doctorsResp)) return doctorsResp;
+    if (Array.isArray(doctorsResp.data)) return doctorsResp.data;
+    if (Array.isArray(doctorsResp.doctors)) return doctorsResp.doctors;
+    return [];
+  }, [doctorsResp]);
+
+  // Surgery Types from Master Data
+  const surgeryTypes = useMemo(() => {
+    const list =
+      masterData?.surgery_types ||
+      (masterData as any)?.surgery_type ||
+      [];
+    return Array.isArray(list) ? list : [];
+  }, [masterData]);
+
+  // Surgery Statuses from Master Data
+  const surgeryStatuses = useMemo(() => {
+    const list =
+      masterData?.surgery_statuses ||
+      (masterData as any)?.surgery_status ||
+      [];
+    return Array.isArray(list) ? list : [];
+  }, [masterData]);
+
+  // Form State
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
+  const [selectedSurgeryTypeId, setSelectedSurgeryTypeId] = useState<string>("");
+  const [selectedStatusId, setSelectedStatusId] = useState<string>("");
+  const [date, setDate] = useState<Date | undefined>();
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
+  const [period, setPeriod] = useState<"AM" | "PM" | "">("");
+  const [timeError, setTimeError] = useState("");
+  const [remarks, setRemarks] = useState<string>("");
+
+  // Derived location / branch / specialization details for badge card
   const derivedBranchId = useMemo(() => {
-    if (appointment?.location_id || appointment?.branch_id) {
-      return Number(appointment.location_id || appointment.branch_id);
-    }
-    const bId = (effectiveLead as any)?.branch_id || (effectiveLead as any)?.location_id;
+    const bId = (lead as any)?.branch_id || (lead as any)?.location_id;
     if (bId && !isNaN(Number(bId)) && Number(bId) > 0) return Number(bId);
 
     const bName =
-      (effectiveLead as any)?.hospital_branch ||
-      (effectiveLead as any)?.branch ||
-      (effectiveLead as any)?.branch_name;
+      (lead as any)?.hospital_branch ||
+      (lead as any)?.branch ||
+      (lead as any)?.branch_name;
     if (bName && masterData?.branches) {
       const found = masterData.branches.find(
         (b: any) =>
@@ -122,18 +118,14 @@ export const ScheduleVisitDialog = ({
       if (found) return found.id;
     }
     return null;
-  }, [effectiveLead, masterData?.branches, appointment]);
+  }, [lead, masterData?.branches]);
 
-  // Derive Specialisation ID from Lead
   const derivedSpecId = useMemo(() => {
-    if (appointment?.specialisation_id || appointment?.specialization_id) {
-      return Number(appointment.specialisation_id || appointment.specialization_id);
-    }
     const dept =
-      (effectiveLead as any)?.specialisation_id ||
-      (effectiveLead as any)?.specialization_id ||
-      (effectiveLead as any)?.department ||
-      (effectiveLead as any)?.specialization ||
+      (lead as any)?.specialisation_id ||
+      (lead as any)?.specialization_id ||
+      (lead as any)?.department ||
+      (lead as any)?.specialization ||
       "";
     if (!dept) return 0;
     if (!isNaN(Number(dept)) && Number(dept) > 0) return Number(dept);
@@ -144,140 +136,88 @@ export const ScheduleVisitDialog = ({
         s.code?.toLowerCase() === String(dept).toLowerCase()
     );
     return found ? found.id : 0;
-  }, [effectiveLead, masterData?.specialisations, appointment]);
+  }, [lead, masterData?.specialisations]);
 
-  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const branchObj = masterData?.branches?.find((b: any) => b.id === derivedBranchId);
+  const locationObj = masterData?.locations?.find((l: any) => l.id === (branchObj?.location_id || lead?.location_id));
+  const specObj = masterData?.specialisations?.find((s: any) => s.id === derivedSpecId);
 
-  // Synchronize branch and location
-  useEffect(() => {
-    if (derivedBranchId) {
-      setSelectedBranchId(derivedBranchId);
-      const foundBranch = masterData?.branches?.find((b: any) => b.id === derivedBranchId);
-      if (foundBranch) {
-        setSelectedLocationId(foundBranch.location_id);
-      }
-    } else if (effectiveLead?.location_id) {
-      setSelectedLocationId(effectiveLead.location_id);
-    }
-  }, [derivedBranchId, effectiveLead, masterData?.branches]);
-
-  // Fetch doctors dynamically based on branch_id and specialization_id
-  const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({
-    branch_id: selectedBranchId ? Number(selectedBranchId) : 0,
-    specialization_id: derivedSpecId ? Number(derivedSpecId) : 0,
-  });
-
-  const doctorsList: ApiDoctor[] = useMemo(() => {
-    return doctorsResp?.data || [];
-  }, [doctorsResp]);
-
-  const statuses =
-    masterData?.appointment_status && masterData.appointment_status.length > 0
-      ? masterData.appointment_status
-      : (masterData as any)?.appointment_statuses &&
-        (masterData as any).appointment_statuses.length > 0
-      ? (masterData as any).appointment_statuses
-      : siteVisitStatuses.length > 0
-      ? siteVisitStatuses
-      : DEFAULT_APPOINTMENT_STATUSES;
-
-  const defaultStatus = statuses.find(
-    (s: any) =>
-      s.code === "OPDBKD" ||
-      s.description?.toUpperCase()?.includes("BOOKED") ||
-      s.description?.toUpperCase()?.includes("SCHEDULED") ||
-      s.code === "SCHD"
-  );
-  const defaultStatusId = defaultStatus?.id || 1;
-
-  const {
-    control,
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<ScheduleVisitFormValues>({
-    resolver: zodResolver(scheduleVisitSchema),
-    defaultValues: {
-      doctor_id: appointment?.doctor_id || undefined,
-      visit_date_time: appointment?.visit_date_time || "",
-      visit_status: appointment?.appointments_status_id || appointment?.appointment_status_id || appointment?.visit_status || defaultStatusId,
-      visit_remarks: appointment?.visit_remarks || "",
-    },
-  });
-
-  const watchDoctorId = useWatch({ control, name: "doctor_id" });
-  const watchRemarks = useWatch({ control, name: "visit_remarks" });
-  const watchStatus = useWatch({ control, name: "visit_status" });
-
-  const [date, setDate] = useState<Date | undefined>();
-  const [hour, setHour] = useState("");
-  const [minute, setMinute] = useState("");
-  const [period, setPeriod] = useState<"AM" | "PM" | "">("");
-  const [timeError, setTimeError] = useState("");
-
+  // Initialize values on dialog open
   useEffect(() => {
     if (open) {
-      if (appointment) {
-        if (appointment.visit_date_time) {
-          try {
-            const validStr = appointment.visit_date_time
-              .replace(/Z/g, "")
-              .split("+")[0]
-              .replace(" ", "T");
-            const d = new Date(validStr);
-            if (!isNaN(d.getTime())) {
-              setDate(d);
-              let h = d.getHours();
-              const m = String(d.getMinutes()).padStart(2, "0");
-              const p = h >= 12 ? "PM" : "AM";
-              h = h % 12 || 12;
-              setHour(String(h).padStart(2, "0"));
-              setMinute(m);
-              setPeriod(p);
-            }
-          } catch {
-            // fallback
-          }
+      // Default to tomorrow 09:00 AM
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setDate(tomorrow);
+      setHour("09");
+      setMinute("00");
+      setPeriod("AM");
+      setTimeError("");
+
+      // Default Doctor
+      if (lead?.doctor_name && doctorsList.length > 0) {
+        const docMatch = doctorsList.find((d: any) => {
+          const docFullName = `${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase();
+          return (
+            docFullName.includes(lead.doctor_name!.toLowerCase()) ||
+            lead.doctor_name!.toLowerCase().includes(docFullName)
+          );
+        });
+        if (docMatch) {
+          setSelectedDoctorId(String(docMatch.id));
+        } else {
+          setSelectedDoctorId(String(doctorsList[0]?.id || ""));
         }
-
-        reset({
-          doctor_id: appointment.doctor_id || undefined,
-          visit_date_time: appointment.visit_date_time || "",
-          visit_status:
-            appointment.appointments_status_id ||
-            appointment.appointment_status_id ||
-            appointment.visit_status ||
-            defaultStatusId,
-          visit_remarks: appointment.visit_remarks || "",
-        });
+      } else if (doctorsList.length > 0) {
+        setSelectedDoctorId(String(doctorsList[0]?.id || ""));
       } else {
-        setDate(undefined);
-        setHour("");
-        setMinute("");
-        setPeriod("");
-        setTimeError("");
-
-        reset({
-          doctor_id: undefined,
-          visit_date_time: "",
-          visit_status: defaultStatusId,
-          visit_remarks: "",
-        });
+        setSelectedDoctorId("");
       }
-    }
-  }, [open, appointment, reset, defaultStatusId]);
 
-  const handleFormSubmit = async (data: ScheduleVisitFormValues) => {
-    if (!data.doctor_id) {
+      // Default Surgery Type
+      if (surgeryTypes.length > 0) {
+        setSelectedSurgeryTypeId(String(surgeryTypes[0].id));
+      } else {
+        setSelectedSurgeryTypeId("");
+      }
+
+      // Default Surgery Status
+      if (surgeryStatuses.length > 0) {
+        const defaultStatus =
+          surgeryStatuses.find((s: any) =>
+            (s.code || s.description || "").toUpperCase().includes("SCHD") ||
+            (s.description || "").toUpperCase().includes("SCHEDULE")
+          ) || surgeryStatuses[0];
+        setSelectedStatusId(String(defaultStatus.id));
+      } else {
+        setSelectedStatusId("");
+      }
+
+      setRemarks("");
+    }
+  }, [open, lead, doctorsList, surgeryTypes, surgeryStatuses]);
+
+  // Form Submit Handler
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!lead?.uuid) {
+      toast.error("Invalid lead record. Please try again.");
+      return;
+    }
+
+    if (!selectedDoctorId) {
       toast.error("Please select a doctor");
       return;
     }
 
-    if (!date || !hour || !minute || !period || (!effectiveLead && !selectedLeadUuid)) {
-      toast.error("Please select both visit date and time");
+    if (!selectedSurgeryTypeId) {
+      toast.error("Please select a surgery type");
+      return;
+    }
+
+    if (!date || !hour || !minute || !period) {
+      toast.error("Please select both surgery date and time");
       return;
     }
 
@@ -286,46 +226,37 @@ export const ScheduleVisitDialog = ({
     if (period === "AM" && hrs === 12) hrs = 0;
 
     const now = new Date();
-    const selectedDateTime = new Date(date!);
+    const selectedDateTime = new Date(date);
     selectedDateTime.setHours(hrs);
     selectedDateTime.setMinutes(parseInt(minute));
     selectedDateTime.setSeconds(0);
 
-    if (!isEdit && selectedDateTime < now) {
-      toast.error("Cannot schedule visit in the past");
+    if (selectedDateTime < now) {
+      toast.error("Cannot schedule surgery in the past");
       return;
     }
 
-    const finalRemarks =
-      dialogType === "Surgery"
-        ? data.visit_remarks
-          ? data.visit_remarks.includes("[Surgery]")
-            ? data.visit_remarks
-            : `[Surgery] ${data.visit_remarks}`
-          : "[Surgery]"
-        : data.visit_remarks || "";
-
-    const payload: any = {
-      lead_uuid: effectiveLead ? effectiveLead.uuid : selectedLeadUuid,
-      doctor_id: Number(data.doctor_id),
-      visit_date_time: selectedDateTime.toISOString(),
-      visit_remarks: finalRemarks,
-      location_id: selectedBranchId ? Number(selectedBranchId) : undefined,
-      visit_status: Number(data.visit_status || defaultStatusId),
-      appointments_status_id: Number(data.visit_status || defaultStatusId),
+    const payload = {
+      lead_uuid: lead.uuid,
+      doctor_id: Number(selectedDoctorId),
+      surgery_type_id: Number(selectedSurgeryTypeId),
+      surgery_date_time: selectedDateTime.toISOString(),
+      surgery_status_id: Number(selectedStatusId || 1),
+      surgery_remarks: remarks.trim(),
     };
 
-    if (appointment?.appointment_id || appointment?.id) {
-      payload.id = appointment.appointment_id || appointment.id;
-      payload.is_active = appointment.is_active ?? 1;
+    console.log("=== [API] createSurgery Payload ===", payload);
+
+    try {
+      const res = await createSurgery(payload).unwrap();
+      toast.success(res?.message || "Surgery scheduled successfully!");
+      handleClose();
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      console.error("Failed to schedule surgery:", err);
+      toast.error(err?.data?.message || err?.message || "Failed to schedule surgery");
     }
-
-    await onSubmit(payload);
   };
-
-  const branchObj = masterData?.branches?.find((b: any) => b.id === selectedBranchId);
-  const locationObj = masterData?.locations?.find((l: any) => l.id === (branchObj?.location_id || selectedLocationId));
-  const specObj = masterData?.specialisations?.find((s: any) => s.id === derivedSpecId);
 
   if (!open) return null;
 
@@ -336,19 +267,13 @@ export const ScheduleVisitDialog = ({
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Stethoscope className="h-5 w-5 text-[#063669] dark:text-blue-400" />
-              {isEdit
-                ? "Edit Appointment"
-                : dialogType === "Surgery"
-                ? "Schedule Surgery"
-                : "Schedule Appointment"}
+              <Activity className="h-5 w-5 text-[#063669] dark:text-blue-400" />
+              Schedule Surgery
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {effectiveLead
-                ? `${isEdit ? "Update appointment details" : "Schedule an appointment"} for ${
-                    effectiveLead.first_name || ""
-                  } ${effectiveLead.last_name || ""}`.trim()
-                : `${isEdit ? "Update appointment details" : "Schedule an appointment"} for a lead`}
+              {lead
+                ? `Schedule a surgery for ${lead.first_name || ""} ${lead.last_name || ""}`.trim()
+                : "Schedule a surgery for a lead"}
             </p>
           </div>
         </div>
@@ -356,41 +281,12 @@ export const ScheduleVisitDialog = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
           <form
-            id="schedule-visit-form"
-            onSubmit={handleSubmit(handleFormSubmit)}
+            id="schedule-surgery-form"
+            onSubmit={handleFormSubmit}
             className="space-y-4 text-sm"
           >
-            {/* Select Lead if not pre-provided */}
-            {!lead && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Select Lead <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={selectedLeadUuid}
-                  onValueChange={setSelectedLeadUuid}
-                  disabled={isLoadingLeads}
-                >
-                  <SelectTrigger className="rounded-xl h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
-                    <SelectValue placeholder="Search / Select a lead" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999]">
-                    {allLeads.map((l: Lead) => (
-                      <SelectItem
-                        key={l.uuid}
-                        value={l.uuid}
-                        className="text-black dark:text-white cursor-pointer"
-                      >
-                        {l.first_name} {l.last_name} ({l.lead_id})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
             {/* Read-only / Derived Lead Details Badge Card */}
-            {effectiveLead && (
+            {lead && (
               <div className="p-3 rounded-2xl bg-blue-50/40 dark:bg-zinc-900/50 border border-blue-100 dark:border-zinc-800 flex flex-wrap items-center gap-3 text-xs">
                 {locationObj && (
                   <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 font-medium">
@@ -413,7 +309,7 @@ export const ScheduleVisitDialog = ({
               </div>
             )}
 
-            {/* Doctor Selection (Filtered by branch & specialization) */}
+            {/* Doctor Selection */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
@@ -427,9 +323,9 @@ export const ScheduleVisitDialog = ({
                 )}
               </Label>
               <Select
-                value={watchDoctorId ? String(watchDoctorId) : ""}
-                onValueChange={(val) => setValue("doctor_id", Number(val), { shouldValidate: true })}
-                disabled={isLoading || isLoadingDoctors}
+                value={selectedDoctorId}
+                onValueChange={setSelectedDoctorId}
+                disabled={isSubmitting || isLoadingDoctors}
               >
                 <SelectTrigger className="rounded-xl h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
                   <SelectValue
@@ -437,13 +333,13 @@ export const ScheduleVisitDialog = ({
                       isLoadingDoctors
                         ? "Loading available doctors..."
                         : doctorsList.length === 0
-                        ? "No doctors found for this branch & department"
+                        ? "No doctors found"
                         : "-- Select Doctor * --"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-60">
-                  {doctorsList.map((doc) => {
+                  {doctorsList.map((doc: any) => {
                     const specTitle =
                       masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)
                         ?.description || "";
@@ -468,9 +364,49 @@ export const ScheduleVisitDialog = ({
                   })}
                 </SelectContent>
               </Select>
-              {errors.doctor_id && (
-                <p className="text-xs text-red-500">{errors.doctor_id.message}</p>
-              )}
+            </div>
+
+            {/* Surgery Type Selection */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
+                  Surgery Type <span className="text-red-500">*</span>
+                </span>
+                {isLoadingMasterData && (
+                  <span className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading types...
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={selectedSurgeryTypeId}
+                onValueChange={setSelectedSurgeryTypeId}
+                disabled={isSubmitting || isLoadingMasterData}
+              >
+                <SelectTrigger className="rounded-xl h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                  <SelectValue
+                    placeholder={
+                      isLoadingMasterData
+                        ? "Loading surgery types..."
+                        : surgeryTypes.length === 0
+                        ? "No surgery types found"
+                        : "-- Select Surgery Type * --"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-60">
+                  {surgeryTypes.map((st: any) => (
+                    <SelectItem
+                      key={st.id}
+                      value={String(st.id)}
+                      className="text-black dark:text-white cursor-pointer text-xs py-2"
+                    >
+                      {st.description || st.code || `Type ${st.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Date & Time Picker */}
@@ -478,7 +414,7 @@ export const ScheduleVisitDialog = ({
               {/* Date Picker */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Visit Date <span className="text-red-500">*</span>
+                  Surgery Date <span className="text-red-500">*</span>
                 </Label>
                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                   <PopoverTrigger asChild>
@@ -488,7 +424,7 @@ export const ScheduleVisitDialog = ({
                       className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 opacity-60" />
-                      {date ? format(date, "PPP") : "Select visit date"}
+                      {date ? format(date, "PPP") : "Select surgery date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
@@ -501,46 +437,18 @@ export const ScheduleVisitDialog = ({
                       onSelect={(selectedDate) => {
                         setDate(selectedDate);
                         setTimeError("");
-                        if (selectedDate && hour && minute && period) {
-                          let hrs = parseInt(hour);
-                          if (period === "PM" && hrs !== 12) hrs += 12;
-                          if (period === "AM" && hrs === 12) hrs = 0;
-
-                          const selectedDateTime = new Date(selectedDate);
-                          selectedDateTime.setHours(hrs);
-                          selectedDateTime.setMinutes(parseInt(minute));
-                          selectedDateTime.setSeconds(0);
-
-                          if (!isEdit && selectedDateTime < new Date()) {
-                            setTimeError("Cannot select a time in the past");
-                            toast.error("Cannot select a time in the past");
-                            setHour("");
-                            setMinute("");
-                            setPeriod("");
-                            setValue("visit_date_time", "");
-                          } else {
-                            setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
-                          }
-                        } else {
-                          setValue("visit_date_time", "");
-                        }
                         setIsPopoverOpen(false);
                       }}
-                      disabled={(d) =>
-                        !isEdit && d < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
+                      disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                     />
                   </PopoverContent>
                 </Popover>
-                {errors.visit_date_time && (
-                  <p className="text-xs text-red-500">{errors.visit_date_time.message}</p>
-                )}
               </div>
 
               {/* Time Picker */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Visit Time <span className="text-red-500">*</span>
+                  Surgery Time <span className="text-red-500">*</span>
                 </Label>
                 <Popover open={isTimePopoverOpen} onOpenChange={setIsTimePopoverOpen}>
                   <PopoverTrigger asChild>
@@ -550,7 +458,7 @@ export const ScheduleVisitDialog = ({
                       className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                       <Clock className="mr-2 h-4 w-4 opacity-60" />
-                      {hour && minute && period ? `${hour}:${minute} ${period}` : "Select visit time"}
+                      {hour && minute && period ? `${hour}:${minute} ${period}` : "Select surgery time"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
@@ -669,8 +577,8 @@ export const ScheduleVisitDialog = ({
                           className="px-4 rounded-xl h-8 text-xs font-bold bg-[#063669] text-white"
                           onClick={() => {
                             if (!date) {
-                              setTimeError("Please select a visit date first");
-                              toast.error("Please select a visit date first");
+                              setTimeError("Please select a date first");
+                              toast.error("Please select a date first");
                               return;
                             }
                             if (!hour || !minute || !period) {
@@ -688,14 +596,13 @@ export const ScheduleVisitDialog = ({
                             selectedDateTime.setMinutes(parseInt(minute));
                             selectedDateTime.setSeconds(0);
 
-                            if (!isEdit && selectedDateTime < new Date()) {
+                            if (selectedDateTime < new Date()) {
                               setTimeError("Cannot select a time in the past");
                               toast.error("Cannot select a time in the past");
                               return;
                             }
 
                             setTimeError("");
-                            setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
                             setIsTimePopoverOpen(false);
                           }}
                         >
@@ -708,47 +615,66 @@ export const ScheduleVisitDialog = ({
               </div>
             </div>
 
-            {/* Appointment Status (In edit mode or customizable) */}
-            {isEdit && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Appointment Status
-                </Label>
-                <Select
-                  value={watchStatus ? String(watchStatus) : String(defaultStatusId)}
-                  onValueChange={(val) => setValue("visit_status", Number(val))}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="rounded-xl h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999]">
-                    {statuses.map((st: any) => (
-                      <SelectItem key={st.id} value={String(st.id)} className="cursor-pointer">
-                        {st.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Surgery Status */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <UserCheck className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
+                  Surgery Status <span className="text-red-500">*</span>
+                </span>
+                {isLoadingMasterData && (
+                  <span className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading statuses...
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={selectedStatusId}
+                onValueChange={setSelectedStatusId}
+                disabled={isSubmitting || isLoadingMasterData}
+              >
+                <SelectTrigger className="rounded-xl h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                  <SelectValue
+                    placeholder={
+                      isLoadingMasterData
+                        ? "Loading statuses..."
+                        : surgeryStatuses.length === 0
+                        ? "No surgery statuses found"
+                        : "Select Status"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-60">
+                  {surgeryStatuses.map((st: any) => (
+                    <SelectItem
+                      key={st.id}
+                      value={String(st.id)}
+                      className="text-black dark:text-white cursor-pointer text-xs py-2"
+                    >
+                      {st.description || st.code || `Status ${st.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Remarks with 500 characters limit */}
+            {/* Surgery Remarks */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="visit_remarks" className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Visit Remarks
+                <Label htmlFor="surgery_remarks" className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Surgery Remarks
                 </Label>
                 <span className="text-[10px] text-zinc-400 font-bold">
-                  {(watchRemarks || "").length}/500
+                  {remarks.length}/500
                 </span>
               </div>
               <textarea
-                id="visit_remarks"
+                id="surgery_remarks"
                 maxLength={500}
-                placeholder="Enter appointment remarks (up to 500 characters)..."
-                disabled={isLoading}
-                {...register("visit_remarks")}
+                placeholder="Enter surgery remarks (up to 500 characters)..."
+                disabled={isSubmitting}
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
                 rows={3}
                 className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#063669] outline-none transition-all resize-none placeholder:text-zinc-400"
               />
@@ -761,24 +687,20 @@ export const ScheduleVisitDialog = ({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
+            onClick={handleClose}
+            disabled={isSubmitting}
             className="rounded-xl text-xs font-bold h-10 px-5"
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            form="schedule-visit-form"
-            disabled={isLoading}
+            form="schedule-surgery-form"
+            disabled={isSubmitting}
             className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white h-10 px-6 gap-2"
           >
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isEdit
-              ? "Update Appointment"
-              : dialogType === "Surgery"
-              ? "Schedule Surgery"
-              : "Schedule Appointment"}
+            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            Schedule Surgery
           </Button>
         </div>
       </div>

@@ -17,11 +17,23 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
-import { useInitiateClickToCallMutation } from "../api/callsApi";
+import { useInitiateClickToCallMutation, useGetCallRecordsMutation } from "../api/callsApi";
+import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
+import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiSlice";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
 import { formatDate, getProjectStatusOptions } from "../../../utils";
+
+const formatDateTimeForTataTele = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 import { useGetAllUsersQuery } from "../../users/api/usersApi";
 import {
@@ -236,9 +248,23 @@ export const LeadDetailsPage = () => {
   } = useGetLeadByIdQuery({ uuid: leadId || "" }, { skip: !leadId, refetchOnMountOrArgChange: true });
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
   const [initiateClickToCall] = useInitiateClickToCallMutation();
+  const [getCallRecords] = useGetCallRecordsMutation();
+  const [uploadFile] = useUploadFileMutation();
+  const [analyzeCall] = useAnalyzeCallMutation();
+  const callRecordsPollingRef = useRef<NodeJS.Timeout | null>(null);
   const [localNote, setLocalNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (callRecordsPollingRef.current) {
+        clearInterval(callRecordsPollingRef.current);
+        callRecordsPollingRef.current = null;
+      }
+    };
+  }, []);
 
   const cleanLeadNote = React.useMemo(() => {
     if (localNote !== null) return localNote;
@@ -554,7 +580,7 @@ export const LeadDetailsPage = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate(fromCustomer ? "/customers" : "/leads")}
-          className="gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          className="gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           {fromCustomer ? "Back to Customers" : "Back to Leads Dashboard"}
@@ -586,11 +612,11 @@ export const LeadDetailsPage = () => {
           {/* ═══════════════════════════════════════════════ */}
           {/* CARD 1: Name, Lead ID, Added Date              */}
           {/* ═══════════════════════════════════════════════ */}
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               {/* Avatar */}
               <div
-                className="shrink-0 flex items-center justify-center rounded-xl text-white font-bold text-base shadow-xs"
+                className="shrink-0 flex items-center justify-center rounded-xl text-white font-bold text-base"
                 style={{ width: 44, height: 44, backgroundColor: "#0f3d6b" }}
               >
                 {initials}
@@ -647,20 +673,98 @@ export const LeadDetailsPage = () => {
                       size="icon"
                       onClick={async () => {
                         console.log("call is clicked");
-                        const leadNumber = lead.phone_number || (lead as any).phone;
-                        if (leadNumber) {
-                          try {
-                            await initiateClickToCall({ lead_number: leadNumber }).unwrap();
-                            toast.success("Call initiated successfully");
-                          } catch (err) {
-                            console.error("Call failed", err);
-                            toast.error("Failed to initiate call");
+                        const customerUuid = lead.customer_uuid || (lead as any).customer_uuid;
+                        const leadUuid = lead.uuid || leadId || (lead as any).lead_uuid;
+                        if (!customerUuid) {
+                          toast.error("Customer UUID not available for this lead");
+                          return;
+                        }
+
+                        try {
+                          await initiateClickToCall({ 
+                            customer_uuid: customerUuid,
+                            lead_uuid: leadUuid || "",
+                          }).unwrap();
+                          toast.success("Call initiated successfully");
+
+                          // Clear previous polling interval if any
+                          if (callRecordsPollingRef.current) {
+                            clearInterval(callRecordsPollingRef.current);
+                            callRecordsPollingRef.current = null;
                           }
-                        } else {
-                          toast.error("Lead phone number not available");
+
+                          const now = new Date();
+                          const fromDate = new Date(now.getTime() - 1 * 60 * 1000); // current time - 1 min
+                          const toDate = new Date(now.getTime() + 5 * 60 * 1000);   // current time + 5 mins
+                          const from_date = formatDateTimeForTataTele(fromDate);
+                          const to_date = formatDateTimeForTataTele(toDate);
+
+                          const pollRecords = async () => {
+                            try {
+                              const res = await getCallRecords({
+                                from_date,
+                                to_date,
+                                limit: 20,
+                                offset: 0,
+                              }).unwrap();
+
+                              const recordsList: any[] = Array.isArray(res?.data?.results)
+                                ? res.data.results
+                                : Array.isArray(res?.results)
+                                  ? res.results
+                                  : Array.isArray(res?.data)
+                                    ? res.data
+                                    : Array.isArray(res)
+                                      ? res
+                                      : [];
+
+                              const foundRecord = recordsList.find((r: any) => r && r.recording_url);
+                              if (foundRecord) {
+                                console.log("Found call record:", foundRecord);
+                                console.log("Call ID:", foundRecord.call_id || foundRecord.id, "Recording URL:", foundRecord.recording_url);
+                                if (callRecordsPollingRef.current) {
+                                  clearInterval(callRecordsPollingRef.current);
+                                  callRecordsPollingRef.current = null;
+                                }
+
+                                const callId = foundRecord.call_id || foundRecord.id || "1";
+                                const cleanPhone = (num: string) => String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
+                                const fromNumber = cleanPhone(foundRecord.agent_number || foundRecord.from_number || lead.phone_number || (lead as any).phone || "");
+                                const toNumber = cleanPhone(foundRecord.client_number || foundRecord.to_number || "1800-123-4567");
+                                const leadName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead";
+                                const cleanUrl = String(foundRecord.recording_url).replace(/["']+/g, "").trim();
+
+                                try {
+                                  toast.info("Analyzing call recording with AI...");
+                                  await analyzeCall({
+                                    call_id: callId,
+                                    lead_uuid: lead.uuid || leadUuid,
+                                    lead_name: leadName,
+                                    from_number: fromNumber,
+                                    to_number: toNumber,
+                                    file: cleanUrl,
+                                  }).unwrap();
+
+                                  toast.success("Call analysis completed successfully!");
+                                  refetch();
+                                } catch (processErr: any) {
+                                  console.error("Error processing call recording:", processErr);
+                                  toast.error(processErr?.data?.message || processErr?.message || "Failed to analyze call recording");
+                                }
+                              }
+                            } catch (pollErr) {
+                              console.error("Error polling call records:", pollErr);
+                            }
+                          };
+
+                          // Poll every 10 seconds
+                          callRecordsPollingRef.current = setInterval(pollRecords, 10000);
+                        } catch (err) {
+                          console.error("Call failed", err);
+                          toast.error("Failed to initiate call");
                         }
                       }}
-                      className="h-9 w-9 rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 shadow-xs transition-all"
+                      className="h-9 w-9 rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 transition-all cursor-pointer"
                     >
                       <Phone className="h-3.5 w-3.5" />
                     </Button>
@@ -705,7 +809,7 @@ export const LeadDetailsPage = () => {
               {roleCode !== 'EXPMNG' && (
                 <button
                   onClick={() => setIsDrawerOpen(true)}
-                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-50 transition-colors cursor-pointer"
                 >
                   <Pencil className="h-4 w-4 text-zinc-500" />
                 </button>
@@ -895,11 +999,11 @@ export const LeadDetailsPage = () => {
                 }}
           {/* CARD 3: Lead Followups & Notes                  */}
           {/* ═══════════════════════════════════════════════ */}
-          <div ref={followupsRef} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+          <div ref={followupsRef} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden max-h-[85vh] flex flex-col">
             {/* Section heading */}
-            <div className="flex items-center justify-between px-8 pt-7 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0">
                   <Calendar className="h-4 w-4 text-[#0f3d6b]" />
                 </div>
                 <div className="flex items-center gap-2">
@@ -907,8 +1011,8 @@ export const LeadDetailsPage = () => {
                     style={{
                       fontFamily: "Inter, sans-serif",
                       fontWeight: 700,
-                      fontSize: "18px",
-                      lineHeight: "24px",
+                      fontSize: "17px",
+                      lineHeight: "22px",
                       color: "#191C1E",
                     }}
                   >
@@ -916,10 +1020,18 @@ export const LeadDetailsPage = () => {
                   </h3>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsFollowupModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-5 h-9 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-full text-xs font-semibold transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Create Follow-Up</span>
+              </button>
             </div>
 
             {/* Followups & Notes Content */}
-            <div className="px-8 py-6">
+            <div className="overflow-y-auto flex-1 p-4 sm:p-5">
               <LeadFollowUpsTab
                 lead={lead ? {
                   ...lead,
@@ -927,6 +1039,9 @@ export const LeadDetailsPage = () => {
                   specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
                 } : lead}
                 masterData={masterData}
+                hideHeader={true}
+                createModalOpen={isFollowupModalOpen}
+                setCreateModalOpen={setIsFollowupModalOpen}
               />
             </div>
           </div>
@@ -953,6 +1068,7 @@ export const LeadDetailsPage = () => {
                           data-[state=active]:shadow-none
                           transition-all
                           flex items-center justify-center gap-1
+                          cursor-pointer
                         "
                       >
                         {tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
@@ -996,12 +1112,23 @@ export const LeadDetailsPage = () => {
                       branch_id: lead.branch_id ?? stateBranchId,
                       specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
                     } : lead}
-                    siteVisitStatuses={masterData?.site_visit_status || []}
-                    getSiteVisitStatusLabel={(id) =>
-                      masterData?.site_visit_status?.find(
-                        (s: any) => s.id === id,
-                      )?.description || String(id)
+                    siteVisitStatuses={
+                      masterData?.appointment_status ||
+                      (masterData as any)?.appointment_statuses ||
+                      masterData?.site_visit_status ||
+                      []
                     }
+                    getSiteVisitStatusLabel={(id) => {
+                      const allStatuses =
+                        masterData?.appointment_status ||
+                        (masterData as any)?.appointment_statuses ||
+                        masterData?.site_visit_status ||
+                        [];
+                      return (
+                        allStatuses.find((s: any) => Number(s.id) === Number(id))?.description ||
+                        String(id)
+                      );
+                    }}
                   />
                 </TabsContent>
 

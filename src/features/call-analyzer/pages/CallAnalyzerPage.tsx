@@ -10,6 +10,7 @@ import { UploadCloud, FileAudio, PlayCircle, Loader2 } from "lucide-react";
 
 export const CallAnalyzerPage = () => {
   const [formData, setFormData] = useState({
+    call_id: "1",
     lead_uuid: "lead_90210",
     lead_name: "Ravi Kumar",
     from_number: "+919876543210",
@@ -87,6 +88,18 @@ export const CallAnalyzerPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="call_id" className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Call ID</Label>
+                <Input
+                  id="call_id"
+                  name="call_id"
+                  value={formData.call_id}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. 1"
+                  className="rounded-xl border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#063669]"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="lead_uuid" className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Lead UUID</Label>
                 <Input
                   id="lead_uuid"
@@ -119,7 +132,7 @@ export const CallAnalyzerPage = () => {
                   className="rounded-xl border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#063669]"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="to_number" className="text-xs font-bold text-zinc-700 dark:text-zinc-300">To Number</Label>
                 <Input
                   id="to_number"

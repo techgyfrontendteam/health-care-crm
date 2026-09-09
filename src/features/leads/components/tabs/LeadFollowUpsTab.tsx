@@ -1,14 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, ChevronRight, X, Lock, Plus } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  User,
+  FileText,
+  Sparkles,
+  X,
+  Plus,
+  Loader2,
+  Lock,
+} from 'lucide-react';
 import { useCreateFollowUpMutation } from '../../../follow-ups/api/followUpsApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
 import { usePermissions } from '../../../../hooks/usePermissions';
 import { PERMISSIONS } from '../../../../config/permissions';
 import { toast } from 'sonner';
+import { Button } from '../../../../components/ui/button';
 
 interface LeadFollowUpsTabProps {
   lead: any;
   masterData?: any;
+  hideHeader?: boolean;
+  createModalOpen?: boolean;
+  setCreateModalOpen?: (open: boolean) => void;
 }
 
 const getInitials = (name: string) => {
@@ -22,50 +36,19 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
-const formatFollowUpDate = (dateString: string) => {
-  if (!dateString) return { date: '', time: '' };
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return { date: dateString, time: '' };
-  
-  const day = d.getDate();
-  const monthShort = d.toLocaleDateString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  
-  const timeStr = d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-  
-  const monthFull = d.toLocaleDateString('en-US', { month: 'long' });
-  const displayMonth = monthFull === 'March' ? 'March' : monthShort;
-  
-  let suffix = 'th';
-  if (day === 1 || day === 21 || day === 31) suffix = 'st';
-  else if (day === 2 || day === 22) suffix = 'nd';
-  else if (day === 3 || day === 23) suffix = 'rd';
-  
-  const displayDay = displayMonth === 'March' ? `${day}${suffix}` : (day < 10 ? `0${day}` : `${day}`);
-  
-  return {
-    date: `${displayDay} ${displayMonth}, ${year}`,
-    time: timeStr
-  };
-};
-
 const getStatusBadgeStyle = (status: string) => {
   switch (status.toUpperCase()) {
     case 'UPCOMING':
     case 'SCHEDULED':
-      return 'bg-[#EEF2F6] text-[#6366F1]';
+      return 'bg-blue-50 text-[#063669] dark:bg-blue-950/50 dark:text-blue-400 border-blue-200 dark:border-blue-900';
     case 'MISSED':
     case 'OVERDUE':
-      return 'bg-[#EF4444] text-white';
+      return 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200 dark:border-rose-900';
     case 'COMPLETED':
     case 'DONE':
-      return 'bg-[#10B981] text-white';
+      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
   }
 };
 
@@ -73,24 +56,40 @@ interface FollowUpListItem {
   followup_id: number;
   name: string;
   leadIdStr: string;
+  day: string;
+  month: string;
   date: string;
   time: string;
   rmName: string;
   status: string;
+  typeName?: string;
   remarks?: string;
 }
 
-
-
-export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) => {
+export const LeadFollowUpsTab = ({
+  lead,
+  masterData,
+  hideHeader = false,
+  createModalOpen,
+  setCreateModalOpen,
+}: LeadFollowUpsTabProps) => {
   const [createFollowUp, { isLoading: isCreating }] = useCreateFollowUpMutation();
   const { masterData: lookupMasterData, getRmLabel, getProjectLabel } = useMasterDataLookup();
   const { roleCode, can, user: currentUser } = usePermissions();
 
-  const canCreate = can(PERMISSIONS.FOLLOWUP_CREATE) || roleCode === 'ADMIN' || roleCode === 'SADMIN' || roleCode === 'RELMNG' || roleCode === 'EXPMNG' || true;
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<FollowUpListItem | null>(null);
 
-  // Form states
+  const isCreateModalOpen = createModalOpen !== undefined ? createModalOpen : internalModalOpen;
+  const setIsCreateModalOpen = (open: boolean) => {
+    if (setCreateModalOpen) {
+      setCreateModalOpen(open);
+    } else {
+      setInternalModalOpen(open);
+    }
+  };
+
+  // Form states for creating follow-up
   const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [formTime, setFormTime] = useState(() => {
     const now = new Date();
@@ -99,14 +98,19 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
   const [purpose, setPurpose] = useState('1');
   const [notes, setNotes] = useState('');
 
+  React.useEffect(() => {
+    if (isCreateModalOpen) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      setFormDate(todayStr);
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      setFormTime(timeStr);
+      if (!purpose) setPurpose('1');
+      setNotes('');
+    }
+  }, [isCreateModalOpen]);
+
   const openCreateModal = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    setFormDate(todayStr);
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setFormTime(timeStr);
-    if (!purpose) setPurpose('1');
-    setNotes('');
     setIsCreateModalOpen(true);
   };
 
@@ -147,18 +151,45 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
           else statusLabel = "UPCOMING";
         }
 
-        const dateDetails = formatFollowUpDate(item.date_time);
+        // Date extraction matching Appointments style (Month + Day)
+        let day = "01";
+        let month = "JAN";
+        let formattedDate = "";
+        let formattedTime = "";
+
+        if (item.date_time) {
+          const validStr = item.date_time.replace(/Z/g, '').split('+')[0].replace(' ', 'T');
+          const dateObj = new Date(validStr);
+          if (!isNaN(dateObj.getTime())) {
+            day = String(dateObj.getDate()).padStart(2, "0");
+            month = dateObj.toLocaleString("default", { month: "short" }).toUpperCase();
+            formattedDate = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            formattedTime = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+          } else {
+            const datePart = item.date_time.split(/[T ]/)[0];
+            const [y, m, d] = datePart.split("-");
+            day = (d || "01").padStart(2, "0");
+            month = new Date(Number(y), Number(m) - 1, Number(d || 1))
+              .toLocaleString("default", { month: "short" })
+              .toUpperCase();
+            formattedDate = item.date_time;
+            formattedTime = "";
+          }
+        }
         
         const assignedLabel = getRmLabel(item.user_id);
         
         return {
           followup_id: item.followup_id,
           name: leadName,
-          leadIdStr: lead?.lead_id || `#LD-${lead?.id || "N/A"}`,
-          date: dateDetails.date,
-          time: dateDetails.time,
+          leadIdStr: lead?.lead_id ? `#${lead.lead_id}` : `#LD-${lead?.id || "N/A"}`,
+          day,
+          month,
+          date: formattedDate,
+          time: formattedTime,
           rmName: assignedLabel === '--' ? rmName : assignedLabel,
           status: statusLabel,
+          typeName: typeObj?.description,
           remarks: item.remarks || '',
         };
       });
@@ -173,9 +204,16 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
     }
     try {
       const followup_date_time = `${formDate} ${formTime}:00`;
+      const targetUserId =
+        lead?.assigned_to_rm !== undefined && lead?.assigned_to_rm !== null && Number(lead.assigned_to_rm) !== 0
+          ? Number(lead.assigned_to_rm)
+          : currentUser?.id
+          ? Number(currentUser.id)
+          : 1;
+
       await createFollowUp({
         lead_uuid: lead.uuid,
-        user_id: currentUser?.id ? Number(currentUser.id) : (lead.assigned_to_rm || 1),
+        user_id: targetUserId,
         followup_type_id: Number(purpose),
         followup_date_time,
         followup_status_id: 1, // Default status: Upcoming
@@ -191,172 +229,265 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
   };
 
   return (
-    <div className="-mx-6 -my-6 bg-[#F7F9FB] relative overflow-hidden font-['Inter'] min-h-[600px] p-6 md:p-10 space-y-8">
-      
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-[20px] leading-[28px] text-[#063669]">
-          Follow-up History
-        </h4>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-4 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Create Follow-Up
-        </button>
-      </div>
+    <div className="space-y-4">
+      {/* HEADER (Only when not embedded in Card 3) */}
+      {!hideHeader && (
+        <div className="flex justify-between items-center pb-1">
+          <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">
+            Followups &amp; Notes ({followupsList.length})
+          </h4>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 bg-[#063669] hover:bg-[#063669]/90 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Create Follow-Up</span>
+          </button>
+        </div>
+      )}
 
-      {/* LIST OF FOLLOWUPS */}
-      <div className="space-y-4">
+      {/* LIST OF FOLLOWUPS - Matches Appointments Card UI 1:1 */}
+      <div className="space-y-3.5">
         {followupsList.length > 0 ? (
-          followupsList.map((item) => (
-            <div 
-              key={item.followup_id}
-              className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center gap-5">
-                {/* Initials Circle */}
-                <div className="w-14 h-14 rounded-[20px] flex items-center justify-center font-bold text-[16px] bg-[#EFF6FF] text-[#1E40AF]">
-                  {getInitials(item.name)}
-                </div>
-                
-                {/* Info details */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-['Plus_Jakarta_Sans'] font-bold text-[16px] leading-[24px] text-[#1F2937]">
-                      {item.name}
+          followupsList.map((item) => {
+            const isLongNote = item.remarks && (item.remarks.length > 70 || item.remarks.includes('\n'));
+
+            return (
+              <div
+                key={item.followup_id}
+                className="group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 transition-all hover:border-zinc-300 dark:hover:border-zinc-700 shadow-xs"
+              >
+                <div className="flex gap-4 sm:gap-6 items-center flex-1 min-w-0">
+                  {/* DATE BADGE (Identical to Appointments card) */}
+                  <div className="flex flex-col items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-blue-50/50 dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 shrink-0">
+                    <span className="text-[10px] font-bold text-[#063669] dark:text-blue-400 tracking-tighter mb-0.5">
+                      {item.month}
                     </span>
-                    <span className="text-[#94A3B8] text-sm font-medium">
-                      - {item.leadIdStr}
-                    </span>
-                  </div>
-                  
-                  {/* Date & Time Row */}
-                  <div className="flex items-center gap-3 text-xs text-[#94A3B8] font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {item.date}
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {item.time}
+                    <span className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100 leading-none">
+                      {item.day}
                     </span>
                   </div>
 
-                  {/* Assigned Sales Executive */}
-                  <p className="text-[11px] text-[#64748B] font-medium pt-0.5">
-                    Sales Executive: {item.rmName}
-                  </p>
+                  {/* DETAILS */}
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    {/* Status & Type badge */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-[9px] px-2.5 py-0.5 rounded-md border font-bold uppercase tracking-wider ${getStatusBadgeStyle(item.status)}`}>
+                        {item.status}
+                      </span>
+                      {item.typeName && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-700">
+                          {item.typeName}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Notes / Remarks */}
-                  {item.remarks && (
-                    <p className="text-xs text-[#475569] bg-[#F8FAFC] border border-[#F1F5F9] rounded-xl px-3 py-2 mt-2 leading-relaxed whitespace-pre-wrap">
-                      {item.remarks}
-                    </p>
-                  )}
+                    {/* Metadata: Sales Executive & Time */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-zinc-500 font-medium">
+                      <span className="flex items-center gap-1.5 font-bold text-zinc-800 dark:text-zinc-200">
+                        <User className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
+                        {item.rmName || "Sales Executive"}
+                      </span>
+
+                      {item.time && (
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-zinc-400" />
+                          {item.time}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Notes / Remarks with View More - strictly 2 lines */}
+                    {item.remarks && (
+                      <div className="flex items-start gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 pt-0.5">
+                        <FileText className="h-3.5 w-3.5 text-zinc-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 italic break-words leading-relaxed">
+                            {item.remarks}
+                          </p>
+                          {isLongNote && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedNote(item)}
+                              className="text-[#063669] dark:text-blue-400 font-bold hover:underline text-[11px] not-italic cursor-pointer inline-flex items-center mt-0.5"
+                            >
+                              View more
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Right block: Status badge */}
-              <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                <span className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeStyle(item.status)}`}>
-                  {item.status}
-                </span>
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
-          <div className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-10 flex flex-col items-center justify-center text-center">
-            <Calendar className="w-12 h-12 text-slate-300 mb-3" />
-            <h5 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-[#0F172A]">No follow-ups found</h5>
-            <p className="text-sm text-[#64748B] mt-1 max-w-sm mb-4">There are currently no follow-ups recorded for this lead.</p>
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create Follow-Up
-            </button>
+          <div className="flex flex-col items-center justify-center min-h-[220px] border border-zinc-100 dark:border-zinc-800 rounded-2xl bg-white/50 dark:bg-zinc-900/50 p-6 text-center space-y-2">
+            <Calendar className="w-8 h-8 text-zinc-300 dark:text-zinc-700 mb-1" />
+            <h5 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">No follow-ups found</h5>
+            <p className="text-xs text-zinc-400 max-w-sm">There are currently no follow-ups recorded for this lead.</p>
           </div>
         )}
       </div>
 
-      {/* CREATE MODAL */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          {/* Backdrop click close */}
-          <div className="absolute inset-0" onClick={() => setIsCreateModalOpen(false)} />
-
-          {/* Modal box */}
-          <div className="bg-white rounded-[32px] w-full max-w-md p-6 md:p-8 shadow-2xl relative space-y-6 z-10 mx-4">
-            
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* VIEW MORE NOTES POPUP MODAL                                 */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {selectedNote && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-950 w-full max-w-md rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col max-h-[85vh] relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
-            <div className="flex justify-between items-center">
-              <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-[#0F172A]">Create Follow-Up</h3>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-[#64748B] hover:text-[#0F172A] p-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Lead Info block */}
-            <div className="bg-[#F8FAFC] border border-[#F1F5F9] rounded-[24px] p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm">
-                  {getInitials(leadName)}
+            <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-[#063669] dark:text-blue-400 shrink-0">
+                  <FileText className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-[#0F172A] truncate">
-                    {leadName}
-                  </h4>
-                  <p className="text-[11px] text-[#64748B] truncate mt-0.5">
-                    Lead ID: {lead?.lead_id || lead?.id || "N/A"} • {projectLabel}
+                <div>
+                  <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    Follow-up Note
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    {selectedNote.name} • {selectedNote.date} {selectedNote.time}
                   </p>
                 </div>
               </div>
-              <Lock className="w-4 h-4 text-[#94A3B8] shrink-0" />
+              <button
+                onClick={() => setSelectedNote(null)}
+                className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Form Fields */}
-            <div className="space-y-4">
-              {/* Date and Time row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Schedule Date</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] pointer-events-none" />
+            {/* Note Content */}
+            <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
+              {/* Metadata chips */}
+              <div className="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-blue-50/40 dark:bg-zinc-900/50 border border-blue-100 dark:border-zinc-800 text-xs">
+                <span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 font-medium">
+                  <User className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400" />
+                  Sales Exec: <strong className="text-zinc-900 dark:text-zinc-200">{selectedNote.rmName}</strong>
+                </span>
+                {selectedNote.typeName && (
+                  <span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 font-medium">
+                    <Sparkles className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400" />
+                    Type: <strong className="text-zinc-900 dark:text-zinc-200">{selectedNote.typeName}</strong>
+                  </span>
+                )}
+                <span className={`text-[9px] px-2 py-0.5 rounded-md border font-bold uppercase tracking-wider ${getStatusBadgeStyle(selectedNote.status)}`}>
+                  {selectedNote.status}
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
+                  Full Note Content
+                </p>
+                <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap break-words max-h-60 overflow-y-auto custom-scrollbar font-medium">
+                  {selectedNote.remarks}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedNote(null)}
+                className="rounded-xl text-xs font-bold h-9 px-5 cursor-pointer"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* CREATE FOLLOW-UP MODAL (Modernized dialog layout)            */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-zinc-950 w-full max-w-lg rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col max-h-[90vh] relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-[#063669] dark:text-blue-400" />
+                  Create Follow-Up
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Schedule next follow-up and add notes for {leadName}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
+              {/* Lead Info block */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/40 dark:bg-zinc-900/50 border border-blue-100 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#063669] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                    {getInitials(leadName)}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                      {leadName}
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      Lead ID: {lead?.lead_id ? `#${lead.lead_id}` : (lead?.id || "N/A")} • {projectLabel}
+                    </p>
+                  </div>
+                </div>
+                <Lock className="w-4 h-4 text-zinc-400 shrink-0" />
+              </div>
+
+              {/* Form Fields */}
+              <div className="space-y-4 text-sm">
+                {/* Date and Time row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      Schedule Date <span className="text-red-500">*</span>
+                    </label>
                     <input 
                       type="date"
                       value={formDate}
                       onChange={(e) => setFormDate(e.target.value)}
-                      className="w-full bg-[#F1F5F9] text-[#1E293B] font-medium text-xs border-0 rounded-2xl py-3.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-11 px-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669]"
                     />
                   </div>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] pointer-events-none" />
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      Time <span className="text-red-500">*</span>
+                    </label>
                     <input 
                       type="time"
                       value={formTime}
                       onChange={(e) => setFormTime(e.target.value)}
-                      className="w-full bg-[#F1F5F9] text-[#1E293B] font-medium text-xs border-0 rounded-2xl py-3.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-11 px-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669]"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Follow-up purpose */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Follow-up Purpose</label>
-                <div className="relative">
+                {/* Follow-up purpose */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                    Follow-up Purpose <span className="text-red-500">*</span>
+                  </label>
                   <select 
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    className="w-full bg-[#F1F5F9] text-[#1E293B] font-medium text-xs border-0 rounded-2xl py-3.5 px-4 focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer pr-10"
+                    className="w-full h-11 px-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer"
                   >
                     {lookupMasterData?.lead_followup_types?.map((t: any) => (
                       <option key={t.id} value={t.id}>{t.description}</option>
@@ -368,57 +499,61 @@ export const LeadFollowUpsTab = ({ lead, masterData }: LeadFollowUpsTabProps) =>
                       </>
                     )}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#94A3B8]">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                    </svg>
+                </div>
+
+                {/* Assigned Sales Executive */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                    Assigned Sales Executive
+                  </label>
+                  <input 
+                    type="text"
+                    readOnly
+                    value={rmName}
+                    className="w-full h-11 px-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-500 dark:text-zinc-400 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Notes / Remarks (up to 500 characters) */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      Notes
+                    </label>
+                    <span className="text-[10px] text-zinc-400 font-bold">{notes.length}/500</span>
                   </div>
+                  <textarea 
+                    rows={3}
+                    maxLength={500}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Enter notes (up to 500 characters)..."
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#063669] outline-none transition-all resize-none placeholder:text-zinc-400"
+                  />
                 </div>
-              </div>
-
-              {/* Assigned Sales Executive */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Assigned Sales Executive</label>
-                <input 
-                  type="text"
-                  readOnly
-                  value={rmName}
-                  className="w-full bg-[#F1F5F9] text-[#64748B] font-medium text-xs border-0 rounded-2xl py-3.5 px-4 focus:ring-0 cursor-not-allowed"
-                />
-              </div>
-
-              {/* Notes / Remarks (up to 500 characters) */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold tracking-wider text-[#94A3B8] uppercase">Notes</label>
-                  <span className="text-[10px] font-medium text-[#94A3B8]">{notes.length}/500</span>
-                </div>
-                <textarea 
-                  rows={3}
-                  maxLength={500}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Enter notes (up to 500 characters)..."
-                  className="w-full bg-[#F1F5F9] text-[#1E293B] font-medium text-xs border-0 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-blue-500 resize-none outline-none placeholder:text-[#94A3B8]"
-                />
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button 
+            <div className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-end gap-2.5">
+              <Button 
+                type="button"
+                variant="outline"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-xs font-bold text-[#64748B] hover:text-[#0F172A] px-4 py-3"
+                disabled={isCreating}
+                className="rounded-xl text-xs font-bold h-10 px-5 cursor-pointer"
               >
                 Cancel
-              </button>
-              <button 
+              </Button>
+              <Button 
+                type="button"
                 onClick={handleCreate}
                 disabled={isCreating}
-                className="bg-[#0B3565] text-white text-xs font-semibold px-6 py-3.5 rounded-full hover:bg-[#072445] transition-colors disabled:opacity-50"
+                className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white h-10 px-6 gap-2 cursor-pointer"
               >
-                {isCreating ? 'Creating...' : 'Create Follow-Up'}
-              </button>
+                {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
+                Create Follow-Up
+              </Button>
             </div>
           </div>
         </div>

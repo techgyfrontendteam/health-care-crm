@@ -18,7 +18,17 @@ import {
   X,
   FileText,
   File,
-  Phone
+  Phone,
+  Building,
+  Calendar,
+  Clock,
+  Stethoscope,
+  Activity,
+  HeartPulse,
+  History,
+  Check,
+  User,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '../../../../utils';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
@@ -65,19 +75,69 @@ const getLast10Digits = (phone?: string | null) => {
   return digits.slice(-10);
 };
 
+const parseTranscript = (rawTranscript?: string) => {
+  if (!rawTranscript) return [];
+  const lines = rawTranscript.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  return lines.map((line, idx) => {
+    if (line.toLowerCase().startsWith('agent:')) {
+      return {
+        id: idx,
+        speaker: 'Agent',
+        text: line.replace(/^agent:\s*/i, '').trim(),
+        isAgent: true,
+      };
+    } else if (line.toLowerCase().startsWith('patient:') || line.toLowerCase().startsWith('caller:')) {
+      return {
+        id: idx,
+        speaker: 'Patient',
+        text: line.replace(/^(patient|caller):\s*/i, '').trim(),
+        isAgent: false,
+      };
+    }
+    return {
+      id: idx,
+      speaker: 'Speaker',
+      text: line,
+      isAgent: false,
+    };
+  });
+};
+
+const getSeverityBadgeClass = (severity?: string) => {
+  const sev = (severity || "").toLowerCase();
+  if (sev.includes("severe") || sev.includes("high") || sev.includes("acute")) {
+    return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-900";
+  }
+  if (sev.includes("moderate") || sev.includes("med")) {
+    return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900";
+  }
+  return "bg-blue-50 text-[#063669] border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900";
+};
+
 
 
 
 export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjections }: LeadCallsTabProps) => {  
   const { masterData: lookupMasterData, getRmLabel } = useMasterDataLookup();
-  const [expandedCallIds, setExpandedCallIds] = useState<number[]>([1]);
+  const [expandedCallIds, setExpandedCallIds] = useState<number[]>(() => {
+    if (calls && calls.length > 0) return [calls[0].id];
+    return [];
+  });
   const [playingCallId, setPlayingCallId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [activeDownloadId, setActiveDownloadId] = useState<number | null>(null);
   const [callSummaries, setCallSummaries] = useState<Record<number, CallSummaryJSON>>({});
+  const [summaryLoading, setSummaryLoading] = useState<Record<number, boolean>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fetchedCallIds = useRef<Set<number>>(new Set());
+
+  // Auto-expand first call if none expanded
+  useEffect(() => {
+    if (calls && calls.length > 0) {
+      setExpandedCallIds(prev => (prev.length === 0 ? [calls[0].id] : prev));
+    }
+  }, [calls]);
 
   const displayObjections = React.useMemo(() => {
     if (objections && objections.length > 0 && masterObjections && masterObjections.length > 0) {
@@ -97,67 +157,117 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
     return null;
   }, [objections, masterObjections]);
 
-
-
-  useEffect(() => {
-    if (!calls) return;
-    
-    expandedCallIds.forEach(id => {
-      if (!fetchedCallIds.current.has(id)) {
-        fetchedCallIds.current.add(id);
-        const call = calls.find(c => c.id === id);
-        if (call) {
-          fetch(getSummaryJsonUrl(call))
-            .then(res => res.json())
-            .then((data: CallSummaryJSON) => {
-              setCallSummaries(prev => ({ ...prev, [call.id]: data }));
-            })
-            .catch(err => console.error(`Failed to fetch Summary JSON for Call ID ${call.id}:`, err));
-        }
-      }
-    });
-  }, [expandedCallIds, calls]);
+  const buildS3Url = (relativePath: string) => {
+    if (!relativePath) return '';
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+      return relativePath;
+    }
+    const base = S3_BASE_URL.replace(/\/+$/, '');
+    const cleanPath = relativePath.replace(/^\/+/, '');
+    return `${base}/${cleanPath}`;
+  };
 
   const getFullS3Path = (call: LeadCall) => {
     const path = call.call_s3_data || "";
-    if (path.includes("recording.mp3") || path.includes("recording.m4a") || path.includes("/")) {
+    if (!path) return "";
+    if (path.includes("/")) {
       return path;
     }
-    if (path) {
-      return `lead/${call.lead_uuid}/call/${path}/recording.mp3`;
+    if (call.lead_uuid) {
+      return `lead/${call.lead_uuid}/call/${path}/recording.mpeg`;
     }
-    return `lead/${call.lead_uuid}/call/1779973914078/recording.mp3`;
-  };
-
-  const getRecordingUrl = (call: LeadCall) => {
-    return `${S3_BASE_URL}/${getFullS3Path(call)}`;
+    return "";
   };
 
   const replaceAudioWithFile = (s3Path: string, filename: string) => {
-    if (s3Path.includes("recording.mp3")) {
-      return s3Path.replace("recording.mp3", filename);
-    }
-    if (s3Path.includes("recording.m4a")) {
-      return s3Path.replace("recording.m4a", filename);
-    }
+    if (!s3Path) return "";
     const lastSlashIndex = s3Path.lastIndexOf("/");
     if (lastSlashIndex !== -1) {
       return s3Path.substring(0, lastSlashIndex + 1) + filename;
     }
-    return s3Path;
+    return "";
+  };
+
+  const getRecordingUrl = (call: LeadCall) => {
+    const s3Path = getFullS3Path(call);
+    return s3Path ? buildS3Url(s3Path) : "";
   };
 
   const getSummaryPdfUrl = (call: LeadCall) => {
-    return `${S3_BASE_URL}/${replaceAudioWithFile(getFullS3Path(call), "summary.pdf")}`;
+    const s3Path = replaceAudioWithFile(getFullS3Path(call), "summary.pdf");
+    return s3Path ? buildS3Url(s3Path) : "";
   };
 
-  const getSummaryDocUrl = (call: LeadCall) => {
-    return `${S3_BASE_URL}/${replaceAudioWithFile(getFullS3Path(call), "summary.docx")}`;
+  const getSummaryTxtUrl = (call: LeadCall) => {
+    const s3Path = replaceAudioWithFile(getFullS3Path(call), "summary.txt");
+    return s3Path ? buildS3Url(s3Path) : "";
   };
 
   const getSummaryJsonUrl = (call: LeadCall) => {
-    return `${S3_BASE_URL}/${replaceAudioWithFile(getFullS3Path(call), "summary.json")}`;
+    const s3Path = replaceAudioWithFile(getFullS3Path(call), "summary.json");
+    return s3Path ? buildS3Url(s3Path) : "";
   };
+
+  useEffect(() => {
+    if (!calls || calls.length === 0) return;
+    
+    // Parse call.call_summary if present in payload
+    calls.forEach(call => {
+      if (call.call_summary) {
+        if (typeof call.call_summary === 'object') {
+          setCallSummaries(prev => {
+            if (prev[call.id]) return prev;
+            return { ...prev, [call.id]: call.call_summary as any };
+          });
+        } else if (typeof call.call_summary === 'string' && call.call_summary.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(call.call_summary);
+            if (parsed && typeof parsed === 'object') {
+              setCallSummaries(prev => {
+                if (prev[call.id]) return prev;
+                return { ...prev, [call.id]: parsed };
+              });
+            }
+          } catch {
+            // not JSON, fallback to S3
+          }
+        }
+      }
+    });
+
+    expandedCallIds.forEach(id => {
+      if (!fetchedCallIds.current.has(id)) {
+        const call = calls.find(c => c.id === id);
+        if (call) {
+          if (callSummaries[id]) {
+            fetchedCallIds.current.add(id);
+            return;
+          }
+          const summaryUrl = getSummaryJsonUrl(call);
+          if (summaryUrl) {
+            fetchedCallIds.current.add(id);
+            setSummaryLoading(prev => ({ ...prev, [id]: true }));
+            fetch(summaryUrl)
+              .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+              })
+              .then((data: CallSummaryJSON) => {
+                if (data && typeof data === 'object') {
+                  setCallSummaries(prev => ({ ...prev, [call.id]: data }));
+                }
+              })
+              .catch(err => {
+                console.warn(`Failed to fetch Summary JSON for Call ID ${call.id}:`, err);
+              })
+              .finally(() => {
+                setSummaryLoading(prev => ({ ...prev, [id]: false }));
+              });
+          }
+        }
+      }
+    });
+  }, [expandedCallIds, calls, callSummaries]);
 
   const togglePlay = (e: React.MouseEvent, call: LeadCall) => {
     e.stopPropagation();
@@ -222,7 +332,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
             </div>
           </div>
           {(!calls || calls.length === 0) ? (
-            <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-12 text-center shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+            <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-12 text-center">
               <p className="text-gray-500 font-medium">No calls available for this lead.</p>
             </div>
           ) : (
@@ -240,7 +350,21 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
             const currentTimeDisplay = isThisCallPlaying ? formatTimeDisplay(currentTime) : "00:00";
             
             const summaryData = callSummaries[call.id];
-            const objectionsToRender = displayObjections && displayObjections.length > 0
+            const isFetchingSummary = summaryLoading[call.id];
+            const hasSummary = Boolean(
+              summaryData && (
+                summaryData.overview ||
+                (summaryData.symptoms && summaryData.symptoms.length > 0) ||
+                summaryData.confirmed_details ||
+                (summaryData.follow_up_plan && summaryData.follow_up_plan.length > 0) ||
+                summaryData.complete_transcript ||
+                summaryData.sentiment ||
+                (summaryData.checklist && summaryData.checklist.length > 0) ||
+                (summaryData.keyPoints && summaryData.keyPoints.length > 0)
+              )
+            );
+
+            const objectionsToRender = (hasSummary && displayObjections && displayObjections.length > 0)
               ? displayObjections
               : [];
             
@@ -259,7 +383,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
             return (
               <div key={call.id} className="flex flex-col">
                 {/* Accordion Header */}
-                <div className="bg-white border border-[#E5E7EB] rounded-[12px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+                <div className="bg-white border border-[#E5E7EB] rounded-[12px]">
                   <div 
                     className={cn(
                       "p-5 flex justify-between items-center cursor-pointer transition-colors",
@@ -342,13 +466,27 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                 <div className="flex flex-col divide-y divide-[#F1F5F9]">
                                   {/* PDF */}
                                   <button
-                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left"
+                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left cursor-pointer"
                                     onClick={() => { window.open(getSummaryPdfUrl(call), "_blank"); setActiveDownloadId(null); }}
                                   >
                                     <div className="flex items-center gap-3">
                                       <FileText className="w-5 h-5 text-[#64748B] group-hover:text-[#063669] transition-colors" />
                                       <span className="font-semibold text-[14px] text-[#063669]">
-                                        PDF
+                                        PDF Summary
+                                      </span>
+                                    </div>
+                                    <Download className="w-[18px] h-[18px] text-[#64748B] group-hover:text-[#063669] transition-colors" />
+                                  </button>
+
+                                  {/* Text Summary */}
+                                  <button
+                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left cursor-pointer"
+                                    onClick={() => { window.open(getSummaryTxtUrl(call), "_blank"); setActiveDownloadId(null); }}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <File className="w-5 h-5 text-[#64748B] group-hover:text-[#063669] transition-colors" />
+                                      <span className="font-semibold text-[14px] text-[#063669]">
+                                        Text Summary (.txt)
                                       </span>
                                     </div>
                                     <Download className="w-[18px] h-[18px] text-[#64748B] group-hover:text-[#063669] transition-colors" />
@@ -356,27 +494,13 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
 
                                   {/* Call Recording */}
                                   <button
-                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left"
+                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left cursor-pointer"
                                     onClick={() => { window.open(getRecordingUrl(call), "_blank"); setActiveDownloadId(null); }}
                                   >
                                     <div className="flex items-center gap-3">
                                       <Phone className="w-5 h-5 text-[#64748B] group-hover:text-[#063669] transition-colors" />
                                       <span className="font-semibold text-[14px] text-[#063669]">
                                         Call Recording
-                                      </span>
-                                    </div>
-                                    <Download className="w-[18px] h-[18px] text-[#64748B] group-hover:text-[#063669] transition-colors" />
-                                  </button>
-
-                                  {/* Doc.file */}
-                                  <button
-                                    className="flex items-center justify-between py-3 hover:bg-[#F8FAFC] px-2 -mx-2 rounded-lg transition-colors group text-left"
-                                    onClick={() => { window.open(getSummaryDocUrl(call), "_blank"); setActiveDownloadId(null); }}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <File className="w-5 h-5 text-[#64748B] group-hover:text-[#063669] transition-colors" />
-                                      <span className="font-semibold text-[14px] text-[#063669]">
-                                        Doc.file
                                       </span>
                                     </div>
                                     <Download className="w-[18px] h-[18px] text-[#64748B] group-hover:text-[#063669] transition-colors" />
@@ -439,77 +563,304 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                   )}
                 >
                   <div className="overflow-hidden">
-                    <div className="space-y-6 pb-2">
-                      {/* ROW 1: MOOD & SENTIMENT ANALYSIS */}
-                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* MOOD ANALYSIS */}
-                        <div className="space-y-4">
-                          <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                            MOOD ANALYSIS
-                          </span>
+                    {isFetchingSummary ? (
+                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-10 text-center flex flex-col items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-[#063669] border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-xs font-bold text-[#063669]">Loading Call Analysis...</p>
+                        <p className="text-[11px] text-slate-400 mt-1">Retrieving AI summary and insights from recording</p>
+                      </div>
+                    ) : !hasSummary ? (
+                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                          <Sparkles className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <h4 className="font-bold text-sm text-[#063669]">AI Analysis Unavailable</h4>
+                        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                          No AI summary or transcript has been generated for this call recording yet.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6 pb-2">
+                        {/* SECTION 1: CLINICAL OVERVIEW & SENTIMENT */}
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Clinical Overview */}
+                        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-[16px] p-6 flex flex-col justify-between">
                           <div>
-                            <div className="flex items-baseline">
-                              <span className="text-4xl font-extrabold text-[#1E293B]">
-                                {summaryData?.tone_based_mood_analaysis?.moodScore || "7.8"}
-                              </span>
-                              <span className="text-sm font-medium text-[#94A3B8] ml-1">
-                                / 10
-                              </span>
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-[#063669]/10 flex items-center justify-center text-[#063669]">
+                                  <Sparkles className="w-4 h-4" />
+                                </div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#063669]">
+                                  CLINICAL CALL OVERVIEW
+                                </span>
+                              </div>
+                              {summaryData?.total_call_time && (
+                                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                                  Duration: {summaryData.total_call_time}
+                                </span>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
-                              <span className="font-bold text-sm text-[#1E3A8A]">
-                                {summaryData?.tone_based_mood_analaysis?.moodAnalysis || "Curious"}
-                              </span>
-                            </div>
-                            {summaryData?.tone_based_mood_analaysis?.moodAnalysis && (
-                              <p className="text-xs text-[#64748B] leading-relaxed mt-3">
-                                Context: 'Customer demonstrated {summaryData.tone_based_mood_analaysis.moodAnalysis.toLowerCase()} tone during the call'
-                              </p>
-                            )}
+                            <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                              {summaryData?.overview || "No clinical overview provided for this call."}
+                            </p>
                           </div>
                         </div>
 
-                        {/* SENTIMENT ANALYSIS */}
-                        <div className="space-y-4 md:border-l md:border-zinc-100 md:pl-8">
-                          <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                            SENTIMENT ANALYSIS
-                          </span>
+                        {/* Sentiment Analysis */}
+                        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-[16px] p-6 flex flex-col justify-between">
                           <div>
-                            <div className="flex items-center gap-3">
-                              <span className={cn(
-                                "font-bold text-[11px] uppercase px-2.5 py-1 rounded-[6px] tracking-wider",
-                                (summaryData?.sentiment?.overall || "N/A").toLowerCase() === 'positive' 
-                                  ? "bg-[#EFF6FF] text-[#1E40AF]" 
-                                  : "bg-[#FEF2F2] text-[#991B1B]"
-                              )}>
-                                {(summaryData?.sentiment?.overall || "N/A").toUpperCase()}
-                              </span>
-                              <span className="font-bold text-sm text-[#1E293B]">
-                                Score: {summaryData?.sentiment?.score 
-                                  ? (summaryData.sentiment.score.includes('/') ? summaryData.sentiment.score : `${summaryData.sentiment.score} / 10`) 
-                                  : "N/A"}
-                              </span>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                  <Activity className="w-4 h-4" />
+                                </div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#64748B]">
+                                  SENTIMENT & QUALITY
+                                </span>
+                              </div>
+                              {summaryData?.sentiment?.score && (
+                                <span className="font-bold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-full">
+                                  Score: {summaryData.sentiment.score.includes('/') ? summaryData.sentiment.score : `${summaryData.sentiment.score}/10`}
+                                </span>
+                              )}
                             </div>
-                            {summaryData?.sentiment?.reason && (
-                              <p className="text-xs text-[#475569] leading-relaxed mt-4">
-                                <span className="font-bold text-[#1E293B]">Reason:</span> {summaryData.sentiment.reason}
+                            {summaryData?.sentiment?.reason ? (
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                {summaryData.sentiment.reason}
                               </p>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic">No sentiment analysis reason available.</p>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* ROW 2: DETECTED OBJECTIONS */}
-                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-4">
-                        <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                          DETECTED OBJECTIONS ({objectionsToRender.length})
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                          {objectionsToRender.length === 0 ? (
-                            <p className="text-xs text-slate-400 font-medium italic col-span-full">No objections detected on this call.</p>
-                          ) : (
-                            objectionsToRender.map((objection, index) => (
+                      {/* SECTION 2: CONFIRMED BOOKING & FOLLOW-UP PLAN */}
+                      {(summaryData?.confirmed_details || (summaryData?.follow_up_plan && summaryData.follow_up_plan.length > 0)) && (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                          {/* Confirmed Details */}
+                          {summaryData?.confirmed_details && (
+                            <div className={cn(
+                              "bg-white border border-[#E5E7EB] rounded-[16px] p-6",
+                              summaryData?.follow_up_plan && summaryData.follow_up_plan.length > 0 ? "lg:col-span-7" : "lg:col-span-12"
+                            )}>
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="w-7 h-7 rounded-lg bg-[#063669]/10 text-[#063669] flex items-center justify-center">
+                                  <Calendar className="w-4 h-4" />
+                                </div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#063669]">
+                                  CONFIRMED APPOINTMENT DETAILS
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {summaryData.confirmed_details.branch && (
+                                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex items-start gap-3">
+                                    <Building className="w-4 h-4 text-[#063669] mt-0.5 shrink-0" />
+                                    <div>
+                                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Hospital Branch</p>
+                                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{summaryData.confirmed_details.branch}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {summaryData.confirmed_details.department && (
+                                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex items-start gap-3">
+                                    <Stethoscope className="w-4 h-4 text-[#063669] mt-0.5 shrink-0" />
+                                    <div>
+                                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Department</p>
+                                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{summaryData.confirmed_details.department}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {(summaryData.confirmed_details.date || summaryData.confirmed_details.time) && (
+                                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex items-start gap-3">
+                                    <Clock className="w-4 h-4 text-[#063669] mt-0.5 shrink-0" />
+                                    <div>
+                                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Slot Time & Date</p>
+                                      <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                                        {[summaryData.confirmed_details.date, summaryData.confirmed_details.time].filter(Boolean).join(' • ')}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                {summaryData.confirmed_details.booking_status && (
+                                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex items-start gap-3">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                                    <div>
+                                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Booking Status</p>
+                                      <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md mt-0.5">
+                                        {summaryData.confirmed_details.booking_status}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Follow-up Plan */}
+                          {summaryData?.follow_up_plan && summaryData.follow_up_plan.length > 0 && (
+                            <div className={cn(
+                              "bg-white border border-[#E5E7EB] rounded-[16px] p-6 flex flex-col justify-between",
+                              summaryData?.confirmed_details ? "lg:col-span-5" : "lg:col-span-12"
+                            )}>
+                              <div>
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <ListChecks className="w-4 h-4" />
+                                  </div>
+                                  <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#64748B]">
+                                    FOLLOW-UP PLAN ({summaryData.follow_up_plan.length})
+                                  </span>
+                                </div>
+                                <ul className="space-y-2.5">
+                                  {summaryData.follow_up_plan.map((planItem, idx) => (
+                                    <li key={idx} className="flex items-start gap-2.5 bg-slate-50/70 border border-slate-100 rounded-xl p-3">
+                                      <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                      </div>
+                                      <span className="text-xs text-slate-700 font-medium leading-relaxed">
+                                        {planItem}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* SECTION 3: REPORTED SYMPTOMS & MEDICAL HISTORY */}
+                      {((summaryData?.symptoms && summaryData.symptoms.length > 0) || (summaryData?.recent_medical_history && summaryData.recent_medical_history.length > 0)) && (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                          {/* Symptoms List */}
+                          {summaryData?.symptoms && summaryData.symptoms.length > 0 && (
+                            <div className={cn(
+                              "bg-white border border-[#E5E7EB] rounded-[16px] p-6",
+                              summaryData?.recent_medical_history && summaryData.recent_medical_history.length > 0 ? "lg:col-span-7" : "lg:col-span-12"
+                            )}>
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                                  <HeartPulse className="w-4 h-4" />
+                                </div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#64748B]">
+                                  REPORTED SYMPTOMS ({summaryData.symptoms.length})
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {summaryData.symptoms.map((s, idx) => (
+                                  <div key={idx} className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between gap-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                        {s.symptom}
+                                      </span>
+                                      {s.severity && (
+                                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", getSeverityBadgeClass(s.severity))}>
+                                          {s.severity}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="space-y-0.5 text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                                      {s.onset && <p><span className="font-semibold text-slate-600">Onset:</span> {s.onset}</p>}
+                                      {s.duration && <p><span className="font-semibold text-slate-600">Duration:</span> {s.duration}</p>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recent Medical History */}
+                          {summaryData?.recent_medical_history && summaryData.recent_medical_history.length > 0 && (
+                            <div className={cn(
+                              "bg-white border border-[#E5E7EB] rounded-[16px] p-6",
+                              summaryData?.symptoms && summaryData.symptoms.length > 0 ? "lg:col-span-5" : "lg:col-span-12"
+                            )}>
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                                  <History className="w-4 h-4" />
+                                </div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#64748B]">
+                                  RECENT MEDICAL HISTORY
+                                </span>
+                              </div>
+                              <ul className="space-y-2.5">
+                                {summaryData.recent_medical_history.map((hist, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 bg-amber-50/40 border border-amber-200/50 rounded-xl p-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                                    <span className="text-xs text-slate-700 font-medium leading-relaxed">
+                                      {hist}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* SECTION 4: CALL TRANSCRIPT DIALOGUE */}
+                      {summaryData?.complete_transcript && (
+                        <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-6">
+                          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-[#063669]/10 text-[#063669] flex items-center justify-center">
+                                <MessageCircle className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#063669] block">
+                                  CALL TRANSCRIPT DIALOGUE
+                                </span>
+                                <span className="text-[11px] text-slate-400">
+                                  Full conversation between Care Coordinator & Patient
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
+                            {parseTranscript(summaryData.complete_transcript).map((item) => (
+                              <div 
+                                key={item.id} 
+                                className={cn(
+                                  "p-3.5 rounded-2xl max-w-[85%] text-xs leading-relaxed",
+                                  item.isAgent 
+                                    ? "bg-[#063669]/5 border border-[#063669]/15 mr-auto rounded-tl-sm text-slate-800" 
+                                    : "bg-slate-100/90 border border-slate-200 ml-auto rounded-tr-sm text-slate-800"
+                                )}
+                              >
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  {item.isAgent ? (
+                                    <span className="inline-flex items-center gap-1 font-bold text-[11px] text-[#063669]">
+                                      <Stethoscope className="w-3 h-3 text-[#063669]" />
+                                      Care Coordinator (Agent)
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 font-bold text-[11px] text-slate-700">
+                                      <User className="w-3 h-3 text-slate-500" />
+                                      Patient / Caller
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="font-normal text-slate-700">
+                                  {item.text}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ROW: DETECTED OBJECTIONS (Fallback / Legacy) */}
+                      {objectionsToRender.length > 0 && (
+                        <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-6 md:p-8 space-y-4">
+                          <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
+                            DETECTED OBJECTIONS ({objectionsToRender.length})
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {objectionsToRender.map((objection, index) => (
                               <div key={index} className="bg-[#F8FAFC] border border-zinc-100 rounded-xl p-4 flex flex-col justify-between">
                                 <div>
                                   <div className="flex items-start gap-2">
@@ -525,130 +876,112 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                   )}
                                 </div>
                               </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      {/* ROW 3: CHECKLIST & KEY DETAILS */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* AGENT CHECKLIST */}
-                        <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-6">
-                          <div className="flex justify-between items-center">
-                            <h2 className="font-bold text-[18px] md:text-[20px] leading-[28px] text-[#1E293B]">
-                              Agent Checklist
-                            </h2>
-                            <div className={cn(
-                              "border rounded-[16px] px-3.5 py-1.5 flex items-center gap-2", 
-                              checklistPct >= 50 
-                                ? "bg-[#DCFCE7] border-[#BBF7D0] text-[#16A34A]" 
-                                : "bg-[#FEF2F2] border-[#FEE2E2] text-[#EF4444]"
-                            )}>
-                              <span className="font-bold text-[10px] md:text-xs uppercase tracking-wider">
-                                {checklistPct}% • {checklistCovered}/{checklistTotal} Checklist Met
-                              </span>
-                            </div>
+                            ))}
                           </div>
+                        </div>
+                      )}
 
-                          <div className="space-y-4">
-                            {finalChecklist.length === 0 ? (
-                              <p className="text-xs text-slate-400 font-medium italic">No checklist items generated.</p>
-                            ) : (
-                              finalChecklist.map((item, idx) => (
-                                <div key={idx} className="flex gap-4">
-                                  <div className="mt-1 shrink-0">
-                                    {item.covered ? (
-                                      <div className="w-5 h-5 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
-                                      </div>
-                                    ) : (
-                                      <div className="w-5 h-5 rounded-full bg-[#FEE2E2] flex items-center justify-center">
-                                        <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 space-y-2">
-                                    <h4 className="font-bold text-sm text-[#1F2937]">
-                                      {item.point}
-                                    </h4>
-                                    <div className={cn(
-                                      "bg-[#F9FAFB] border-l-[3px] rounded-r-lg rounded-l p-3", 
-                                      item.covered ? "border-[#22C55E]" : "border-[#EF4444]"
-                                    )}>
-                                      <p className="font-['Inter'] italic font-normal text-xs text-[#4B5563] leading-relaxed">
-                                        "{item.evidence}"
-                                      </p>
-                                    </div>
-                                  </div>
+                      {/* ROW: CHECKLIST & KEY DETAILS (Fallback / Legacy) */}
+                      {(finalChecklist.length > 0 || finalKeyPoints.length > 0 || finalQuestions.length > 0) && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          {/* AGENT CHECKLIST */}
+                          {finalChecklist.length > 0 && (
+                            <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-[16px] p-6 md:p-8 space-y-6">
+                              <div className="flex justify-between items-center">
+                                <h2 className="font-bold text-[18px] md:text-[20px] leading-[28px] text-[#1E293B]">
+                                  Agent Checklist
+                                </h2>
+                                <div className={cn(
+                                  "border rounded-[16px] px-3.5 py-1.5 flex items-center gap-2", 
+                                  checklistPct >= 50 
+                                    ? "bg-[#DCFCE7] border-[#BBF7D0] text-[#16A34A]" 
+                                    : "bg-[#FEF2F2] border-[#FEE2E2] text-[#EF4444]"
+                                )}>
+                                  <span className="font-bold text-[10px] md:text-xs uppercase tracking-wider">
+                                    {checklistPct}% • {checklistCovered}/{checklistTotal} Checklist Met
+                                  </span>
                                 </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
+                              </div>
 
-                        {/* KEY DETAILS PANEL */}
-                        <div className="bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-6 md:p-8 flex flex-col justify-between gap-6">
-                          {/* KEY POINTS MENTIONED */}
-                          <div className="space-y-3">
-                            <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                              KEY POINTS MENTIONED
-                            </span>
-                            {finalKeyPoints.length === 0 ? (
-                              <p className="text-xs text-slate-400 font-medium italic">No key points captured.</p>
-                            ) : (
-                              <ul className="space-y-2.5">
-                                {finalKeyPoints.map((kp, idx) => (
-                                  <li key={idx} className="flex items-start gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB] mt-1.5 shrink-0" />
-                                    <p className="font-medium text-xs text-[#475569] leading-normal">
-                                      {kp}
-                                    </p>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-
-                          {/* QUESTIONS DISCUSSED */}
-                          <div className="space-y-3">
-                            <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                              QUESTIONS DISCUSSED
-                            </span>
-                            {finalQuestions.length === 0 ? (
-                              <p className="text-xs text-slate-400 font-medium italic">No questions captured.</p>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {finalQuestions.map((q: any, idx: number) => (
-                                  <div key={idx} className="bg-[#F1F5F9] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-full">
-                                    {q}
+                              <div className="space-y-4">
+                                {finalChecklist.map((item, idx) => (
+                                  <div key={idx} className="flex gap-4">
+                                    <div className="mt-1 shrink-0">
+                                      {item.covered ? (
+                                        <div className="w-5 h-5 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
+                                        </div>
+                                      ) : (
+                                        <div className="w-5 h-5 rounded-full bg-[#FEE2E2] flex items-center justify-center">
+                                          <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <h4 className="font-bold text-sm text-[#1F2937]">
+                                        {item.point}
+                                      </h4>
+                                      <div className={cn(
+                                        "bg-[#F9FAFB] border-l-[3px] rounded-r-lg rounded-l p-3", 
+                                        item.covered ? "border-[#22C55E]" : "border-[#EF4444]"
+                                      )}>
+                                        <p className="font-['Inter'] italic font-normal text-xs text-[#4B5563] leading-relaxed">
+                                          "{item.evidence}"
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
-                          {/* SPEAKER ENGAGEMENT */}
-                          <div className="space-y-2 pt-2 border-t border-zinc-100">
-                            <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
-                              SPEAKER ENGAGEMENT
-                            </span>
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-xs text-[#475569]">Agent Engagement</span>
-                              <span className="font-bold text-xs text-[#1E3A8A]">92% High</span>
+                          {/* KEY DETAILS PANEL */}
+                          {(finalKeyPoints.length > 0 || finalQuestions.length > 0) && (
+                            <div className={cn("bg-white border border-[#E5E7EB] rounded-[16px] p-6 md:p-8 flex flex-col justify-between gap-6", finalChecklist.length === 0 && "lg:col-span-3")}>
+                              {/* KEY POINTS MENTIONED */}
+                              {finalKeyPoints.length > 0 && (
+                                <div className="space-y-3">
+                                  <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
+                                    KEY POINTS MENTIONED
+                                  </span>
+                                  <ul className="space-y-2.5">
+                                    {finalKeyPoints.map((kp, idx) => (
+                                      <li key={idx} className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB] mt-1.5 shrink-0" />
+                                        <p className="font-medium text-xs text-[#475569] leading-normal">
+                                          {kp}
+                                        </p>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {/* QUESTIONS DISCUSSED */}
+                              {finalQuestions.length > 0 && (
+                                <div className="space-y-3">
+                                  <span className="font-['Inter'] font-bold text-[10px] leading-[15px] tracking-[1.5px] uppercase text-[#94A3B8] block">
+                                    QUESTIONS DISCUSSED
+                                  </span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {finalQuestions.map((q: any, idx: number) => (
+                                      <div key={idx} className="bg-[#F1F5F9] text-[#475569] text-xs font-semibold px-3 py-1.5 rounded-full">
+                                        {q}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="w-full h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
-                              <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: "92%" }} />
-                            </div>
-                            <span className="text-[11px] text-[#64748B] mt-1.5 block leading-normal italic">
-                              Customer spoke for 92% of the duration.
-                            </span>
-                          </div>
+                          )}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
+            </div>
             );
           }))}
 

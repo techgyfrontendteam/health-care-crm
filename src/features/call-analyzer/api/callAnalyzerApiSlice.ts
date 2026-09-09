@@ -1,6 +1,7 @@
 import { baseApi } from "../../../app/api/baseApi";
 
 export interface AnalyzeCallRequest {
+  call_id?: string | number;
   lead_uuid: string;
   lead_name: string;
   from_number: string;

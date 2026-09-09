@@ -161,7 +161,7 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
                 {/* Timeline Indicator Column */}
                 <div className="shrink-0 flex flex-col items-center w-[76px] mt-2">
                   {/* Circle Container */}
-                  <div className="timeline-circle w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-center shadow-sm relative z-10">
+                  <div className="timeline-circle w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-center relative z-10">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#0f3d6b] dark:bg-blue-400" />
                   </div>
                   {/* Date under the circle */}
@@ -171,7 +171,7 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
                 </div>
 
                 {/* Enquiry Card */}
-                <div className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 rounded-2xl px-6 py-5 shadow-sm">
+                <div className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-5">
                   <div className="grid grid-cols-[1fr_1fr_1fr_0.8fr_1.2fr_1.2fr_0.8fr] gap-4 items-center">
                     {/* Lead ID */}
                     <div className="space-y-1">

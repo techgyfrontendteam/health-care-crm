@@ -175,13 +175,13 @@ export const LeadRemarksTab = ({ remarks }: LeadRemarksTabProps) => {
               >
                 {/* Numbered Container positioned precisely over the line */}
                 <div 
-                  className="absolute -left-[48px] md:-left-[56px] top-3 z-10 flex items-center justify-center w-[48px] h-[48px] bg-[#FFFFFF] border-[4px] border-[#E6EAF0] dark:border-zinc-800 rounded-full shadow-[0px_2px_6px_rgba(0,0,0,0.04)] font-['Plus_Jakarta_Sans'] font-extrabold text-[16px] text-[#063669] dark:text-zinc-200"
+                  className="absolute -left-[48px] md:-left-[56px] top-3 z-10 flex items-center justify-center w-[48px] h-[48px] bg-[#FFFFFF] border-[4px] border-[#E6EAF0] dark:border-zinc-800 rounded-full font-['Plus_Jakarta_Sans'] font-extrabold text-[16px] text-[#063669] dark:text-zinc-200"
                 >
                   {data.length - index}
                 </div>
 
-                {/* Glassmorphic Card */}
-                <div className="flex-1 bg-[rgba(255,255,255,0.7)] border border-[rgba(255,255,255,0.4)] shadow-[0px_10px_30px_rgba(0,0,0,0.02)] backdrop-blur-[10px] rounded-[16px] px-6 py-6 transition-all hover:bg-[rgba(255,255,255,0.8)]">
+                {/* Plain Card */}
+                <div className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-[16px] px-6 py-6 transition-all">
                   <div className="flex flex-col md:flex-row items-start justify-between gap-2 md:gap-6">
                     <div className="space-y-1.5 flex-1">
                       <p className="font-['Plus_Jakarta_Sans'] font-bold text-[16px] leading-[24px] text-[#191C1E]">

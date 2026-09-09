@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
@@ -10,6 +10,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  Minus,
 } from "lucide-react";
 import { cn } from "../../../utils";
 import { usePermissions } from "../../../hooks/usePermissions";
@@ -194,9 +195,30 @@ export const FollowUpsPage: React.FC = () => {
   const leads = useMemo(() => Array.isArray(leadsData) ? leadsData : (leadsData?.data || []), [leadsData]);
 
   // Filters State
-  const [selectedRm, setSelectedRm] = useState<string>("All Sales Heads");
+  const [selectedRmIds, setSelectedRmIds] = useState<number[]>([]);
+  const [hasInitializedRms, setHasInitializedRms] = useState(false);
   const [selectedEm, setSelectedEm] = useState<string>("All Sales Executives");
   const [searchQuery, setSearchQuery] = useState("");
+  const rmDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Initialize selectedRmIds with all Sales Head IDs on load
+  useEffect(() => {
+    if (rms.length > 0 && !hasInitializedRms) {
+      setSelectedRmIds(rms.map((r: any) => Number(r.id)));
+      setHasInitializedRms(true);
+    }
+  }, [rms, hasInitializedRms]);
+
+  // Click outside to close RM dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (rmDropdownRef.current && !rmDropdownRef.current.contains(event.target as Node)) {
+        setIsRmDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const today = useMemo(() => new Date(), []);
   const next7Days = useMemo(() => {
@@ -228,7 +250,28 @@ export const FollowUpsPage: React.FC = () => {
   const [isEmDropdownOpen, setIsEmDropdownOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
 
+  // Multi-select RM helpers
+  const isAllRmsSelected = useMemo(() => {
+    return rms.length > 0 && selectedRmIds.length === rms.length;
+  }, [rms, selectedRmIds]);
 
+  const isPartialRmsSelected = useMemo(() => {
+    return selectedRmIds.length > 0 && selectedRmIds.length < rms.length;
+  }, [rms, selectedRmIds]);
+
+  const handleToggleSelectAllRms = () => {
+    if (isAllRmsSelected) {
+      setSelectedRmIds([]);
+    } else {
+      setSelectedRmIds(rms.map((r: any) => Number(r.id)));
+    }
+  };
+
+  const handleToggleRm = (rmId: number) => {
+    setSelectedRmIds((prev) =>
+      prev.includes(rmId) ? prev.filter((id) => id !== rmId) : [...prev, rmId]
+    );
+  };
 
   // Quick Complete Modal State
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
@@ -266,74 +309,88 @@ export const FollowUpsPage: React.FC = () => {
 
   // Date filters are controlled directly by startDate and endDate states
 
-  // Find matching RM or EM
-  const selectedRmUser = useMemo(() => {
-    if (selectedRm === "All Sales Heads") return null;
-    return rms.find(r => `${r.first_name} ${r.last_name}`.trim() === selectedRm);
-  }, [selectedRm, rms]);
-
-  // Fetch EMs reporting to selected RM
-  const selectedRmId = selectedRmUser?.id;
-  const { data: rmReportees = [] } = useGetReporteesQuery(
-    { reporting_manager_id: Number(selectedRmId), offset: 0 },
-    { skip: !selectedRmId }
-  );
-
-  const displayEms = useMemo(() => {
-    if (selectedRmId) return rmReportees;
-    return ems;
-  }, [selectedRmId, rmReportees, ems]);
-
-  const selectedEmUser = useMemo(() => {
-    if (selectedEm === "All Sales Executives") return null;
-    return displayEms.find(e => `${e.first_name} ${e.last_name}`.trim() === selectedEm);
-  }, [selectedEm, displayEms]);
-
   // The user IDs to query the API for
   const queryUserIds = useMemo(() => {
     // For role-scoped users (RM/EM), always use their own ID silently
-    if (isRoleScoped) return [Number(user?.id || 0)];
+    if (isRoleScoped && user?.id) return [Number(user.id)];
     
-    const ids = [];
-    if (selectedRmUser) ids.push(Number(selectedRmUser.id));
-    if (selectedEmUser) ids.push(Number(selectedEmUser.id));
-
-    if (ids.length > 0) return ids;
-
-    if (isSalesAdmin && rms.length > 0) {
-      return rms.map(r => Number(r.id));
+    // When specific RM checkboxes are selected:
+    if (selectedRmIds.length > 0) {
+      return selectedRmIds;
     }
-    return [Number(user?.id || 0)];
-  }, [selectedRmUser, selectedEmUser, user, isRoleScoped, isSalesAdmin, rms]);
 
-  // Get the display name of the queried user
-  const queriedUserDisplayName = useMemo(() => {
-    if (selectedRmUser) {
-      return `${selectedRmUser.first_name} ${selectedRmUser.last_name}`.trim();
+    // When initialized but all checkboxes unselected:
+    if (hasInitializedRms && selectedRmIds.length === 0) {
+      return [0];
     }
-    if (selectedEmUser) {
-      return `${selectedEmUser.first_name} ${selectedEmUser.last_name}`.trim();
+
+    // Default initial load before state hydration: send all RM IDs
+    if (rms.length > 0) {
+      return rms.map((r: any) => Number(r.id));
     }
-    return user?.name || "Self";
-  }, [selectedRmUser, selectedEmUser, user]);
+
+    return [0];
+  }, [isRoleScoped, user, selectedRmIds, hasInitializedRms, rms]);
+
+  // Format API start and end dates from calendar selection
+  const apiStartDate = useMemo(() => formatApiDate(startDate) || "2026-09-08", [startDate]);
+  const apiEndDate = useMemo(() => formatApiDate(endDate) || "2026-09-08", [endDate]);
+
+  // Followup status ID based on tab selection
+  const activeFollowupStatusId = useMemo(() => {
+    const statuses = lookupMasterData?.lead_followup_statuses;
+    if (activeTab === "Scheduled") {
+      const found = statuses?.find((s: any) => s.code === 'SCHDLD' || s.description?.toUpperCase().includes('SCHEDULE'));
+      return found ? Number(found.id) : 1;
+    }
+    if (activeTab === "Completed") {
+      const found = statuses?.find((s: any) => s.code === 'CMPLTD' || s.description?.toUpperCase().includes('COMPLETE'));
+      return found ? Number(found.id) : 2;
+    }
+    if (activeTab === "Missed") {
+      const found = statuses?.find((s: any) => s.code === 'MISSED' || s.description?.toUpperCase().includes('MISSED'));
+      return found ? Number(found.id) : 4;
+    }
+    return 0;
+  }, [activeTab, lookupMasterData]);
+
+  const queryPayload = useMemo(() => ({
+    user_id: queryUserIds,
+    followup_status_id: activeFollowupStatusId,
+    start_date: apiStartDate,
+    end_date: apiEndDate,
+    offset: 0,
+  }), [queryUserIds, activeFollowupStatusId, apiStartDate, apiEndDate]);
 
   // Fetch Follow-ups from API dynamically
-  const { data: apiData, refetch } = useGetAllFollowupsByUserIdQuery(
-    {
-      user_id: queryUserIds,
-      start_date: "2020-01-01",
-      end_date: "2030-12-31",
-      offset: "0",
-    },
-    {
-      skip: queryUserIds.length === 0 || (queryUserIds.length === 1 && queryUserIds[0] === 0),
-    }
+  const { data: apiData, isLoading: isFollowupsLoading, isFetching: isFollowupsFetching, error: followupsError, refetch } = useGetAllFollowupsByUserIdQuery(
+    queryPayload
   );
+
+  // Log API request payload & response to console as requested
+  useEffect(() => {
+    console.log("=== [API] getAllFollowupsByUserId ===");
+    console.log("Request Payload:", queryPayload);
+    console.log("Response Data:", apiData);
+    if (followupsError) {
+      console.error("API Error:", followupsError);
+    }
+  }, [apiData, followupsError, queryPayload]);
+
+  // Extract raw followups list from response
+  const rawFollowupsList = useMemo(() => {
+    if (!apiData) return [];
+    if (Array.isArray(apiData)) return apiData;
+    if (Array.isArray((apiData as any).followups)) return (apiData as any).followups;
+    if (Array.isArray((apiData as any).data)) return (apiData as any).data;
+    if (Array.isArray((apiData as any).data?.followups)) return (apiData as any).data.followups;
+    return [];
+  }, [apiData]);
 
   // Map API response to UI follow-ups format
   const apiFollowUps = useMemo(() => {
-    if (!apiData?.followups) return [];
-    const mapped = apiData.followups.map((item, idx) => {
+    if (!rawFollowupsList || rawFollowupsList.length === 0) return [];
+    const mapped = rawFollowupsList.map((item: any, idx: number) => {
       const dateDetails = formatFollowUpDate(item.followup_date_time);
 
       const statusObj = lookupMasterData?.lead_followup_statuses?.find((s: any) => s.id === item.followup_status_id);
@@ -388,8 +445,11 @@ export const FollowUpsPage: React.FC = () => {
              const emLabel = getEmLabel(Number((item as any).user_id));
              if (emLabel !== '--') return emLabel;
           }
-          const label = getRmLabel(queryUserIds.length === 1 ? queryUserIds[0] : 0);
-          return label !== '--' ? label : queriedUserDisplayName;
+          if (queryUserIds.length === 1 && queryUserIds[0] !== 0) {
+            const label = getRmLabel(queryUserIds[0]);
+            if (label !== '--') return label;
+          }
+          return "Sales Head";
         })(),
         assignedEm: (() => {
           if ((item as any).user_id) {
@@ -409,37 +469,17 @@ export const FollowUpsPage: React.FC = () => {
       const dateB = new Date(b.rawDate || 0).getTime();
       return dateB - dateA;
     });
-  }, [apiData, queriedUserDisplayName, selectedRmUser, selectedEmUser, getRmLabel, getEmLabel, user, queryUserIds, lookupMasterData]);
+  }, [rawFollowupsList, getRmLabel, getEmLabel, queryUserIds, lookupMasterData]);
 
   // Combine Mock Data & API Data
   const mergedFollowUps = useMemo(() => {
     return apiFollowUps;
   }, [apiFollowUps]);
 
-  // Filter Data based on Tab and Dropdowns
+  // Filter Data based on Search Query
   const filteredFollowUps = useMemo(() => {
     return mergedFollowUps.filter((item) => {
-      // 1. Tab Filter
-      if (activeTab === "Scheduled") {
-        if (item.status !== "Pending") return false;
-      } else if (activeTab === "Completed") {
-        if (item.status !== "Completed" && item.status !== "Cancelled") return false;
-      } else if (activeTab === "Missed") {
-        if (item.status !== "Overdue") return false;
-      }
-
-      // 2. Date Filter (Scheduled Date)
-      if (startDate && endDate && item.rawDate) {
-        const itemDate = new Date(item.rawDate);
-        const itemDay = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate()).getTime();
-        const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
-        const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
-        if (itemDay < startDay || itemDay > endDay) {
-          return false;
-        }
-      }
-
-      // 3. Search Query (Lead Name, Lead ID, RM)
+      // Search Query (Lead Name, Lead ID, RM)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const nameMatch = item.leadName.toLowerCase().includes(query);
@@ -450,7 +490,7 @@ export const FollowUpsPage: React.FC = () => {
 
       return true;
     });
-  }, [mergedFollowUps, activeTab, searchQuery]);
+  }, [mergedFollowUps, searchQuery]);
 
   // Date Modal Handlers
   const handleQuickSelect = (option: string) => {
@@ -651,9 +691,9 @@ export const FollowUpsPage: React.FC = () => {
   }, [rms]);
 
   const experienceManagers = useMemo(() => {
-    const list = displayEms.map((e) => `${e.first_name} ${e.last_name}`.trim());
+    const list = (ems || []).map((e: any) => `${e.first_name} ${e.last_name}`.trim());
     return ["All Sales Executives", ...list];
-  }, [displayEms]);
+  }, [ems]);
 
   // Date range filter options
 
@@ -690,38 +730,96 @@ export const FollowUpsPage: React.FC = () => {
       {/* Filters & Navigation Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
         <div className="flex flex-wrap items-center gap-6">
-          {/* Relationship Manager Dropdown — hidden for RM and EM roles */}
+          {/* Relationship Manager Dropdown with Multi-select Checkboxes — hidden for RM and EM roles */}
           {!isRoleScoped && (
             <>
-              <div className="relative">
+              <div className="relative" ref={rmDropdownRef}>
                 <span className="text-[9px] font-black text-slate-400 block mb-1 uppercase tracking-wider">
                   SALES HEAD
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     setIsRmDropdownOpen(!isRmDropdownOpen);
                     setIsEmDropdownOpen(false);
                   }}
-                  className="flex items-center gap-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[150px] justify-between"
+                  className="flex items-center gap-2.5 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[170px] justify-between"
                 >
-                  <span className="truncate max-w-[120px]">{selectedRm === "All RM's" ? "All Sales Heads" : selectedRm}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="truncate max-w-[125px]">
+                    {selectedRmIds.length === 0
+                      ? "None Selected"
+                      : isAllRmsSelected
+                      ? "All Sales Heads"
+                      : selectedRmIds.length === 1
+                      ? `${rms.find((r: any) => Number(r.id) === selectedRmIds[0])?.first_name || ""} ${rms.find((r: any) => Number(r.id) === selectedRmIds[0])?.last_name || ""}`.trim()
+                      : `${selectedRmIds.length} Selected`}
+                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#063669]">
+                      {selectedRmIds.length}/{rms.length}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
                 </button>
+
                 {isRmDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-56 max-h-60 overflow-y-auto scrollbar-thin bg-white border border-slate-100 rounded-xl shadow-lg py-1.5 z-30">
-                    {relationshipManagers.map((rm) => (
-                      <button
-                        key={rm}
-                        onClick={() => {
-                          setSelectedRm(rm);
-                          setSelectedEm("All Sales Executives"); // Reset EM when RM changes
-                          setIsRmDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        {rm}
-                      </button>
-                    ))}
+                  <div className="absolute left-0 mt-2 w-64 max-h-72 overflow-y-auto scrollbar-thin bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-30 space-y-1">
+                    {/* Select All Option */}
+                    <div
+                      onClick={handleToggleSelectAllRms}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#063669] hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 pb-2.5 mb-1"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+                            isAllRmsSelected
+                              ? "bg-[#063669] border-[#063669] text-white"
+                              : isPartialRmsSelected
+                              ? "bg-blue-100 border-[#063669] text-[#063669]"
+                              : "border-slate-300 bg-white"
+                          }`}
+                        >
+                          {isAllRmsSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                          {isPartialRmsSelected && <Minus className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <span>Select All Sales Heads</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-semibold">{rms.length}</span>
+                    </div>
+
+                    {/* RM List Items with Checkboxes */}
+                    {rms.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-xs text-slate-400 font-medium">
+                        No Sales Heads found
+                      </div>
+                    ) : (
+                      rms.map((rm: any) => {
+                        const rmId = Number(rm.id);
+                        const isSelected = selectedRmIds.includes(rmId);
+                        const fullName = `${rm.first_name || ""} ${rm.last_name || ""}`.trim() || "Sales Head";
+                        return (
+                          <div
+                            key={rmId}
+                            onClick={() => handleToggleRm(rmId)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                          >
+                            <div
+                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                                isSelected
+                                  ? "bg-[#063669] border-[#063669] text-white"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {getInitials(fullName)}
+                            </div>
+                            <span className="truncate flex-1 text-slate-800">{fullName}</span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 )}
               </div>
@@ -814,7 +912,12 @@ export const FollowUpsPage: React.FC = () => {
 
       {/* List cards section */}
       <div className="space-y-4 pt-2">
-        {filteredFollowUps.length === 0 ? (
+        {isFollowupsLoading ? (
+          <div className="bg-white border border-slate-200/80 rounded-[20px] p-12 text-center text-xs font-semibold text-slate-500 shadow-xs flex flex-col items-center justify-center gap-3">
+            <div className="w-7 h-7 border-3 border-[#063669] border-t-transparent rounded-full animate-spin" />
+            <span>Fetching follow-ups from server...</span>
+          </div>
+        ) : filteredFollowUps.length === 0 ? (
           <div className="bg-white border border-dashed border-slate-200 rounded-[20px] p-12 text-center text-xs font-bold text-slate-400 shadow-sm flex flex-col items-center justify-center gap-3">
             <span>No {activeTab.toLowerCase()} follow-ups found for your selection.</span>
             <button
@@ -868,7 +971,7 @@ export const FollowUpsPage: React.FC = () => {
 
                   {/* Assignee */}
                   <p className="text-[11px] text-[#64748B] font-medium pt-0.5">
-                    {isRM || selectedRmUser ? item.assignedRm : (item.assignedEm || item.assignedRm)}
+                    {item.assignedEm || item.assignedRm || "Sales Head"}
                   </p>
                 </div>
               </div>

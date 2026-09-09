@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Clock, Pencil, Building, User, FileText, Loader2, Stethoscope, Sparkles } from 'lucide-react';
 import type { LeadVisit } from '../../types';
 import { ScheduleVisitDialog } from '../ScheduleVisitDialog';
+import { ScheduleSurgeryDialog } from '../ScheduleSurgeryDialog';
 import { useGetAllUsersByRoleIdQuery } from '@/features/users/api/usersApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
 import { usePermissions } from '../../../../hooks/usePermissions';
@@ -51,6 +52,7 @@ export const LeadVisitsTab = ({
   const { data: masterData } = useGetAllMasterDataQuery();
 
   const [openDialog, setOpenDialog] = useState(false);
+  const [openSurgeryDialog, setOpenSurgeryDialog] = useState(false);
   const [dialogType, setDialogType] = useState<"Appointment" | "Surgery">("Appointment");
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
 
@@ -103,6 +105,10 @@ export const LeadVisitsTab = ({
   }, [apiAppointments, visits]);
 
   const handleOpenCreate = (type: "Appointment" | "Surgery" = "Appointment") => {
+    if (type === "Surgery") {
+      setOpenSurgeryDialog(true);
+      return;
+    }
     setDialogType(type);
     setSelectedAppointment(null);
     setOpenDialog(true);
@@ -273,14 +279,11 @@ export const LeadVisitsTab = ({
                 ? masterData?.specialisations?.find((s: any) => s.id === matchedDoctor.specialization_id)?.description
                 : undefined;
 
-              const statusId = v.appointment_status_id || v.visit_status || 1;
-              const statusItem =
-                masterData?.appointment_status?.find((s: any) => s.id === statusId) ||
-                (masterData as any)?.appointment_statuses?.find((s: any) => s.id === statusId) ||
-                siteVisitStatuses.find((s: any) => s.id === statusId);
-
-              const statusText = statusItem?.description || getSiteVisitStatusLabel(statusId) || "OPD Booked";
-              const statusCode = statusItem?.code?.toUpperCase();
+              const statusId = Number(v.appointments_status_id ?? v.appointment_status_id);
+              const statusItem = masterData?.appointment_statuses?.find((s: any) => s.id === statusId);
+              console.log(statusItem, v.appointments_status_id ,v,'statusItem');
+              const statusText = statusItem?.description || "";
+              const statusCode = statusItem?.code?.toUpperCase() || "";
 
               let badgeStyle = "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700";
               if (statusCode === "OPDBKD") {
@@ -298,7 +301,7 @@ export const LeadVisitsTab = ({
               return (
                 <div
                   key={appointmentKey}
-                  className="group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
+                  className="group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 transition-all"
                 >
                   <div className="flex gap-4 sm:gap-6 items-center flex-1 min-w-0">
                     {/* DATE BADGE */}
@@ -313,9 +316,11 @@ export const LeadVisitsTab = ({
 
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[9px] px-2.5 py-0.5 rounded-md border font-bold uppercase tracking-wider ${badgeStyle}`}>
-                          {statusText}
-                        </span>
+                        {statusText && (
+                          <span className={`text-[9px] px-2.5 py-0.5 rounded-md border font-bold uppercase tracking-wider ${badgeStyle}`}>
+                            {statusText}
+                          </span>
+                        )}
                         {v.visit_remarks?.includes("[Surgery]") && (
                           <span className="text-[9px] px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider border border-rose-200 dark:border-rose-900">
                             Surgery
@@ -380,6 +385,12 @@ export const LeadVisitsTab = ({
         rms={rms}
         onSubmit={handleDialogSubmit}
         isLoading={isSubmitting}
+      />
+
+      <ScheduleSurgeryDialog
+        open={openSurgeryDialog}
+        onOpenChange={setOpenSurgeryDialog}
+        lead={lead}
       />
     </div>
   );

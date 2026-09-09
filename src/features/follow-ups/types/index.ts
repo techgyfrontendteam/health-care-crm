@@ -14,9 +14,10 @@ export interface CreateFollowUpResponse {
 
 export interface GetAllFollowupsByUserIdRequest {
   user_id: number[];
+  followup_status_id?: number;
   start_date: string;
   end_date: string;
-  offset: string;
+  offset: number | string;
 }
 
 export interface FollowUpItem {
