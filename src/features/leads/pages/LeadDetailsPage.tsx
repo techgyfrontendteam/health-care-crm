@@ -8,14 +8,32 @@ import {
   Calendar,
   Info,
   Pencil,
+  Plus,
+  Clock,
+  Trash2,
   MessageSquare,
+  FileText,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
+import { useInitiateClickToCallMutation, useGetCallRecordsMutation } from "../api/callsApi";
+import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
+import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiSlice";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
-import { formatDate } from "../../../utils";
+import { formatDate, getProjectStatusOptions } from "../../../utils";
+
+const formatDateTimeForTataTele = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 import { useGetAllUsersQuery } from "../../users/api/usersApi";
 import {
@@ -24,6 +42,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import { LeadRemarksTab } from "../components/tabs/LeadRemarksTab";
 import { LeadCallsTab } from "../components/tabs/LeadCallsTab";
 import LeadCalls from "../components/tabs/LeadCalls";
@@ -76,12 +101,112 @@ const DetailField = ({
   </div>
 );
 
+interface ParsedNote {
+  id: string;
+  text: string;
+  date?: string;
+}
+
+const formatNoteDate = (d = new Date()) => {
+  return (
+    d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) +
+    ", " +
+    d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  );
+};
+
+const parseNotes = (rawNotes: string): ParsedNote[] => {
+  if (!rawNotes || !rawNotes.trim()) return [];
+  const trimmed = rawNotes.trim();
+
+  // 1. Check if stored as JSON
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.every((p) => typeof p === "object" && p !== null && "text" in p)) {
+        return parsed.map((item, idx) => ({
+          id: item.id || String(idx + 1),
+          text: String(item.text).trim(),
+          date: item.date || item.createdAt || undefined,
+        }));
+      }
+    } catch {
+      // Fall through to other formats
+    }
+  }
+
+  // 2. Check for delimiter `---`
+  const delimiterRegex = /[\r\n]+---[\r\n]+/;
+  if (delimiterRegex.test(trimmed)) {
+    const chunks = trimmed.split(delimiterRegex);
+    return chunks
+      .map((chunk, idx) => {
+        const cTrim = chunk.trim();
+        const dateMatch = cTrim.match(/^\[(.*?)\]\s*[\r\n]+([\s\S]*)$/);
+        if (dateMatch) {
+          return {
+            id: String(idx + 1),
+            date: dateMatch[1],
+            text: dateMatch[2].trim(),
+          };
+        }
+        return {
+          id: String(idx + 1),
+          text: cTrim,
+        };
+      })
+      .filter((n) => n.text.length > 0);
+  }
+
+  // 3. Single note starting with [Date]
+  const singleDateMatch = trimmed.match(/^\[(.*?)\]\s*[\r\n]+([\s\S]*)$/);
+  if (singleDateMatch) {
+    return [
+      {
+        id: "1",
+        date: singleDateMatch[1],
+        text: singleDateMatch[2].trim(),
+      },
+    ];
+  }
+
+  // 4. Default plain note
+  return [
+    {
+      id: "1",
+      text: trimmed,
+    },
+  ];
+};
+
+const serializeNotes = (notes: ParsedNote[]): string => {
+  if (notes.length === 0) return "";
+  return notes
+    .map((n) => {
+      const header = n.date ? `[${n.date}]\n` : "";
+      return `${header}${n.text.trim()}`;
+    })
+    .join("\n\n---\n\n");
+};
+
 export const LeadDetailsPage = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const fromCustomer = location.state?.fromCustomer;
+  const stateLead = location.state?.lead as Lead | undefined;
+  const stateBranchId = location.state?.branch_id ?? stateLead?.branch_id;
+  const stateBranchName = location.state?.branch ?? location.state?.branch_name ?? location.state?.hospital_branch ?? stateLead?.branch ?? stateLead?.branch_name ?? stateLead?.hospital_branch;
+  const stateSpecialisationId = location.state?.specialisation_id ?? stateLead?.specialisation_id;
   const initialTab = searchParams.get('tab') || 'activity';
   const [activeTab, setActiveTab] = useState(initialTab);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -114,21 +239,6 @@ export const LeadDetailsPage = () => {
     setSearchParams({ tab: value });
   };
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
-
-  const handleEditSubmit = async (values: any) => {
-    try {
-      if (lead) {
-        await updateLead({ ...values, uuid: lead.uuid }).unwrap();
-        toast.success("Lead updated successfully");
-      }
-      setIsDrawerOpen(false);
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to update lead");
-    }
-  };
-
   const {
     data: lead,
     isLoading,
@@ -136,6 +246,147 @@ export const LeadDetailsPage = () => {
     error,
     refetch,
   } = useGetLeadByIdQuery({ uuid: leadId || "" }, { skip: !leadId, refetchOnMountOrArgChange: true });
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
+  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
+  const [initiateClickToCall] = useInitiateClickToCallMutation();
+  const [getCallRecords] = useGetCallRecordsMutation();
+  const [uploadFile] = useUploadFileMutation();
+  const [analyzeCall] = useAnalyzeCallMutation();
+  const callRecordsPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [localNote, setLocalNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (callRecordsPollingRef.current) {
+        clearInterval(callRecordsPollingRef.current);
+        callRecordsPollingRef.current = null;
+      }
+    };
+  }, []);
+
+  const cleanLeadNote = React.useMemo(() => {
+    if (localNote !== null) return localNote;
+    if (!lead) return "";
+    const note = (lead.appointment_note || lead.lead_note || lead.notes || (lead as any).note || "").trim();
+    // Exclude address and accidental Kukatpally fallback
+    if (note && lead.address && note.toLowerCase() === lead.address.trim().toLowerCase()) {
+      return "";
+    }
+    if (note.toLowerCase() === "kukatpally") {
+      return "";
+    }
+    return note;
+  }, [lead, localNote]);
+
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  const parsedNotes = React.useMemo<ParsedNote[]>(() => {
+    if (!cleanLeadNote) return [];
+    return parseNotes(cleanLeadNote);
+  }, [cleanLeadNote]);
+
+  const saveNotesPayload = async (updatedNotes: ParsedNote[]) => {
+    if (!lead?.uuid) return false;
+    setIsSavingNote(true);
+    const serialized = serializeNotes(updatedNotes);
+    try {
+      const payload: any = {
+        ...lead,
+        uuid: lead.uuid,
+        appointment_note: serialized,
+        lead_note: serialized,
+        notes: serialized,
+        source_id: Number(lead.source_id || 1),
+        project_id: lead.project_id,
+        lead_priority_id: lead.lead_priority_id || 1,
+        lead_status_id: lead.lead_status_id || 1,
+        first_name: lead.first_name || "",
+        last_name: lead.last_name || "",
+        phone_number: lead.phone_number || "",
+        email_address: lead.email_address || lead.email || "",
+        source_employee_user_id: lead.source_employee_user_id ?? null,
+        assigned_to_rm: lead.assigned_to_rm ?? null,
+        assigned_to_em: lead.assigned_to_em ?? null,
+        occupation: lead.occupation || "",
+        address: lead.address || "",
+        city: lead.city || "",
+        state: lead.state || "",
+        country: lead.country || "",
+        zip: lead.zip || "",
+      };
+
+      await updateLead(payload).unwrap();
+      setLocalNote(serialized);
+      refetch();
+      return true;
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to save note");
+      return false;
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    const trimmed = newNoteText.trim();
+    if (!trimmed) return;
+    const newNote: ParsedNote = {
+      id: String(Date.now()),
+      text: trimmed,
+      date: formatNoteDate(new Date()),
+    };
+    const updated = [newNote, ...parsedNotes];
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note added successfully");
+      setIsAddingNote(false);
+      setNewNoteText("");
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    const trimmed = editingNoteText.trim();
+    if (!trimmed) return;
+    const updated = parsedNotes.map((n) =>
+      n.id === noteId ? { ...n, text: trimmed } : n
+    );
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note updated successfully");
+      setEditingNoteId(null);
+      setEditingNoteText("");
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    const updated = parsedNotes.filter((n) => n.id !== noteId);
+    const ok = await saveNotesPayload(updated);
+    if (ok) {
+      toast.success("Note deleted successfully");
+    }
+  };
+
+  const handleEditSubmit = async (values: any) => {
+    try {
+      if (lead) {
+        await updateLead({ ...values, uuid: lead.uuid }).unwrap();
+        if (values.appointment_note !== undefined) {
+          setLocalNote(values.appointment_note.trim());
+        }
+        toast.success("Lead updated successfully");
+        refetch();
+      }
+      setIsDrawerOpen(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update lead");
+    }
+  };
 
   const handleViewLead = (uuid: string) => {
     navigate(`/leads/${uuid}`);
@@ -150,6 +401,8 @@ export const LeadDetailsPage = () => {
     getCustomerStatusLabel,
     getProjectLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
     getEmLabel,
     masterData,
@@ -176,6 +429,94 @@ export const LeadDetailsPage = () => {
   const displayStatusLabel = lead?.project_lead_status_id
     ? getProjectLeadStatusLabel(lead.project_lead_status_id)
     : getStatusLabel(lead?.lead_status_id);
+
+  const statusOptions = React.useMemo(() => {
+    if (lead?.project_id && projectLeadStatuses) {
+      const opts = getProjectStatusOptions(lead.project_id, projectLeadStatuses);
+      if (opts && opts.length > 0) return opts;
+    }
+    return (masterData?.lead_statuses || []).map((s: any) => ({
+      id: s.id,
+      value: s.id,
+      label: s.description || s.status_name || s.name || `Status ${s.id}`,
+      lead_status_id: s.id,
+    }));
+  }, [lead?.project_id, projectLeadStatuses, masterData?.lead_statuses]);
+
+  const currentStatusValue = React.useMemo(() => {
+    if (projectLeadStatusId) {
+      const match = statusOptions.find((opt: any) => Number(opt.id) === Number(projectLeadStatusId));
+      if (match) return String(match.id);
+    }
+    if (lead?.lead_status_id) {
+      const match = statusOptions.find((opt: any) => Number(opt.lead_status_id || opt.value) === Number(lead.lead_status_id));
+      if (match) return String(match.id || match.value);
+    }
+    return statusOptions[0] ? String(statusOptions[0].id || statusOptions[0].value) : "";
+  }, [projectLeadStatusId, lead?.lead_status_id, statusOptions]);
+
+  const handleStatusChange = async (newVal: string) => {
+    if (!lead) return;
+    const selectedOpt = statusOptions.find((opt: any) => String(opt.id || opt.value) === newVal);
+
+    const updatedPayload: any = {
+      ...lead,
+      uuid: lead.uuid,
+      source_id: Number(lead.source_id || 1),
+      project_id: lead.project_id,
+      lead_priority_id: lead.lead_priority_id || 1,
+      first_name: lead.first_name || '',
+      last_name: lead.last_name || '',
+      phone_number: lead.phone_number,
+      email_address: lead.email_address || lead.email || '',
+      source_employee_user_id: lead.source_employee_user_id ?? null,
+      assigned_to_rm: lead.assigned_to_rm ?? null,
+      assigned_to_em: lead.assigned_to_em ?? null,
+      occupation: lead.occupation || '',
+      address: lead.address || '',
+      city: lead.city || '',
+      state: lead.state || '',
+      country: lead.country || '',
+      zip: lead.zip || '',
+    };
+
+    if (selectedOpt) {
+      if (selectedOpt.id) {
+        updatedPayload.project_lead_status_id = Number(selectedOpt.id);
+      }
+      if (selectedOpt.lead_status_id || selectedOpt.value) {
+        updatedPayload.lead_status_id = Number(selectedOpt.lead_status_id || selectedOpt.value);
+      }
+    } else {
+      updatedPayload.lead_status_id = Number(newVal);
+    }
+
+    try {
+      await updateLead(updatedPayload).unwrap();
+      toast.success("Lead status updated successfully");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update lead status");
+    }
+  };
+
+  const upcomingVisitText = React.useMemo(() => {
+    if (lead?.visits && Array.isArray(lead.visits) && lead.visits.length > 0) {
+      const now = new Date();
+      const upcoming = lead.visits.filter((v: any) => {
+        if (!v.visit_date_time) return false;
+        const vDate = new Date(v.visit_date_time.replace(/Z/g, '').split('+')[0].replace(' ', 'T'));
+        return vDate >= now || v.visit_status === 1;
+      });
+      if (upcoming.length > 0 && upcoming[0].visit_date_time) {
+        return `${upcoming.length} Scheduled (${formatDate(upcoming[0].visit_date_time)})`;
+      }
+    }
+    const leadAny = lead as any;
+    if (leadAny?.appointment_date) {
+      return `${leadAny.appointment_date} ${leadAny.appointment_time || ''}`.trim();
+    }
+    return "No Upcoming Visits";
+  }, [lead]);
 
   const sourceObj = masterData?.sources?.find((s) => s.id === lead?.source_id);
   const isInternalEmployeeSource =
@@ -239,7 +580,7 @@ export const LeadDetailsPage = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate(fromCustomer ? "/customers" : "/leads")}
-          className="gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          className="gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           {fromCustomer ? "Back to Customers" : "Back to Leads Dashboard"}
@@ -271,70 +612,180 @@ export const LeadDetailsPage = () => {
           {/* ═══════════════════════════════════════════════ */}
           {/* CARD 1: Name, Lead ID, Added Date              */}
           {/* ═══════════════════════════════════════════════ */}
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-8 py-6 flex items-center justify-between">
-            <div className="flex items-center gap-5">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
               {/* Avatar */}
               <div
-                className="shrink-0 flex items-center justify-center rounded-2xl text-white font-bold text-2xl"
-                style={{ width: 56, height: 56, backgroundColor: "#0f3d6b" }}
+                className="shrink-0 flex items-center justify-center rounded-xl text-white font-bold text-base"
+                style={{ width: 44, height: 44, backgroundColor: "#0f3d6b" }}
               >
                 {initials}
               </div>
 
               {/* Name + meta */}
               <div>
-                <h2
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "22px",
-                    lineHeight: "28px",
-                    color: "#191C1E",
-                  }}
-                >
+                <h2 className="font-bold text-lg text-[#191C1E] dark:text-zinc-100 font-['Plus_Jakarta_Sans'] capitalize leading-tight">
                   {lead.first_name || ""} {lead.last_name || ""}
                 </h2>
-                <div className="flex items-center gap-3 mt-1">
-                  <span
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                      fontSize: "13px",
-                      color: "#64748B",
-                    }}
-                  >
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-1 text-xs text-[#64748B] font-medium">
+                  <span>
                     Lead ID:{" "}
-                    <span style={{ fontWeight: 700, color: "#0f3d6b" }}>
+                    <span className="font-bold text-[#0f3d6b] dark:text-blue-400">
                       #{lead.lead_id}
                     </span>
                   </span>
-                  <span style={{ color: "#CBD5E1" }}>·</span>
-                  <span
-                    className="flex items-center gap-1.5"
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                      fontSize: "13px",
-                      color: "#64748B",
-                    }}
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    Added: {formatDate(lead.created_on)}
-                  </span>
+                  <span className="text-[#CBD5E1]">·</span>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="flex items-center gap-1.5 cursor-pointer hover:text-[#0f3d6b] transition-colors"
+                          onClick={() => console.log("call is clicked")}
+                        >
+                          <Phone className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
+                          {lead.phone_number || (lead as any).phone || "N/A"}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Call</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  {(lead.email_address || lead.email) && (
+                    <>
+                      <span className="text-[#CBD5E1]">·</span>
+                      <span className="flex items-center gap-1.5">
+                        <Mail className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
+                        {lead.email_address || lead.email}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Points to Talk Dialog */}
-            <PointsToTalkDialog
-              project={getProjectLabel(lead.project_id)}
-              status={displayStatusLabel}
-              projectLeadStatusId={projectLeadStatusId}
-            />
+            <div className="flex items-center gap-2.5">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        console.log("call is clicked");
+                        const customerUuid = lead.customer_uuid || (lead as any).customer_uuid;
+                        const leadUuid = lead.uuid || leadId || (lead as any).lead_uuid;
+                        if (!customerUuid) {
+                          toast.error("Customer UUID not available for this lead");
+                          return;
+                        }
+
+                        try {
+                          await initiateClickToCall({ 
+                            customer_uuid: customerUuid,
+                            lead_uuid: leadUuid || "",
+                          }).unwrap();
+                          toast.success("Call initiated successfully");
+
+                          // Clear previous polling interval if any
+                          if (callRecordsPollingRef.current) {
+                            clearInterval(callRecordsPollingRef.current);
+                            callRecordsPollingRef.current = null;
+                          }
+
+                          const now = new Date();
+                          const fromDate = new Date(now.getTime() - 1 * 60 * 1000); // current time - 1 min
+                          const toDate = new Date(now.getTime() + 5 * 60 * 1000);   // current time + 5 mins
+                          const from_date = formatDateTimeForTataTele(fromDate);
+                          const to_date = formatDateTimeForTataTele(toDate);
+
+                          const pollRecords = async () => {
+                            try {
+                              const res = await getCallRecords({
+                                from_date,
+                                to_date,
+                                limit: 20,
+                                offset: 0,
+                              }).unwrap();
+
+                              const recordsList: any[] = Array.isArray(res?.data?.results)
+                                ? res.data.results
+                                : Array.isArray(res?.results)
+                                  ? res.results
+                                  : Array.isArray(res?.data)
+                                    ? res.data
+                                    : Array.isArray(res)
+                                      ? res
+                                      : [];
+
+                              const foundRecord = recordsList.find((r: any) => r && r.recording_url);
+                              if (foundRecord) {
+                                console.log("Found call record:", foundRecord);
+                                console.log("Call ID:", foundRecord.call_id || foundRecord.id, "Recording URL:", foundRecord.recording_url);
+                                if (callRecordsPollingRef.current) {
+                                  clearInterval(callRecordsPollingRef.current);
+                                  callRecordsPollingRef.current = null;
+                                }
+
+                                const callId = foundRecord.call_id || foundRecord.id || "1";
+                                const cleanPhone = (num: string) => String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
+                                const fromNumber = cleanPhone(foundRecord.agent_number || foundRecord.from_number || lead.phone_number || (lead as any).phone || "");
+                                const toNumber = cleanPhone(foundRecord.client_number || foundRecord.to_number || "1800-123-4567");
+                                const leadName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead";
+                                const cleanUrl = String(foundRecord.recording_url).replace(/["']+/g, "").trim();
+
+                                try {
+                                  toast.info("Analyzing call recording with AI...");
+                                  await analyzeCall({
+                                    call_id: callId,
+                                    lead_uuid: lead.uuid || leadUuid,
+                                    lead_name: leadName,
+                                    from_number: fromNumber,
+                                    to_number: toNumber,
+                                    file: cleanUrl,
+                                  }).unwrap();
+
+                                  toast.success("Call analysis completed successfully!");
+                                  refetch();
+                                } catch (processErr: any) {
+                                  console.error("Error processing call recording:", processErr);
+                                  toast.error(processErr?.data?.message || processErr?.message || "Failed to analyze call recording");
+                                }
+                              }
+                            } catch (pollErr) {
+                              console.error("Error polling call records:", pollErr);
+                            }
+                          };
+
+                          // Poll every 10 seconds
+                          callRecordsPollingRef.current = setInterval(pollRecords, 10000);
+                        } catch (err) {
+                          console.error("Call failed", err);
+                          toast.error("Failed to initiate call");
+                        }
+                      }}
+                      className="h-9 w-9 rounded-full border-zinc-200 hover:bg-zinc-100 text-[#0f3d6b] dark:border-zinc-800 dark:hover:bg-zinc-900 transition-all cursor-pointer"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Call</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Points to Talk Dialog */}
+              <PointsToTalkDialog
+                project={getProjectLabel(lead.project_id)}
+                status={displayStatusLabel}
+                projectLeadStatusId={projectLeadStatusId}
+              />
+            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
-          {/* CARD 2: General Details                         */}
+          {/* CARD 2: Patient Details                         */}
           {/* ═══════════════════════════════════════════════ */}
           <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
             {/* Section heading */}
@@ -352,13 +803,13 @@ export const LeadDetailsPage = () => {
                     color: "#191C1E",
                   }}
                 >
-                  General Details
+                  Patient Details
                 </h3>
               </div>
               {roleCode !== 'EXPMNG' && (
                 <button
                   onClick={() => setIsDrawerOpen(true)}
-                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-50 transition-colors cursor-pointer"
                 >
                   <Pencil className="h-4 w-4 text-zinc-500" />
                 </button>
@@ -366,32 +817,74 @@ export const LeadDetailsPage = () => {
             </div>
 
             {/* Fields */}
-            <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
-              <DetailField
-                label="Creation Date"
-                value={formatDate(lead.created_on)}
-              />
-              <DetailField
-                label="Lead Status"
-                value={
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    {displayStatusLabel}
-                  </span>
-                }
-              />
-              <DetailField
-                label="Customer Status"
-                value={getCustomerStatusLabel(lead.customer_status_id)}
-              />
-              <DetailField
-                label="Project"
-                value={getProjectLabel(lead.project_id)}
-              />
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 xl:gap-x-12 gap-y-7 px-8 py-7">
               <DetailField
                 label="Source"
                 value={getSourceLabel(lead.source_id)}
               />
+              {isInternalEmployeeSource && (
+                <DetailField
+                  label="Source Employee"
+                  value={getSourceEmployeeName()}
+                />
+              )}
+              <DetailField
+                label="Creation Date"
+                value={formatDate(lead.created_on)}
+              />
+              <div className="space-y-2">
+                <Select
+                  value={currentStatusValue}
+                  onValueChange={handleStatusChange}
+                  disabled={isUpdating}
+                >
+                  <SelectTrigger className="w-full text-left bg-transparent border-none p-0 shadow-none focus:ring-0 focus:outline-none group cursor-pointer h-auto [&>svg]:hidden">
+                    <div className="space-y-2">
+                      <dt style={labelStyle} className="flex items-center gap-1.5">
+                        <span>LEAD STATUS</span>
+                        <Pencil className="h-3.5 w-3.5 text-zinc-400 group-hover:text-[#0f3d6b] shrink-0 transition-colors" />
+                      </dt>
+                      <dd style={valueStyle} className="flex items-center gap-2">
+                        <span style={valueStyle} className="truncate max-w-[200px] block" title={displayStatusLabel}>
+                          {displayStatusLabel}
+                        </span>
+                      </dd>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="w-[260px] max-h-[240px] overflow-y-auto p-1 shadow-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl">
+                    {statusOptions.map((opt: any) => (
+                      <SelectItem
+                        key={opt.id || opt.value}
+                        value={String(opt.id || opt.value)}
+                        className="py-1.5 px-2 text-xs font-medium cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                      >
+                        <div className="w-full max-w-[200px] truncate" title={opt.label}>
+                          <span className="truncate text-xs text-zinc-800 dark:text-zinc-200">
+                            {opt.label}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Customer Status commented out as requested
+              <DetailField
+                label="Customer Status"
+                value={getCustomerStatusLabel(lead.customer_status_id)}
+              />
+              */}
+              <DetailField
+                label="Upcoming Visits"
+                value={upcomingVisitText}
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
+              />
+              {/* Project field commented out as requested
+              <DetailField
+                label="Project"
+                value={getProjectLabel(lead.project_id)}
+              />
+              */}
               <DetailField
                 label="Assigned RM"
                 value={
@@ -409,12 +902,7 @@ export const LeadDetailsPage = () => {
                   ) : null
                 }
               />
-              {isInternalEmployeeSource && (
-                <DetailField
-                  label="Source Employee"
-                  value={getSourceEmployeeName()}
-                />
-              )}
+              {/* Assigned EM commented out as requested
               <DetailField
                 label="Assigned EM"
                 value={
@@ -434,6 +922,9 @@ export const LeadDetailsPage = () => {
                   )
                 }
               />
+              */}
+              {/* Occupation, Phone Number, Email Address commented out as requested */}
+              {/*
               <DetailField label="Occupation" value={lead.occupation} />
               <DetailField
                 label="Phone Number"
@@ -442,17 +933,58 @@ export const LeadDetailsPage = () => {
               />
               <DetailField
                 label="Email Address"
-                value={lead.email_address}
+                value={lead.email_address || lead.email}
                 icon={<Mail className="h-4 w-4 text-[#64748B]" />}
+              />
+              */}
+              <DetailField
+                label="Branch"
+                value={
+                  (lead?.branch_id ?? stateBranchId)
+                    ? getBranchLabel(lead?.branch_id ?? stateBranchId)
+                    : (lead?.hospital_branch || lead?.branch || lead?.branch_name || stateBranchName || getProjectLabel(lead?.project_id) || "--")
+                }
+              />
+              <DetailField
+                label="Follow Up Date"
+                value={
+                  lead?.followup_date || lead?.next_followup_date
+                    ? formatDate(lead?.followup_date || lead?.next_followup_date)
+                    : (lead?.follow_ups && lead?.follow_ups.length > 0
+                      ? formatDate(lead?.follow_ups[0].date_time)
+                      : (lead?.followups && lead?.followups.length > 0
+                        ? formatDate(lead?.followups[0].date_time)
+                        : "--"))
+                }
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
+              />
+              <DetailField
+                label="Appointment Date"
+                value={
+                  lead?.appointment_date
+                    ? formatDate(lead?.appointment_date)
+                    : (lead?.visits && lead?.visits.length > 0 && lead?.visits[0].visit_date_time
+                      ? formatDate(lead?.visits[0].visit_date_time)
+                      : "--")
+                }
+                icon={<Calendar className="h-4 w-4 text-[#0f3d6b]" />}
+              />
+              <DetailField
+                label="Department"
+                value={
+                  (lead?.specialisation_id ?? stateSpecialisationId)
+                    ? getSpecialisationLabel(lead?.specialisation_id ?? stateSpecialisationId)
+                    : (lead?.department || lead?.specialization || "--")
+                }
               />
             </dl>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
-          {/* CARD 3: Address Details                         */}
+          {/* CARD 3: Address Details (Commented)             */}
           {/* ═══════════════════════════════════════════════ */}
+          {/*
           <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            {/* Section heading */}
             <div className="flex items-center gap-2.5 px-8 pt-7 pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center">
                 <MapPin className="h-4 w-4 text-[#0f3d6b]" />
@@ -465,19 +997,53 @@ export const LeadDetailsPage = () => {
                   lineHeight: "24px",
                   color: "#191C1E",
                 }}
+          {/* CARD 3: Lead Followups & Notes                  */}
+          {/* ═══════════════════════════════════════════════ */}
+          <div ref={followupsRef} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            {/* Section heading */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0">
+                  <Calendar className="h-4 w-4 text-[#0f3d6b]" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <h3
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "17px",
+                      lineHeight: "22px",
+                      color: "#191C1E",
+                    }}
+                  >
+                    Lead Followups &amp; Notes
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFollowupModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-5 h-9 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-full text-xs font-semibold transition-all cursor-pointer active:scale-95"
               >
-                Address Details
-              </h3>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Create Follow-Up</span>
+              </button>
             </div>
 
-            {/* Fields */}
-            <dl className="grid grid-cols-2 gap-x-16 gap-y-7 px-8 py-7">
-              <DetailField label="State" value={masterData?.states?.find((s: any) => s.id === lead.state_id)?.description || lead.state} />
-              <DetailField label="Country" value={lead.country} />
-              <DetailField label="City" value={lead.city} />
-              <DetailField label="Zip Code" value={lead.zip} />
-              <DetailField label="Street" value={lead.address} />
-            </dl>
+            {/* Followups & Notes Content */}
+            <div className="overflow-y-auto flex-1 p-4 sm:p-5">
+              <LeadFollowUpsTab
+                lead={lead ? {
+                  ...lead,
+                  branch_id: lead.branch_id ?? stateBranchId,
+                  specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+                } : lead}
+                masterData={masterData}
+                hideHeader={true}
+                createModalOpen={isFollowupModalOpen}
+                setCreateModalOpen={setIsFollowupModalOpen}
+              />
+            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
@@ -487,8 +1053,8 @@ export const LeadDetailsPage = () => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col">
               {/* Tab triggers */}
               <div className="border-b border-zinc-200 dark:border-zinc-800">
-                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6">
-                  {["activity", "calls", "chats", "visits", "enquiries", "followups"].map((tab) => {
+                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-5">
+                  {["activity", "calls", "chats", "visits", "enquiries"].map((tab) => {
                     return (
                       <TabsTrigger
                         key={tab}
@@ -502,9 +1068,10 @@ export const LeadDetailsPage = () => {
                           data-[state=active]:shadow-none
                           transition-all
                           flex items-center justify-center gap-1
+                          cursor-pointer
                         "
                       >
-                        {tab === "followups" ? "Follow Ups" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                        {tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
                       </TabsTrigger>
                     );
                   })}
@@ -518,9 +1085,9 @@ export const LeadDetailsPage = () => {
                 </TabsContent>
 
                 <TabsContent value="calls" className="mt-0">
-                  <LeadCallsTab 
-                    calls={lead?.calls} 
-                    leadPhoneNumber={lead?.phone_number} 
+                  <LeadCallsTab
+                    calls={lead?.calls}
+                    leadPhoneNumber={lead?.phone_number}
                     objections={lead?.objections}
                     masterObjections={masterData?.objections}
                   />
@@ -540,25 +1107,34 @@ export const LeadDetailsPage = () => {
                 <TabsContent value="visits" className="mt-0">
                   <LeadVisitsTab
                     visits={lead?.visits}
-                    lead={lead}
-                    siteVisitStatuses={masterData?.site_visit_status || []}
-                    getSiteVisitStatusLabel={(id) =>
-                      masterData?.site_visit_status?.find(
-                        (s: any) => s.id === id,
-                      )?.description || String(id)
+                    lead={lead ? {
+                      ...lead,
+                      branch_id: lead.branch_id ?? stateBranchId,
+                      specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+                    } : lead}
+                    siteVisitStatuses={
+                      masterData?.appointment_status ||
+                      (masterData as any)?.appointment_statuses ||
+                      masterData?.site_visit_status ||
+                      []
                     }
+                    getSiteVisitStatusLabel={(id) => {
+                      const allStatuses =
+                        masterData?.appointment_status ||
+                        (masterData as any)?.appointment_statuses ||
+                        masterData?.site_visit_status ||
+                        [];
+                      return (
+                        allStatuses.find((s: any) => Number(s.id) === Number(id))?.description ||
+                        String(id)
+                      );
+                    }}
                   />
                 </TabsContent>
 
                 <TabsContent value="enquiries" className="mt-0">
                   <div ref={enquiriesRef}>
                     <LeadEnquiriesTab leadId={leadId} enquiries={lead?.enquires} onView={handleViewLead} />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="followups" className="mt-0">
-                  <div ref={followupsRef}>
-                    <LeadFollowUpsTab lead={lead} masterData={masterData} />
                   </div>
                 </TabsContent>
               </div>
@@ -572,7 +1148,11 @@ export const LeadDetailsPage = () => {
             description="Update the details for this lead"
           >
             <LeadForm
-              initialValues={lead}
+              initialValues={lead ? {
+                ...lead,
+                branch_id: lead.branch_id ?? stateBranchId,
+                specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+              } : undefined}
               onSubmit={handleEditSubmit}
               isLoading={isUpdating}
               isEdit={true}

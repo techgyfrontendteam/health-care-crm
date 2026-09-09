@@ -14,6 +14,8 @@ import type {
   BulkImportLeadsRequest,
   BulkImportLeadsResponse,
   ProjectEmAndRmData,
+  CreateSurgeryRequest,
+  CreateSurgeryResponse,
 } from "../types";
 
 export const leadsApi = baseApi.injectEndpoints({
@@ -75,7 +77,10 @@ export const leadsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Leads"],
+      invalidatesTags: (result, error, arg) => [
+        "Leads",
+        { type: "Leads", id: arg.uuid },
+      ],
       async onQueryStarted(arg, { dispatch, queryFulfilled, getState }) {
         try {
           await queryFulfilled;
@@ -116,8 +121,12 @@ export const leadsApi = baseApi.injectEndpoints({
                 leadsApi.util.updateQueryData(
                   "getLeadById",
                   queries[key].originalArgs,
-                  (draft) => {
-                    if (draft.uuid === arg.uuid) Object.assign(draft, arg);
+                  (draft: any) => {
+                    if (draft?.uuid === arg.uuid) {
+                      Object.assign(draft, arg);
+                    } else if (draft?.data?.uuid === arg.uuid) {
+                      Object.assign(draft.data, arg);
+                    }
                   },
                 ),
               );
@@ -182,14 +191,13 @@ export const leadsApi = baseApi.injectEndpoints({
       {
         user_ids: number[];
         offset: number;
-        date?: string;
-        visit_status?: number;
-        start_date?: string;
-        end_date?: string;
+        start_date: string;
+        end_date: string;
+        appointments_status_id: number;
       }
     >({
       query: (params) => ({
-        url: "/leadSiteVisits/getVisitsByUserId",
+        url: "/appointments/getVisitsByUserId",
         method: "POST",
         body: params,
       }),
@@ -214,6 +222,17 @@ export const leadsApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Leads"],
     }),
+    createSurgery: builder.mutation<CreateSurgeryResponse, CreateSurgeryRequest>({
+      query: (body) => ({
+        url: "/leadSurgeries/createSurgery",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Leads",
+        { type: "Leads", id: arg.lead_uuid },
+      ],
+    }),
   }),
 });
 
@@ -235,4 +254,5 @@ export const {
   useLazyGetLeadByIdQuery,
   useLazyGetLeadsQuery,
   useGetAllProjectEmAndRmDataQuery,
+  useCreateSurgeryMutation,
 } = leadsApi;

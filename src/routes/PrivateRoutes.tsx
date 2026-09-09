@@ -55,20 +55,36 @@ const WarRoomPage = React.lazy(() =>
 const MarketingDashboardPage = React.lazy(() =>
   import("../features/marketing-dashboard/pages/MarketingDashboardPage").then((m) => ({ default: m.MarketingDashboardPage }))
 );
+const DoctorsPage = React.lazy(() =>
+  import("../features/doctors/pages/DoctorsPage").then((m) => ({ default: m.DoctorsPage }))
+);
+const RevenueDashboardPage = React.lazy(() =>
+  import("../features/revenue/pages/RevenueDashboardPage").then((m) => ({ default: m.RevenueDashboardPage }))
+);
+const SalesDashboardPage = React.lazy(() =>
+  import("../features/sales/pages/SalesDashboardPage").then((m) => ({ default: m.SalesDashboardPage }))
+);
 
+
+const ComingSoonReportPage = React.lazy(() => import('../features/reports/pages/ComingSoonReportPage').then(m => ({ default: m.ComingSoonReportPage })));
+const CallAnalyzerPage = React.lazy(() => import('../features/call-analyzer/pages/CallAnalyzerPage').then(m => ({ default: m.CallAnalyzerPage })));
 
 export const PrivateRoutes = (
   <Route element={<MainLayout />}>
     <Route path="/" element={<Navigate to="/leads" replace />} />
-    <Route path="/project-analytics" element={<ProjectAnalyticsPage />} />
-    <Route path="/master-data" element={<MasterDataPage />} />
-    <Route path="/master-data/lead-statuses" element={<LeadStatusesPage />} />
-    <Route path="/master-data/content" element={<ContentPage />} />
-    <Route path="/master-data/content-types" element={<ContentTypesPage />} />
-    <Route path="/master-data/follow-up-statuses" element={<FollowUpStatusesPage />} />
-    <Route path="/master-data/objections" element={<ObjectionsPage />} />
-    <Route path="/master-data/project-score" element={<ProjectScorePage />} />
-    <Route path="/master-data/points" element={<PointsPage />} />
+    <Route path="/doctors" element={<DoctorsPage />} />
+    <Route path="/revenue" element={<RevenueDashboardPage />} />
+    <Route path="/reports/revenue" element={<RevenueDashboardPage />} />
+    <Route path="/sales" element={<SalesDashboardPage />} />
+    {/* <Route path="/project-analytics" element={<ProjectAnalyticsPage />} /> */}
+    {/* <Route path="/master-data" element={<MasterDataPage />} /> */}
+    {/* <Route path="/master-data/lead-statuses" element={<LeadStatusesPage />} /> */}
+    {/* <Route path="/master-data/content" element={<ContentPage />} /> */}
+    {/* <Route path="/master-data/content-types" element={<ContentTypesPage />} /> */}
+    {/* <Route path="/master-data/follow-up-statuses" element={<FollowUpStatusesPage />} /> */}
+    {/* <Route path="/master-data/objections" element={<ObjectionsPage />} /> */}
+    {/* <Route path="/master-data/project-score" element={<ProjectScorePage />} /> */}
+    {/* <Route path="/master-data/points" element={<PointsPage />} /> */}
     <Route path="/update-password" element={<UpdatePasswordPage />} />
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/leads" element={<LeadsPage />} />
@@ -79,23 +95,26 @@ export const PrivateRoutes = (
     <Route path="/scheduled-visits" element={<ScheduledVisitsPage />} />
     <Route path="/scheduled-visits/:emId" element={<ScheduledVisitsPage />} />
     <Route path="/visit-feedback/completed/:visitId" element={<VisitFeedbackAuditPage />} />
-    <Route path="/customers" element={<CustomersPage />} />
+    {/* <Route path="/customers" element={<CustomersPage />} /> */}
     <Route path="/relationship-managers" element={<RelationshipManagersPage />} />
     <Route path="/relationship-managers/dashboard" element={<RmDashboardPage />} />
     <Route path="/relationship-managers/stale" element={<RelationshipManagersPage />} />
     <Route path="/relationship-managers/escalated" element={<RelationshipManagersPage />} />
     <Route path="/relationship-managers/leaderboard" element={<RelationshipManagersPage />} />
     <Route path="/relationship-managers/table" element={<RelationshipManagersPage />} />
-    <Route path="/agents" element={<AgentsPage />} />
+    {/* <Route path="/agents" element={<AgentsPage />} /> */}
     <Route path="/agents/dashboard" element={<EmDashboardPage />} />
     <Route path="/playground" element={<PlaygroundPage />} />
     <Route path="/reports" element={<ReportsPage />} />
-    <Route path="/reports/daily-sales" element={<DailySalesReportPage />} />
-    <Route path="/reports/project-objections" element={<ProjectObjectionsPage />} />
-    <Route path="/reports/persona" element={<PersonaSegmentPage />} />
-    <Route path="/reports/lead-quality" element={<LeadSourceQualityPage />} />
-    <Route path="/reports/campaigns" element={<CampaignPerformancePage />} />
-    <Route path="/war-room" element={<WarRoomPage />} />
-    <Route path="/marketing-dashboard" element={<MarketingDashboardPage />} />
+    {/* <Route path="/reports/daily-sales" element={<DailySalesReportPage />} /> */}
+    {/* <Route path="/reports/project-objections" element={<ProjectObjectionsPage />} /> */}
+    {/* <Route path="/reports/persona" element={<PersonaSegmentPage />} /> */}
+    {/* <Route path="/reports/lead-quality" element={<LeadSourceQualityPage />} /> */}
+    {/* <Route path="/reports/campaigns" element={<CampaignPerformancePage />} /> */}
+    <Route path="/reports/op-reports" element={<ComingSoonReportPage title="OP Reports" />} />
+    <Route path="/reports/ip-reports" element={<ComingSoonReportPage title="IP Reports" />} />
+    <Route path="/analyse/call-recording" element={<CallAnalyzerPage />} />
+    {/* <Route path="/war-room" element={<WarRoomPage />} /> */}
+    {/* <Route path="/marketing-dashboard" element={<MarketingDashboardPage />} /> */}
   </Route>
 );

@@ -103,6 +103,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
         render: (l: Lead) => (
           <Link
             to={`/leads/${l.uuid}`}
+            state={{ lead: l, branch_id: l.branch_id, branch: l.branch, branch_name: l.branch_name, hospital_branch: l.hospital_branch, specialisation_id: l.specialisation_id, department: l.department }}
             className="text-secondary-foreground font-semibold hover:text-primary transition-colors text-xs"
           >
             #{fallback(l.lead_id)}

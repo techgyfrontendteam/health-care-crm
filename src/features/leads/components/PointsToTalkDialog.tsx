@@ -39,31 +39,9 @@ export const PointsToTalkDialog = ({ project, status, projectLeadStatusId }: Poi
     <Popover>
       <PopoverTrigger asChild>
         <button
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "10px 24px",
-            width: "175px",
-            height: "40px",
-            background: "#063669",
-            borderRadius: "9999px",
-            boxShadow:
-              "0px 10px 15px -3px rgba(6, 54, 105, 0.2), 0px 4px 6px -4px rgba(6, 54, 105, 0.2)",
-          }}
+          className="flex items-center justify-center px-5 h-9 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer"
         >
-          <span
-            style={{
-              fontFamily: "Inter, sans-serif",
-              fontWeight: 600,
-              fontSize: "14px",
-              lineHeight: "20px",
-              color: "#FFFFFF",
-            }}
-          >
-            Points to Talk
-          </span>
+          <span>Points to Talk</span>
         </button>
       </PopoverTrigger>
 

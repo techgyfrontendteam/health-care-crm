@@ -5,7 +5,9 @@ import {
   Building2, 
   Users, 
   Star, 
-  Gauge
+  Gauge,
+  IndianRupee,
+  Stethoscope,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Report } from "../types";
@@ -26,6 +28,9 @@ const iconMap: Record<number, IconConfig> = {
   3: { src: "/icons/persona.png", fallback: Users },
   4: { src: "/icons/lead-quality.png", fallback: Star },
   5: { src: "/icons/campaign-perf.png", fallback: Gauge },
+  100: { src: "", fallback: IndianRupee },
+  101: { src: "", fallback: Stethoscope },
+  102: { src: "", fallback: Building2 },
 };
 
 export const ReportCard = ({ report }: ReportCardProps) => {
@@ -34,7 +39,9 @@ export const ReportCard = ({ report }: ReportCardProps) => {
   const iconConfig = iconMap[report.id] || { src: "", fallback: BarChart3 };
 
   const handleClick = () => {
-    if (report.id === 1) {
+    if (report.path) {
+      navigate(report.path);
+    } else if (report.id === 1) {
       navigate("/reports/daily-sales");
     } else if (report.id === 2) {
       navigate("/reports/project-objections");

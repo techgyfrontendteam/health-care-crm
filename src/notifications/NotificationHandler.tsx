@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { requestForToken, deleteCurrentToken, app } from './firebase';
-import { getMessaging, onMessage } from 'firebase/messaging';
+import { requestForToken, deleteCurrentToken, getMessagingInstance } from './firebase';
+import { onMessage } from 'firebase/messaging';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useSelector } from 'react-redux';
@@ -16,6 +16,8 @@ export const NotificationHandler: React.FC = () => {
 
   useEffect(() => {
     let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+    let unsubscribe: (() => void) | undefined;
+    let isMounted = true;
 
     const setupNotifications = async () => {
       if (!isAuthenticated || !authToken) {
@@ -34,6 +36,7 @@ export const NotificationHandler: React.FC = () => {
       registeredTokenRef.current = authToken;
 
       const fcmToken = await requestForToken();
+      if (!isMounted) return;
 
       if (fcmToken) {
         let deviceId = localStorage.getItem('fcm_device_id');
@@ -52,6 +55,8 @@ export const NotificationHandler: React.FC = () => {
         const lastRegisteredUser = localStorage.getItem('last_registered_user_id');
         const needsRegistration = fcmToken !== lastRegisteredToken || (Boolean(user?.id) && user?.id !== lastRegisteredUser);
 
+        // Heartbeat commented out to prevent periodic refresh and unnecessary deviceHeartbeat calls
+        /*
         const sendHeartbeat = async () => {
           try {
             await deviceHeartbeat({
@@ -61,6 +66,7 @@ export const NotificationHandler: React.FC = () => {
           } catch (error) {
           }
         };
+        */
 
         if (needsRegistration) {
           try {
@@ -79,8 +85,9 @@ export const NotificationHandler: React.FC = () => {
           }
         }
 
-        await sendHeartbeat();
-        heartbeatInterval = setInterval(sendHeartbeat, 5 * 60 * 1000);
+        // Periodic heartbeat commented out as requested
+        // await sendHeartbeat();
+        // heartbeatInterval = setInterval(sendHeartbeat, 5 * 60 * 1000);
       } else {
         registeredTokenRef.current = null;
       }
@@ -88,51 +95,58 @@ export const NotificationHandler: React.FC = () => {
 
     setupNotifications();
 
-    const messaging = getMessaging(app);
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("🔥 INCOMING FOREGROUND NOTIFICATION RECEIVED:", payload);
+    // Safely setup onMessage only if messaging is supported
+    getMessagingInstance().then((messaging) => {
+      if (!messaging || !isMounted) return;
 
-      const title =
-        payload?.data?.title ||
-        payload?.notification?.title ||
-        "New Message";
+      unsubscribe = onMessage(messaging, (payload) => {
+        console.log("🔥 INCOMING FOREGROUND NOTIFICATION RECEIVED:", payload);
 
-      const body =
-        payload?.data?.message ||
-        payload?.data?.body ||
-        payload?.notification?.body ||
-        "";
+        const title =
+          payload?.data?.title ||
+          payload?.notification?.title ||
+          "New Message";
 
-      toast.info(title, {
-        description: body,
-      });
+        const body =
+          payload?.data?.message ||
+          payload?.data?.body ||
+          payload?.notification?.body ||
+          "";
 
-      if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification(title, {
-            body: body,
-            icon: "/favicon.svg",
-            data: payload.data || {}
-          });
-        } catch (e) {
+        toast.info(title, {
+          description: body,
+        });
+
+        if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification(title, {
+              body: body,
+              icon: "/favicon.svg",
+              data: payload.data || {}
+            });
+          } catch (e) {
+          }
         }
-      }
 
-      const detail = { 
-        id: Date.now(),
-        title, 
-        body, 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      };
-      window.dispatchEvent(new CustomEvent("push_notification_received", { detail }));
-      window.dispatchEvent(new Event("new_message_received"));
-    });
+        const detail = {
+          id: Date.now(),
+          title,
+          body,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        window.dispatchEvent(new CustomEvent("push_notification_received", { detail }));
+        window.dispatchEvent(new Event("new_message_received"));
+      });
+    }).catch(() => {});
 
     return () => {
+      isMounted = false;
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [isAuthenticated, authToken, user?.id]);
 

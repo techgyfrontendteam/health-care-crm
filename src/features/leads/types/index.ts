@@ -77,6 +77,7 @@ export interface Lead {
   first_name?: string;
   last_name?: string;
   email_address?: string;
+  email?: string;
   occupation?: string;
   address?: string;
   city?: string;
@@ -88,6 +89,21 @@ export interface Lead {
   income?: number;
   junk_reason?: string;
   customer_status_id?: number;
+  hospital_branch?: string;
+  branch_id?: number;
+  branch?: string;
+  branch_name?: string;
+  followup_date?: string;
+  next_followup_date?: string;
+  appointment_date?: string;
+  specialisation_id?: number;
+  specialization?: string;
+  department?: string;
+  doctor_name?: string;
+  doctor?: string;
+  appointment_note?: string;
+  lead_note?: string;
+  notes?: string;
   remarks?: LeadRemark[];
   calls?: LeadCall[];
   visits?: LeadVisit[];
@@ -149,6 +165,12 @@ export interface CreateLeadRequest {
   junk_reason?: string;
   dob?: string;
   income?: number;
+  department?: string;
+  specialisation_id?: number;
+  doctor_id?: number | null;
+  appointment_date?: string;
+  appointment_time?: string;
+  appointment_note?: string;
 }
 
 export interface UpdateLeadRequest extends CreateLeadRequest {
@@ -255,24 +277,47 @@ export interface AIToneMood {
   moodScore: string;
 }
 
-export interface AISentiment {
-  overall: string;
-  score: string;
-  reason: string;
-  sentimentExplanation: string[];
+export interface SymptomDetail {
+  symptom: string;
+  onset?: string;
+  duration?: string;
+  severity?: string;
+}
+
+export interface ConfirmedBookingDetails {
+  branch?: string;
+  time?: string;
+  date?: string;
+  department?: string;
+  booking_status?: string;
+}
+
+export interface CallSummarySentiment {
+  score?: string;
+  reason?: string;
+  overall?: string;
+  sentimentExplanation?: string[];
 }
 
 export interface CallSummaryJSON {
-  has_real_conversation: boolean;
-  overview: string;
-  sentiment: AISentiment;
-  checklist: AIChecklistItem[];
-  keyPoints: string[];
-  speakers: AISpeaker[];
-  actionItems: AIActionItem[];
-  followUp: AIFollowUp;
-  callOutcome: string;
-  tone_based_mood_analaysis: AIToneMood;
+  overview?: string;
+  total_call_time?: string;
+  symptoms?: SymptomDetail[];
+  recent_medical_history?: string[];
+  confirmed_details?: ConfirmedBookingDetails;
+  follow_up_plan?: string[];
+  sentiment?: CallSummarySentiment;
+  complete_transcript?: string;
+  // Legacy / fallback fields
+  has_real_conversation?: boolean;
+  checklist?: AIChecklistItem[];
+  keyPoints?: string[];
+  speakers?: AISpeaker[];
+  actionItems?: AIActionItem[];
+  followUp?: AIFollowUp;
+  callOutcome?: string;
+  tone_based_mood_analaysis?: AIToneMood;
+  [key: string]: any;
 }
 
 export interface BulkImportLeadsRequest {
@@ -307,3 +352,19 @@ export interface ProjectEmAndRmData {
   project_id: number;
   rm_data: ProjectRmData[];
 }
+
+export interface CreateSurgeryRequest {
+  lead_uuid: string;
+  doctor_id: number;
+  surgery_type_id: number;
+  surgery_date_time: string;
+  surgery_status_id: number;
+  surgery_remarks: string;
+}
+
+export interface CreateSurgeryResponse {
+  message?: string;
+  data?: any;
+  [key: string]: any;
+}
+

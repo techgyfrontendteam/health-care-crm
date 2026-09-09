@@ -670,8 +670,9 @@ export const LeadsPage = () => {
       projectLeadStatuses || []
     );
     const selectedOption = projectOptions.find((o: any) => o.id === newStatusId);
+    const isJunkSelected = (junkStatus && newStatusId === junkStatus.id) || (junkStatus && selectedOption && selectedOption.lead_status_id === junkStatus.id);
 
-    if (junkStatus && selectedOption && selectedOption.lead_status_id === junkStatus.id) {
+    if (isJunkSelected) {
       setPendingJunkUpdate({ lead, statusId: newStatusId });
       setIsJunkDialogOpen(true);
       return;
@@ -696,6 +697,7 @@ export const LeadsPage = () => {
         assigned_to_rm: lead.assigned_to_rm || null,
         assigned_to_em: lead.assigned_to_em || null,
         lead_priority_id: lead.lead_priority_id || 1,
+        lead_status_id: newStatusId,
         project_lead_status_id: newStatusId,
       };
 
@@ -705,7 +707,7 @@ export const LeadsPage = () => {
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to update status');
     }
-  }, [updateLead, masterData, handleRefetch]);
+  }, [updateLead, masterData, projectLeadStatuses, handleRefetch]);
 
   const handleJunkReasonConfirm = async (reason: string) => {
     if (!pendingJunkUpdate) return;
@@ -729,6 +731,7 @@ export const LeadsPage = () => {
         assigned_to_rm: lead.assigned_to_rm || null,
         assigned_to_em: lead.assigned_to_em || null,
         lead_priority_id: lead.lead_priority_id || 1,
+        lead_status_id: statusId,
         project_lead_status_id: statusId,
         junk_reason: reason,
       };

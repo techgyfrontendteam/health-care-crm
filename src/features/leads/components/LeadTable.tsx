@@ -285,18 +285,33 @@ const StatusCell = ({
   disabled,
 }: {
   lead: Lead;
-  options: { id: number; label: string; lead_status_id: number }[];
-  onUpdateStatus: (lead: Lead, projectLeadStatusId: number) => void;
+  options: { id: number; label: string; lead_status_id?: number; code?: string }[];
+  onUpdateStatus: (lead: Lead, statusId: number) => void;
   disabled: boolean;
 }) => {
   const [open, setOpen] = useState(false);
-  // Find current status using project_lead_status_id
-  const currentStatus = options.find((o) => o.id === lead.project_lead_status_id);
   const [search, setSearch] = useState("");
+
+  // Find current status matching lead_status_id or project_lead_status_id
+  const currentStatus = options.find(
+    (o) =>
+      (lead.lead_status_id && (o.lead_status_id === lead.lead_status_id || o.id === lead.lead_status_id)) ||
+      (lead.project_lead_status_id && (o.id === lead.project_lead_status_id || o.lead_status_id === lead.project_lead_status_id))
+  );
 
   const filteredOptions = options.filter((o) =>
     o.label?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const isCurrent = (o: { id: number; lead_status_id?: number }) => {
+    if (lead.lead_status_id) {
+      return o.lead_status_id === lead.lead_status_id || o.id === lead.lead_status_id;
+    }
+    if (lead.project_lead_status_id) {
+      return o.id === lead.project_lead_status_id || o.lead_status_id === lead.project_lead_status_id;
+    }
+    return false;
+  };
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -304,7 +319,7 @@ const StatusCell = ({
         <PopoverTrigger asChild disabled={disabled}>
           <button
             className={cn(
-              "h-8 text-[11px] font-bold uppercase w-36 bg-source-bg text-primary border-2 border-primary/40 rounded-full focus:ring-0 px-4 hover:border-primary transition-colors flex items-center justify-between",
+              "h-8 text-[11px] font-bold uppercase w-36 bg-source-bg text-primary border-2 border-primary/40 rounded-full focus:ring-0 px-4 hover:border-primary transition-colors flex items-center justify-between cursor-pointer",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -326,25 +341,28 @@ const StatusCell = ({
               No status found
             </CommandEmpty>
             <CommandGroup className="max-h-60 overflow-y-auto">
-              {filteredOptions.map((o) => (
-                <CommandItem
-                  key={o.id}
-                  value={o.label}
-                  onSelect={() => {
-                    onUpdateStatus(lead, o.id);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 py-2 cursor-pointer text-[10px] uppercase font-bold",
-                    lead.project_lead_status_id === o.id && "bg-primary/5 text-primary"
-                  )}
-                >
-                  <span>{o.label}</span>
-                  {lead.project_lead_status_id === o.id && (
-                    <span className="ml-auto text-[9px] text-primary font-bold">CURRENT</span>
-                  )}
-                </CommandItem>
-              ))}
+              {filteredOptions.map((o) => {
+                const isSelected = isCurrent(o);
+                return (
+                  <CommandItem
+                    key={o.id}
+                    value={o.label}
+                    onSelect={() => {
+                      onUpdateStatus(lead, o.lead_status_id || o.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 py-2 cursor-pointer text-[10px] uppercase font-bold",
+                      isSelected && "bg-primary/5 text-primary"
+                    )}
+                  >
+                    <span>{o.label}</span>
+                    {isSelected && (
+                      <span className="ml-auto text-[9px] text-primary font-bold">CURRENT</span>
+                    )}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </Command>
         </PopoverContent>
@@ -412,6 +430,8 @@ export const LeadTable = ({
     getProjectLabel,
     getEmLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     masterData,
     projectLeadStatuses,
     isLoading: isLookupLoading
@@ -469,6 +489,7 @@ export const LeadTable = ({
         render: (l: Lead) => (
           <Link
             to={`/leads/${l.uuid}`}
+            state={{ lead: l, branch_id: l.branch_id, branch: l.branch, branch_name: l.branch_name, hospital_branch: l.hospital_branch, specialisation_id: l.specialisation_id, department: l.department, doctor_name: l.doctor_name }}
             className="text-secondary-foreground font-semibold hover:text-primary transition-colors text-xs"
           >
             #{fallback(l.lead_id)}
@@ -498,26 +519,7 @@ export const LeadTable = ({
         ),
       },
 
-      {
-        key: 'dob',
-        header: 'DOB',
-        width: '120px',
-        render: (l: Lead) => {
-          if (!l.dob) return '--';
-
-          const formatted = new Date(l.dob).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
-
-          return (
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {formatted}
-            </span>
-          );
-        },
-      },
+      /* Income column commented out as requested
       {
         key: 'income',
         header: 'INCOME',
@@ -528,6 +530,7 @@ export const LeadTable = ({
           </span>
         ),
       },
+      */
       {
         key: 'created_on',
         header: 'CREATION DATE',
@@ -563,10 +566,34 @@ export const LeadTable = ({
         },
       },
       {
-        key: 'project_id',
-        header: 'PROJECT',
+        key: 'branch_id',
+        header: 'BRANCH',
         width: '150px',
-        render: (l: Lead) => <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{getProjectLabel(l.project_id)}</span>,
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {l.branch_id ? getBranchLabel(l.branch_id) : (l.hospital_branch || l.branch || l.branch_name || getProjectLabel(l.project_id) || '--')}
+          </span>
+        ),
+      },
+      {
+        key: 'specialisation_id',
+        header: 'DEPARTMENT',
+        width: '160px',
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {l.specialisation_id ? getSpecialisationLabel(l.specialisation_id) : (l.specialization || l.department || '--')}
+          </span>
+        ),
+      },
+      {
+        key: 'doctor_name',
+        header: 'DOCTOR NAME',
+        width: '160px',
+        render: (l: Lead) => (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {l.doctor_name || (l as any).doctor || '--'}
+          </span>
+        ),
       },
       {
         key: 'enquiries',
@@ -576,6 +603,7 @@ export const LeadTable = ({
           <div className="text-center w-full">
             <Link
               to={`/leads/${l.uuid}?tab=enquiries`}
+              state={{ lead: l, branch_id: l.branch_id, branch: l.branch, branch_name: l.branch_name, hospital_branch: l.hospital_branch, specialisation_id: l.specialisation_id, department: l.department, doctor_name: l.doctor_name }}
               className="font-bold text-xs text-[#0f3d6b] hover:text-[#0f3d6b]/80 underline decoration-[#0f3d6b] transition-colors"
             >
               {l.enquiries ?? l.enquires?.length ?? 0}
@@ -589,21 +617,30 @@ export const LeadTable = ({
         sortable: true,
         width: '150px',
         render: (l: Lead) => {
-          const options = getProjectStatusOptions(
-            l.project_id,
-            projectLeadStatuses
-          );
-          const filteredOptions = options.filter(
-            (o: { id: number; label: string; lead_status_id: number }) => o.label !== 'Junk Lead'
-          );
+          const rawLeadStatuses = masterData?.lead_statuses;
+          const options: { id: number; label: string; lead_status_id: number; code?: string }[] =
+            rawLeadStatuses && rawLeadStatuses.length > 0
+              ? rawLeadStatuses
+                  .filter((s: any) => s.code !== 'JUNK' && s.description !== 'Junk Lead')
+                  .map((s: any) => ({
+                    id: s.id,
+                    label: s.description || s.code || `Status ${s.id}`,
+                    lead_status_id: s.id,
+                    code: s.code,
+                  }))
+              : getProjectStatusOptions(l.project_id, projectLeadStatuses).filter(
+                  (o: { id: number; label: string; lead_status_id: number }) => o.label !== 'Junk Lead'
+                );
 
           return (
             <StatusCell
               lead={l}
-              options={filteredOptions}
+              options={options}
               onUpdateStatus={(lead, newStatusId) => {
-                const option = filteredOptions.find((o: any) => o.id === newStatusId);
-                const statusMaster = masterData?.lead_statuses?.find((s: any) => s.id === option?.lead_status_id);
+                const option = options.find((o: any) => o.id === newStatusId || o.lead_status_id === newStatusId);
+                const statusMaster = masterData?.lead_statuses?.find(
+                  (s: any) => s.id === (option?.lead_status_id || newStatusId)
+                );
                 if (statusMaster?.code === 'JUNKPE') {
                   setJunkConfirm({ lead, newStatusId, isLoading: true });
 
@@ -640,7 +677,7 @@ export const LeadTable = ({
           ),
         }
       ] : []),
-      // Conditional: EM for Admin/Super/RM (SADMIN, ADMIN, RELMNG)
+      /* Assigned Sales Executive column commented out as requested
       ...((roleCode === 'SADMIN' || roleCode === 'ADMIN' || roleCode === 'RELMNG') ? [
         {
           key: 'assigned_to_em',
@@ -657,22 +694,13 @@ export const LeadTable = ({
           ),
         }
       ] : []),
+      */
       {
         key: 'actions',
         header: 'ACTIONS',
         width: '120px',
         render: (lead: Lead) => (
-          <div className="flex items-center gap-1">
-            {can(PERMISSIONS.LEAD_EDIT) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(lead)}
-                className="h-8 text-[11px] font-bold uppercase rounded-xl border-zinc-200 dark:border-zinc-800 text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all px-4 shadow-none"
-              >
-                Edit Lead
-              </Button>
-            )}
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -683,17 +711,32 @@ export const LeadTable = ({
                 <DropdownMenuLabel className="font-normal text-zinc-500 uppercase px-3 py-2">
                   Lead Actions
                 </DropdownMenuLabel>
-                <Link to={`/leads/${lead.uuid}`}>
+                <Link
+                  to={`/leads/${lead.uuid}`}
+                  state={{ lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }}
+                >
                   <DropdownMenuItem className="cursor-pointer gap-2 py-2">
                     <Eye className="h-4 w-4 text-zinc-500" />
                     <span>View Details</span>
                   </DropdownMenuItem>
                 </Link>
 
+                {can(PERMISSIONS.LEAD_EDIT) && (
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2 py-2"
+                    onClick={() => onEdit(lead)}
+                  >
+                    <Pencil className="h-4 w-4 text-zinc-500" />
+                    <span>Edit Lead</span>
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer gap-2 py-2"
-                  onClick={() => navigate(`/leads/${lead.uuid}?tab=chats&type=CM`)}
+                  onClick={() => navigate(`/leads/${lead.uuid}?tab=chats&type=CM`, {
+                    state: { lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }
+                  })}
                 >
                   <MessageSquare className="h-4 w-4 text-indigo-500" />
                   <span>Initialize Chat</span>

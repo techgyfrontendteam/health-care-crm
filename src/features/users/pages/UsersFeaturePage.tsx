@@ -9,6 +9,7 @@ import { Button } from '../../../components/ui/button';
 import { UserPlus } from "lucide-react";
 import { UserTable } from '../components/UserTable';
 import { UserForm } from '../components/UserForm';
+import { TelephonyAgentDialog } from '../components/TelephonyAgentDialog';
 import {
   useGetAllUsersByRoleIdQuery,
   useGetReporteesQuery,
@@ -50,6 +51,8 @@ export const UsersFeaturePage = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [createdUserData, setCreatedUserData] = useState<{ id: number; name: string; phone: string } | null>(null);
+  const [isTelephonyDialogOpen, setIsTelephonyDialogOpen] = useState(false);
 
   const { currentRole, user: currentUser } = usePermissions();
   const isRM = currentRole?.code === 'RELMNG';
@@ -211,6 +214,21 @@ export const UsersFeaturePage = ({
         title="Delete User"
         description={`Are you sure you want to delete this ${roleLabel.toLowerCase()}? This action cannot be undone.`}
       />
+
+      <TelephonyAgentDialog
+        open={isTelephonyDialogOpen}
+        onClose={() => {
+          setIsTelephonyDialogOpen(false);
+          setCreatedUserData(null);
+        }}
+        userId={createdUserData?.id}
+        userName={createdUserData?.name}
+        initialPhone={createdUserData?.phone}
+        onSuccess={() => {
+          setIsTelephonyDialogOpen(false);
+          setCreatedUserData(null);
+        }}
+      />
     </div>
   );
 
@@ -219,11 +237,29 @@ export const UsersFeaturePage = ({
       if (editingUser) {
         await updateUser({ ...values, id: editingUser.id }).unwrap();
         toast.success('Updated successfully');
+        setIsDrawerOpen(false);
       } else {
-        await createUser({ ...values, role_id: roleId }).unwrap();
+        const createRes = await createUser({ ...values, role_id: roleId }).unwrap();
         toast.success('User created successfully. Temporary password has been sent to the registered email.');
+        setIsDrawerOpen(false);
+
+        // Extract newly created user ID and open Telephony Agent Dialog
+        const createdId =
+          createRes?.id ||
+          createRes?.user_id ||
+          createRes?.data?.id ||
+          (typeof createRes === "number" ? createRes : undefined);
+        const fullName = `${values.first_name || ""} ${values.last_name || ""}`.trim();
+
+        if (createdId) {
+          setCreatedUserData({
+            id: Number(createdId),
+            name: fullName,
+            phone: values.phone_number || "",
+          });
+          setIsTelephonyDialogOpen(true);
+        }
       }
-      setIsDrawerOpen(false);
     } catch (err: any) {
       let message =
         err?.data?.error ||

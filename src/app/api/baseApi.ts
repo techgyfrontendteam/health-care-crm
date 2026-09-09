@@ -1,6 +1,7 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { logoutUser, setCredentials } from '../../features/auth/store/authSlice';
+import { storage } from '../../shared/utils/localStorage';
 import { Mutex } from 'async-mutex';
 
 // Create a new mutex
@@ -11,17 +12,17 @@ const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://y7lidobvl7.execute-api.ap-south-1.amazonaws.com',
   // baseUrl: 'https://nonslippery-monumentally-lane.ngrok-free.dev',
   prepareHeaders: (headers, { getState }) => {
-  const stateToken = (getState() as any).auth.token;
-  const localToken = localStorage.getItem('token');
+    const stateToken = (getState() as any)?.auth?.token;
+    const localToken = storage.get('crm_token', null) || localStorage.getItem('token') || localStorage.getItem('crm_token');
 
-  const token = stateToken || localToken;
+    const token = stateToken || localToken;
 
-  if (token) {
-    headers.set('authorization', `Bearer ${token}`);
-  }
+    if (token) {
+      headers.set('authorization', `Bearer ${token}`);
+    }
 
-  return headers;
-},
+    return headers;
+  },
 });
 
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
@@ -33,7 +34,13 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
   await mutex.waitForUnlock();
   let result = await baseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  const url = typeof args === 'string' ? args : args.url;
+  const isAuthEndpoint =
+    url.includes('/auth/login') ||
+    url.includes('/auth/refreshToken') ||
+    url.includes('/auth/forgotPassword');
+
+  if (result.error && result.error.status === 401 && !isAuthEndpoint) {
     // Checking whether the mutex is locked
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
@@ -64,11 +71,15 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
             result = await baseQuery(args, api, extraOptions);
           } else {
             api.dispatch(logoutUser());
-            window.location.href = '/login';
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
           }
         } else {
           api.dispatch(logoutUser());
-          window.location.href = '/login';
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       } finally {
         release();
@@ -87,6 +98,6 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 export const baseApi = createApi({
   reducerPath: 'baseApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps'],
+  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps', 'Appointments'],
   endpoints: () => ({}),
 });

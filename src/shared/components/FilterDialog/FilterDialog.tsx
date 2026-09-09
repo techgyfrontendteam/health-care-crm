@@ -7,12 +7,27 @@ import { cn, getProjectStatusOptions } from "../../../utils";
 import { useGetReporteesQuery } from "../../../features/users/api/usersApi";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 
-type FilterSection = "status" | "projects" | "rms" | "ems";
+type FilterSection = "projects" | "status" | "opdLeads" | "ipdLeads" | "rms" | "ems";
 
 interface Option {
   value: string;
   label: string;
 }
+
+const OPD_OPTIONS: Option[] = [
+  { value: "opd_consultation", label: "OPD Consultation" },
+  { value: "opd_followup", label: "OPD Follow-up" },
+  { value: "opd_new", label: "OPD New Patient" },
+  { value: "opd_active", label: "OPD Active" },
+];
+
+const IPD_OPTIONS: Option[] = [
+  { value: "ipd_admission", label: "IPD Admission" },
+  { value: "ipd_surgery", label: "IPD Surgery" },
+  { value: "ipd_inpatient", label: "IPD In-Patient" },
+  { value: "ipd_discharge", label: "IPD Discharge" },
+  { value: "ipd_active", label: "IPD Active" },
+];
 
 interface UserOption {
   id: number;
@@ -28,6 +43,8 @@ interface FilterDialogProps {
     projectIds: string[];
     rmIds: string[];
     emIds: string[];
+    opdLeads?: string[];
+    ipdLeads?: string[];
   }) => void;
   onReset: () => void;
   // Current applied values
@@ -35,6 +52,8 @@ interface FilterDialogProps {
   projectIds: string[];
   rmIds: string[];
   emIds: string[];
+  opdLeads?: string[];
+  ipdLeads?: string[];
   // Options
   statusOptions: Option[];
   projectOptions: Option[];
@@ -72,6 +91,8 @@ export const FilterDialog = ({
   projectIds,
   rmIds,
   emIds,
+  opdLeads = [],
+  ipdLeads = [],
   statusOptions,
   projectOptions,
   rmOptions,
@@ -84,6 +105,8 @@ export const FilterDialog = ({
   const [localProjects, setLocalProjects] = useState<string[]>(projectIds);
   const [localRmId, setLocalRmId] = useState<string>(rmIds[0] || "");
   const [localEmIds, setLocalEmIds] = useState<string[]>(emIds);
+  const [localOpdLeads, setLocalOpdLeads] = useState<string[]>(opdLeads);
+  const [localIpdLeads, setLocalIpdLeads] = useState<string[]>(ipdLeads);
   const [userSearch, setUserSearch] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -105,6 +128,8 @@ export const FilterDialog = ({
       setLocalProjects(projectIds);
       setLocalRmId(rmIds[0] || "");
       setLocalEmIds(emIds);
+      setLocalOpdLeads(opdLeads);
+      setLocalIpdLeads(ipdLeads);
       setUserSearch("");
       setActiveSection(showProjectFilter ? "projects" : "status");
 
@@ -127,7 +152,7 @@ export const FilterDialog = ({
       }
       setIsInitialized(true);
     }
-  }, [open, isInitialized, projectLeadStatuses, projectIds, rmIds, emIds, statusIds]);
+  }, [open, isInitialized, projectLeadStatuses, projectIds, rmIds, emIds, statusIds, opdLeads, ipdLeads]);
 
   // Compute grouped status options dynamically
   const filteredStatusOptions = React.useMemo(() => {
@@ -165,6 +190,8 @@ export const FilterDialog = ({
   const sections: { key: FilterSection; label: string; show: boolean }[] = [
     { key: "projects" as FilterSection, label: "Projects", show: showProjectFilter },
     { key: "status" as FilterSection, label: "Status", show: true },
+    { key: "opdLeads" as FilterSection, label: "OPD Leads", show: true },
+    { key: "ipdLeads" as FilterSection, label: "IPD Leads", show: true },
     { key: "rms" as FilterSection, label: "Sales Heads", show: showRmFilter },
     { key: "ems" as FilterSection, label: "Sales Executives", show: showEmFilter },
   ].filter((s) => s.show);
@@ -210,6 +237,8 @@ export const FilterDialog = ({
       projectIds: localProjects,
       rmIds: localRmId ? [localRmId] : [],
       emIds: localEmIds,
+      opdLeads: localOpdLeads,
+      ipdLeads: localIpdLeads,
     });
     onClose();
   };
@@ -219,6 +248,8 @@ export const FilterDialog = ({
     setLocalProjects([]);
     setLocalRmId("");
     setLocalEmIds([]);
+    setLocalOpdLeads([]);
+    setLocalIpdLeads([]);
     onReset();
     onClose();
   };
@@ -344,6 +375,7 @@ export const FilterDialog = ({
 
           {/* Right Content */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-5 py-4 space-y-5 min-w-0">
+            {/* ── Status ── */}
             {activeSection === "status" && (
               <>
                 {localProjects.length === 0 ? (
@@ -383,6 +415,70 @@ export const FilterDialog = ({
                     </div>
                   </>
                 )}
+              </>
+            )}
+
+            {/* ── OPD Leads ── */}
+            {activeSection === "opdLeads" && (
+              <>
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-3">
+                    Selected
+                  </p>
+                  {renderChips(localOpdLeads, OPD_OPTIONS, (v) =>
+                    setLocalOpdLeads(localOpdLeads.filter((t) => t !== v)),
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-3">
+                    Select from
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {OPD_OPTIONS.filter((o) => !localOpdLeads.includes(o.value)).map((o) => (
+                      <button
+                        key={o.value}
+                        onClick={() =>
+                          toggleMulti(o.value, localOpdLeads, setLocalOpdLeads)
+                        }
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border-2 text-foreground hover:border-primary hover:text-primary transition-colors"
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── IPD Leads ── */}
+            {activeSection === "ipdLeads" && (
+              <>
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-3">
+                    Selected
+                  </p>
+                  {renderChips(localIpdLeads, IPD_OPTIONS, (v) =>
+                    setLocalIpdLeads(localIpdLeads.filter((t) => t !== v)),
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-3">
+                    Select from
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {IPD_OPTIONS.filter((o) => !localIpdLeads.includes(o.value)).map((o) => (
+                      <button
+                        key={o.value}
+                        onClick={() =>
+                          toggleMulti(o.value, localIpdLeads, setLocalIpdLeads)
+                        }
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border-2 text-foreground hover:border-primary hover:text-primary transition-colors"
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
 

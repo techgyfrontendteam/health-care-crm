@@ -37,6 +37,7 @@ const STORAGE_KEYS = {
   REFRESH_TOKEN: 'crm_refresh_token',
   ROLES: 'crm_roles',
   CURRENT_ROLE: 'crm_current_role',
+  IS_FIRST_LOGIN: 'crm_is_first_login',
 };
 
 const initialState: AuthState = {
@@ -46,7 +47,7 @@ const initialState: AuthState = {
   roles: storage.get(STORAGE_KEYS.ROLES, []),
   currentRole: storage.get(STORAGE_KEYS.CURRENT_ROLE, null),
   isAuthenticated: !!storage.get(STORAGE_KEYS.TOKEN, null),
-  isFirstLogin: false,
+  isFirstLogin: Boolean(storage.get(STORAGE_KEYS.IS_FIRST_LOGIN, false)),
 };
 
 const authSlice = createSlice({
@@ -67,6 +68,7 @@ const authSlice = createSlice({
       storage.set(STORAGE_KEYS.USER, user);
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      storage.set(STORAGE_KEYS.IS_FIRST_LOGIN, !!isFirstLogin);
     },
     updateUserProfile: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
@@ -98,6 +100,7 @@ const authSlice = createSlice({
     },
     setPasswordSuccess: (state) => {
       state.isFirstLogin = false;
+      storage.set(STORAGE_KEYS.IS_FIRST_LOGIN, false);
     },
     logoutUser: (state) => {
       state.user = null;

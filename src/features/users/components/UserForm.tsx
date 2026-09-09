@@ -87,7 +87,7 @@ const getFormSchema = (isEdit: boolean, roleId: number) => {
       password: z.string().optional(),
       role_id: z.number({ error: "Role is required" }),
       reporting_manager_id: z.number({ error: "Invalid manager selection" }).nullable().optional(),
-      project_id: z.number({ error: "Project is required" }).min(1, "Project is required"),
+      project_id: z.number().optional().nullable(),
     })
     .superRefine((data, ctx) => {
       if (roleId === 4 && !data.reporting_manager_id) {
@@ -109,7 +109,7 @@ type FormValues = {
   password?: string;
   role_id: number;
   reporting_manager_id?: number | null;
-  project_id: number;
+  project_id?: number | null;
 };
 
 const extractProjectId = (vals?: any): number | undefined => {
@@ -421,6 +421,8 @@ export const UserForm = ({
               )}
             />
 
+            {/* Project Selection (Commented out) */}
+            {/*
             <FormField
               control={form.control}
               name="project_id"
@@ -465,6 +467,7 @@ export const UserForm = ({
                 </FormItem>
               )}
             />
+            */}
 
             {/* Reporting Manager Dropdown (Only for Experience Managers/Agents) */}
             {roleId === 4 && (

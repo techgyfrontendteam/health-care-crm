@@ -47,54 +47,65 @@ export const LoginPage = () => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    let response: any;
     try {
-      const response = await loginApi(values).unwrap();     
-      const isFirst = Boolean(response.is_first_login);
-      
-      // 1. Set credentials first so the token is available for subsequent API calls
-      login(
-        response.token,
-        response.refreshToken,
-        isFirst,
-        {
-          id: String(response.id),
-          email: response.login_id,
-          name: `${response.first_name} ${response.last_name}`,
-          role_id: response.role_id,
-          project_ids: response.project_ids,
-          profile_pic_location: null,
-        }
-      );
+      response = await loginApi(values).unwrap();
+    } catch (err: any) {
+      const message =
+        err?.data?.error ||
+        err?.data?.message ||
+        (typeof err?.data === 'string' ? err.data : null) ||
+        err?.message ||
+        'Invalid credentials or server unavailable.';
+      form.setError('root', { message });
+      return;
+    }
 
-      // Fetch user details to get profile picture
-      try {
-        const userDetails = await getUserById({ id: response.id }).unwrap();
-        if (userDetails.profile_pic_location) {
-          login(
-            response.token,
-            response.refreshToken,
-            isFirst,
-            {
-              id: String(response.id),
-              email: response.login_id,
-              name: `${response.first_name} ${response.last_name}`,
-              role_id: response.role_id,
-              project_ids: response.project_ids,
-              profile_pic_location: userDetails.profile_pic_location,
-            }
-          );
-        }
-      } catch (err) {
-        console.error('Failed to fetch user details for profile picture', err);
+    const isFirst = Number(response.is_first_login) === 1;
+
+    // 1. Set credentials first so the token is available for subsequent API calls
+    login(
+      response.token,
+      response.refreshToken,
+      isFirst,
+      {
+        id: String(response.id),
+        email: response.login_id,
+        name: `${response.first_name} ${response.last_name}`,
+        role_id: response.role_id,
+        project_ids: response.project_ids,
+        profile_pic_location: null,
       }
+    );
 
-      // 2. Now fetch roles (token will be injected by baseApi)
+    // Fetch user details to get profile picture
+    try {
+      const userDetails = await getUserById({ id: response.id }).unwrap();
+      if (userDetails.profile_pic_location) {
+        login(
+          response.token,
+          response.refreshToken,
+          isFirst,
+          {
+            id: String(response.id),
+            email: response.login_id,
+            name: `${response.first_name} ${response.last_name}`,
+            role_id: response.role_id,
+            project_ids: response.project_ids,
+            profile_pic_location: userDetails.profile_pic_location,
+          }
+        );
+      }
+    } catch (err) {
+      console.error('Failed to fetch user details for profile picture', err);
+    }
+
+    // 2. Now fetch roles (token will be injected by baseApi)
+    try {
       const roles = await getUserRoles({ offset: 0 }).unwrap();
       dispatch(setRoles(roles));
-
-    } catch (err: any) {
-      const message = err?.data?.error || 'Invalid credentials or server unavailable.';
-      form.setError('root', { message });
+    } catch (err) {
+      console.error('Failed to fetch user roles', err);
     }
   };
 
@@ -167,9 +178,9 @@ export const LoginPage = () => {
               </Link>
             </div>
             {form.formState.errors.root && (
-              <p className="text-sm font-medium text-destructive">
+              <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md border border-destructive/20 text-center">
                 {form.formState.errors.root.message}
-              </p>
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoggingIn
