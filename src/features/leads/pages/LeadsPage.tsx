@@ -993,9 +993,9 @@ export const LeadsPage = () => {
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filter
-                {(statusIds.length + ((isSADMIN || isAdmin) ? projectIds.length : 0) + (isAdmin ? rmIds.length : 0) + emIds.length) > 0 && (
+                {(statusIds.length + (isAdmin ? rmIds.length : 0)) > 0 && (
                   <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-white rounded-full">
-                    {statusIds.length + ((isSADMIN || isAdmin) ? projectIds.length : 0) + (isAdmin ? rmIds.length : 0) + emIds.length}
+                    {statusIds.length + (isAdmin ? rmIds.length : 0)}
                   </span>
                 )}
               </Button>
@@ -1040,12 +1040,13 @@ export const LeadsPage = () => {
                 emIds={emIds}
                 rmOptions={rms}
                 showRmFilter={activeTab !== 0 && isAdmin}
-                showEmFilter={activeTab !== 0 && (isAdmin || isRM)}
-                showProjectFilter={isSADMIN || isAdmin}
+                showEmFilter={false}
+                showProjectFilter={false}
               />
 
               {isAdmin && (activeTab === 0 || activeTab === 1) && (
                 <>
+                  {/*
                   <Button
                     onClick={() => setIsBulkImportOpen(true)}
                     className="gap-2 h-11 rounded-[16px] px-6 text-base font-bold bg-[#063669] hover:bg-[#063669]/90 text-white shadow-sm transition-all focus-visible:ring-0"
@@ -1053,6 +1054,7 @@ export const LeadsPage = () => {
                     <UserPlus className="h-4 w-4" />
                     Bulk Import
                   </Button>
+                  */}
                   {activeTab === 0 && (
                     <Button
                       onClick={() => setShowRandomConfirm(true)}

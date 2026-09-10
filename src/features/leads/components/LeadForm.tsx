@@ -325,7 +325,7 @@ export const LeadForm = ({
                             <SelectValue placeholder="-- Select Source * --" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-white text-black z-[99999]">
+                        <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
                           {masterData?.sources.map((source) => (
                             <SelectItem key={source.id} value={String(source.id)} className="text-black cursor-pointer font-medium">
                               {source.description}
@@ -383,7 +383,7 @@ export const LeadForm = ({
                                 placeholder="Search employees..."
                                 className="h-10 border-none focus:ring-0 text-sm shrink-0"
                               />
-                              <CommandList className="max-h-[250px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
+                              <CommandList className="max-h-[300px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                                 <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                                   No employees found.
                                 </CommandEmpty>
@@ -542,7 +542,7 @@ export const LeadForm = ({
                         <SelectValue placeholder="-- Select Location * --" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white text-black z-[99999]">
+                    <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
                       {masterData?.locations?.map((loc: any) => (
                         <SelectItem key={loc.id} value={String(loc.id)} className="text-black cursor-pointer font-medium">
                           {loc.description}
@@ -572,7 +572,7 @@ export const LeadForm = ({
                           <SelectValue placeholder="-- Select Branch --" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white text-black z-[99999]">
+                      <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
                         {filteredBranches.map((b: any) => (
                           <SelectItem key={b.id} value={String(b.id)} className="text-black cursor-pointer font-medium">
                             {b.description}
@@ -613,7 +613,7 @@ export const LeadForm = ({
                           <SelectValue placeholder="-- Select Department * --" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white text-black z-[99999]">
+                      <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
                         {departmentOptions.map((dept) => (
                           <SelectItem key={dept.id} value={dept.value} className="text-black cursor-pointer font-medium">
                             {dept.label}
@@ -645,7 +645,7 @@ export const LeadForm = ({
                         <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white text-black z-[99999]">
+                    <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
                       {isLoadingDoctors ? (
                         <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -782,7 +782,7 @@ export const LeadForm = ({
                             placeholder="Search Sales Heads..."
                             className="h-10 border-none focus:ring-0 text-sm shrink-0"
                           />
-                          <CommandList className="max-h-[250px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
+                          <CommandList className="max-h-[300px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                             <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                               No sales heads found.
                             </CommandEmpty>
@@ -873,7 +873,7 @@ export const LeadForm = ({
                             placeholder="Search Sales Executives..."
                             className="h-10 border-none focus:ring-0 text-sm shrink-0"
                           />
-                          <CommandList className="max-h-[250px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
+                          <CommandList className="max-h-[300px] overflow-y-auto custom-scrollbar pointer-events-auto" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                             <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                               No sales executives found.
                             </CommandEmpty>

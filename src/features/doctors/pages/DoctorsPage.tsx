@@ -133,15 +133,6 @@ export const DoctorsPage = () => {
     }
   }, [allDoctorsResp, masterData]);
 
-  // Service Tabs definition (OPD = 1, IPD = 2, Both = 6)
-  const serviceTabs = useMemo(() => {
-    return [
-      { id: 0, code: "ALL", label: "All Doctors" },
-      { id: 1, code: "OPD", label: "OP Doctors (OPD)" },
-      { id: 2, code: "IPD", label: "IP Doctors (IPD)" },
-      { id: 6, code: "BTH", label: "Both (IPD & OPD)" },
-    ];
-  }, []);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -274,31 +265,35 @@ export const DoctorsPage = () => {
             />
           </div>
 
-          {/* Service Tabs (All, OPD, IPD, BTH) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800 overflow-x-auto max-w-full">
-            {serviceTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedServiceId(tab.id)}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
-                  selectedServiceId === tab.id
-                    ? "bg-white dark:bg-zinc-800 text-[#063669] dark:text-blue-400 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
           {/* Dropdown Filters & View Switcher */}
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
+            {/* Service Type Select */}
+            <select
+              value={selectedServiceId}
+              onChange={(e) => setSelectedServiceId(Number(e.target.value))}
+              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
+            >
+              <option value={0}>All Service Types</option>
+              {masterData?.services && masterData.services.length > 0 ? (
+                masterData.services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.description}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value={1}>OP Doctors (OPD)</option>
+                  <option value={2}>IP Doctors (IPD)</option>
+                  <option value={6}>Both (IPD &amp; OPD)</option>
+                </>
+              )}
+            </select>
+
             {/* Branch Select */}
             <select
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
+              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
             >
               <option value={0}>All Branches</option>
               {masterData?.branches?.map((branch) => (
@@ -312,7 +307,7 @@ export const DoctorsPage = () => {
             <select
               value={selectedSpecId}
               onChange={(e) => setSelectedSpecId(Number(e.target.value))}
-              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
+              className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
             >
               <option value={0}>All Departments</option>
               {masterData?.specialisations?.map((spec) => (
@@ -327,7 +322,7 @@ export const DoctorsPage = () => {
               <button
                 onClick={() => setViewMode("grid")}
                 className={cn(
-                  "p-1.5 rounded-lg text-zinc-500 hover:text-[#063669] transition-colors",
+                  "p-1.5 rounded-lg text-zinc-500 hover:text-[#063669] transition-colors cursor-pointer",
                   viewMode === "grid" && "bg-white dark:bg-zinc-800 text-[#063669] dark:text-blue-400 shadow-sm"
                 )}
                 title="Grid View"
@@ -337,7 +332,7 @@ export const DoctorsPage = () => {
               <button
                 onClick={() => setViewMode("table")}
                 className={cn(
-                  "p-1.5 rounded-lg text-zinc-500 hover:text-[#063669] transition-colors",
+                  "p-1.5 rounded-lg text-zinc-500 hover:text-[#063669] transition-colors cursor-pointer",
                   viewMode === "table" && "bg-white dark:bg-zinc-800 text-[#063669] dark:text-blue-400 shadow-sm"
                 )}
                 title="Table View"

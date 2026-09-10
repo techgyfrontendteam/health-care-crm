@@ -2,6 +2,8 @@ import { baseApi } from '../../../app/api/baseApi';
 import type {
   CreateFollowUpRequest,
   CreateFollowUpResponse,
+  UpdateFollowupRequest,
+  UpdateFollowupResponse,
   GetAllFollowupsByUserIdRequest,
   GetAllFollowupsByUserIdResponse,
 } from '../types';
@@ -24,6 +26,14 @@ export const followUpsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['FollowUps', 'Leads'],
     }),
+    updateFollowUp: builder.mutation<UpdateFollowupResponse, UpdateFollowupRequest>({
+      query: (body) => ({
+        url: '/leadFollowups/updateFollowup',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['FollowUps', 'Leads'],
+    }),
   }),
 });
 
@@ -31,4 +41,5 @@ export const {
   useGetAllFollowupsByUserIdQuery,
   useLazyGetAllFollowupsByUserIdQuery,
   useCreateFollowUpMutation,
+  useUpdateFollowUpMutation,
 } = followUpsApi;

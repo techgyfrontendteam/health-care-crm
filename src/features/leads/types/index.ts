@@ -368,3 +368,37 @@ export interface CreateSurgeryResponse {
   [key: string]: any;
 }
 
+export interface SurgeryDetail {
+  surgery_id: number;
+  id?: number;
+  lead_uuid: string;
+  doctor_id: number;
+  doctor_name: string;
+  surgery_type_id: number;
+  surgery_type_name: string;
+  surgery_date_time: string;
+  surgery_status_id: number;
+  surgery_status_code: string;
+  surgery_status_name: string;
+  surgery_remarks: string;
+  is_active: number;
+  created_on: string;
+  updated_on: string;
+}
+
+export interface GetSurgeriesByLeadUuidResponse {
+  lead_uuid: string;
+  lead_frist_name?: string;
+  lead_first_name?: string;
+  lead_last_name?: string;
+  branch_id?: number;
+  specialisation_id?: number;
+  lead_note?: string;
+  assign_to_rm?: number;
+  rm_first_name?: string;
+  rm_last_name?: string;
+  rm_phone_number?: string;
+  rm_profile_pic_location?: string;
+  surgery_details: SurgeryDetail[];
+}
+

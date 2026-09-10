@@ -6,8 +6,8 @@ import { setCredentials, logoutUser, setPasswordSuccess } from '../features/auth
 interface AuthContextType {
   isAuthenticated: boolean;
   isFirstLogin: boolean;
-  user: { id: string; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null } | null;
-  login: (token: string, refreshToken: string, isFirstLogin: boolean, user: { id: string; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null }) => void;
+  user: { id: string; agent_id?: number; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null } | null;
+  login: (token: string, refreshToken: string, isFirstLogin: boolean, user: { id: string; agent_id?: number; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null }) => void;
   logout: () => void;
   completePasswordSetup: () => void;
 }
@@ -18,11 +18,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const dispatch = useDispatch();
   const { isAuthenticated, isFirstLogin, user } = useSelector((state: RootState) => state.auth);
 
-  const login = (token: string, refreshToken: string, isFirstLevel: boolean, userData: { id: string; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null }) => {
+  const login = (token: string, refreshToken: string, isFirstLevel: boolean, userData: { id: string; agent_id?: number; email: string; name: string; role_id: number; project_ids?: number[]; profile_pic_location?: string | null }) => {
+    if (userData.agent_id !== undefined && userData.agent_id !== null) {
+      try {
+        sessionStorage.setItem('agent_id', String(userData.agent_id));
+      } catch (e) {
+        console.error('Error saving agent_id to sessionStorage:', e);
+      }
+    }
     dispatch(setCredentials({ user: userData, token, refreshToken, isFirstLogin: isFirstLevel }));
   };
 
   const logout = () => {
+    try {
+      sessionStorage.removeItem('agent_id');
+    } catch (e) {
+      console.error('Error removing agent_id from sessionStorage:', e);
+    }
     dispatch(logoutUser());
   };
 

@@ -12,6 +12,18 @@ export interface CreateFollowUpResponse {
   followup_id: number;
 }
 
+export interface UpdateFollowupRequest {
+  lead_uuid: string;
+  followup_id: number;
+  remarks: string;
+  user_id: number;
+}
+
+export interface UpdateFollowupResponse {
+  message: string;
+  followup_id?: number;
+}
+
 export interface GetAllFollowupsByUserIdRequest {
   user_id: number[];
   followup_status_id?: number;

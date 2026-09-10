@@ -22,6 +22,12 @@ export interface User {
   project_id?: number | string;
   projectId?: number | string;
   project_ids?: (number | string)[];
+  caller_id?: string;
+  assign_extension?: boolean;
+  route_call_through?: number;
+  block_web_login?: boolean;
+  login_based_calling?: boolean;
+  specialisation_ids?: number[];
 }
 
 export interface CreateUserRequest {
@@ -35,6 +41,12 @@ export interface CreateUserRequest {
   reporting_manager_id?: number | null;
   project_ids?: number[];
   profile_pic_location?: string | null;
+  caller_id?: string;
+  assign_extension?: boolean;
+  route_call_through?: number;
+  block_web_login?: boolean;
+  login_based_calling?: boolean;
+  specialisation_ids?: number[];
 }
 
 export interface CreateUserResponse {

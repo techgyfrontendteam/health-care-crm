@@ -395,6 +395,7 @@ interface LeadTableProps {
   onSelectUuids?: (uuids: string[]) => void;
   offset?: number;
   maxHeight?: string;
+  containerHeight?: string;
 }
 
 export const LeadTable = ({
@@ -418,6 +419,7 @@ export const LeadTable = ({
   onSelectUuids,
   offset = 0,
   maxHeight,
+  containerHeight = '85vh',
 }: LeadTableProps) => {
   const dataArray = data || [];
   const [junkConfirm, setJunkConfirm] = useState<{ lead: Lead, newStatusId: number, isLoading?: boolean, error?: string | null } | null>(null);
@@ -789,6 +791,7 @@ export const LeadTable = ({
         onSort={onSort as (key: string) => void}
         offset={offset}
         maxHeight={maxHeight}
+        containerHeight={containerHeight}
       />
       <JunkValidationDialog
         open={!!junkConfirm}

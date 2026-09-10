@@ -2,7 +2,7 @@ import { baseApi } from "../../../app/api/baseApi";
 
 export const callsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    initiateClickToCall: builder.mutation<any, { customer_uuid: string; lead_uuid?: string }>({
+    initiateClickToCall: builder.mutation<any, { customer_uuid: string; lead_uuid?: string; agent_id: number }>({
       query: (payload) => ({
         url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/click-to-call",
         method: "POST",
@@ -51,6 +51,28 @@ export const callsApi = baseApi.injectEndpoints({
         },
       }),
     }),
+    createCall: builder.mutation<any, {
+      lead_uuid: string;
+      call_id: string;
+      from_number: string;
+      to_number: string;
+      call_duration_in_seconds: number;
+      call_summary: string;
+      call_remarks: string;
+      manual_call_notes: string;
+      caller_user_id: number;
+      caller_role_id: number;
+      call_s3_data: string;
+      lead_call_status_id: number;
+      created_on: string;
+    }>({
+      query: (payload) => ({
+        url: "/leadCalls/createCall",
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Leads"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -61,6 +83,7 @@ export const {
   useGetTelephonyProvidersMutation,
   useGetExtensionTypesMutation,
   useUpsertTelephonyAgentMutation,
+  useCreateCallMutation,
 } = callsApi;
 
 

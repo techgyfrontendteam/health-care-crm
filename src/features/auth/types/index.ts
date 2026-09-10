@@ -44,6 +44,7 @@ export interface GetUserByIdRequest {
 
 export interface GetUserByIdResponse {
   id: number;
+  agent_id?: number;
   login_id: string;
   first_name: string;
   last_name: string;

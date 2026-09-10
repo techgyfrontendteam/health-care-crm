@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Clock, Pencil, Building, User, FileText, Loader2, Stethoscope, Sparkles } from 'lucide-react';
 import type { LeadVisit } from '../../types';
 import { ScheduleVisitDialog } from '../ScheduleVisitDialog';
-import { ScheduleSurgeryDialog } from '../ScheduleSurgeryDialog';
 import { useGetAllUsersByRoleIdQuery } from '@/features/users/api/usersApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
 import { usePermissions } from '../../../../hooks/usePermissions';
@@ -52,7 +51,6 @@ export const LeadVisitsTab = ({
   const { data: masterData } = useGetAllMasterDataQuery();
 
   const [openDialog, setOpenDialog] = useState(false);
-  const [openSurgeryDialog, setOpenSurgeryDialog] = useState(false);
   const [dialogType, setDialogType] = useState<"Appointment" | "Surgery">("Appointment");
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
 
@@ -104,12 +102,8 @@ export const LeadVisitsTab = ({
     return [];
   }, [apiAppointments, visits]);
 
-  const handleOpenCreate = (type: "Appointment" | "Surgery" = "Appointment") => {
-    if (type === "Surgery") {
-      setOpenSurgeryDialog(true);
-      return;
-    }
-    setDialogType(type);
+  const handleOpenCreate = () => {
+    setDialogType("Appointment");
     setSelectedAppointment(null);
     setOpenDialog(true);
   };
@@ -150,46 +144,8 @@ export const LeadVisitsTab = ({
     }
   };
 
-  // Top level lead note and assignment info if provided
-  const headerBranchId = apiAppointments?.branch_id || lead?.branch_id;
-  const headerSpecId = apiAppointments?.specialisation_id || lead?.specialisation_id;
-  const headerRmId = apiAppointments?.assign_to_rm || lead?.assigned_to_rm;
-
-  const headerBranchName = masterData?.branches?.find((b: any) => b.id === headerBranchId)?.description;
-  const headerSpecName = masterData?.specialisations?.find((s: any) => s.id === headerSpecId)?.description;
-
   return (
     <div className="mt-4 space-y-4">
-      {/* Lead info summary if available from API */}
-      {(headerBranchName || headerSpecName || headerRmId || apiAppointments?.lead_note) && (
-        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/70 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
-            {headerBranchName && (
-              <span className="flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-zinc-200">
-                <Building className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
-                {headerBranchName}
-              </span>
-            )}
-            {headerSpecName && (
-              <span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 font-medium">
-                <Sparkles className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
-                {headerSpecName}
-              </span>
-            )}
-            {headerRmId && (
-              <span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 font-medium">
-                <User className="h-3.5 w-3.5 text-zinc-400" />
-                RM: {getRmLabel(headerRmId)}
-              </span>
-            )}
-          </div>
-          {apiAppointments?.lead_note && (
-            <p className="text-xs text-zinc-500 italic max-w-md truncate">
-              &ldquo;{apiAppointments.lead_note}&rdquo;
-            </p>
-          )}
-        </div>
-      )}
 
       {isLoadingAppointments ? (
         <div className="flex flex-col items-center justify-center min-h-[220px] border border-zinc-100 dark:border-zinc-800 rounded-2xl bg-white/50 dark:bg-zinc-900/50 p-6">
@@ -202,20 +158,12 @@ export const LeadVisitsTab = ({
             No appointments scheduled for this lead.
           </p>
           {!isSADMIN && (
-            <div className="flex flex-col sm:flex-row items-center gap-3">
-              <button
-                onClick={() => handleOpenCreate("Appointment")}
-                className="px-4 py-2 rounded-xl text-xs bg-[#063669] hover:bg-[#063669]/90 text-white font-bold shadow-sm transition-all flex items-center gap-1.5"
-              >
-                + Schedule Appointment
-              </button>
-              <button
-                onClick={() => handleOpenCreate("Surgery")}
-                className="px-4 py-2 rounded-xl text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm transition-all flex items-center gap-1.5"
-              >
-                + Schedule Surgery
-              </button>
-            </div>
+            <button
+              onClick={handleOpenCreate}
+              className="px-4 py-2 rounded-xl text-xs bg-[#063669] hover:bg-[#063669]/90 text-white font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              + Schedule Appointment
+            </button>
           )}
         </div>
       ) : (
@@ -226,20 +174,12 @@ export const LeadVisitsTab = ({
               Appointments ({displayList.length})
             </h3>
             {!isSADMIN && (
-              <div className="flex items-center gap-2.5">
-                <button
-                  onClick={() => handleOpenCreate("Appointment")}
-                  className="text-xs font-bold text-[#063669] hover:text-[#063669]/90 bg-[#063669]/10 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1"
-                >
-                  + Schedule Appointment
-                </button>
-                <button
-                  onClick={() => handleOpenCreate("Surgery")}
-                  className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 dark:bg-rose-950/50 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1"
-                >
-                  + Schedule Surgery
-                </button>
-              </div>
+              <button
+                onClick={handleOpenCreate}
+                className="text-xs font-bold text-[#063669] hover:text-[#063669]/90 bg-[#063669]/10 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                + Schedule Appointment
+              </button>
             )}
           </div>
 
@@ -385,12 +325,6 @@ export const LeadVisitsTab = ({
         rms={rms}
         onSubmit={handleDialogSubmit}
         isLoading={isSubmitting}
-      />
-
-      <ScheduleSurgeryDialog
-        open={openSurgeryDialog}
-        onOpenChange={setOpenSurgeryDialog}
-        lead={lead}
       />
     </div>
   );

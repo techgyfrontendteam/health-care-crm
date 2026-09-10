@@ -17,7 +17,7 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
-import { useInitiateClickToCallMutation, useGetCallRecordsMutation } from "../api/callsApi";
+import { useInitiateClickToCallMutation, useGetCallRecordsMutation, useCreateCallMutation } from "../api/callsApi";
 import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
 import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiSlice";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
@@ -53,6 +53,7 @@ import { LeadRemarksTab } from "../components/tabs/LeadRemarksTab";
 import { LeadCallsTab } from "../components/tabs/LeadCallsTab";
 import LeadCalls from "../components/tabs/LeadCalls";
 import { LeadVisitsTab } from "../components/tabs/LeadVisitsTab";
+import { LeadSurgeriesTab } from "../components/tabs/LeadSurgeriesTab";
 import { LeadChatsTab } from "../components/tabs/LeadChatsTab";
 import { LeadEnquiriesTab } from "../components/tabs/LeadEnquiriesTab";
 import { LeadFollowUpsTab } from "../components/tabs/LeadFollowUpsTab";
@@ -252,6 +253,7 @@ export const LeadDetailsPage = () => {
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
   const [initiateClickToCall] = useInitiateClickToCallMutation();
   const [getCallRecords] = useGetCallRecordsMutation();
+  const [createCall] = useCreateCallMutation();
   const [uploadFile] = useUploadFileMutation();
   const [analyzeCall] = useAnalyzeCallMutation();
   const callRecordsPollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -409,7 +411,7 @@ export const LeadDetailsPage = () => {
     projectLeadStatuses,
   } = useMasterDataLookup();
 
-  const { roleCode } = usePermissions();
+  const { roleCode, user: currentUser, currentRole } = usePermissions();
 
   const projectLeadStatusId = React.useMemo(() => {
     if (lead?.project_lead_status_id) return lead.project_lead_status_id;
@@ -680,10 +682,14 @@ export const LeadDetailsPage = () => {
                           return;
                         }
 
+                        const sessionAgentId = typeof window !== 'undefined' ? sessionStorage.getItem('agent_id') : null;
+                        const agentId = Number(currentUser?.id || currentUser?.agent_id || sessionAgentId || 0);
+
                         try {
                           await initiateClickToCall({ 
                             customer_uuid: customerUuid,
                             lead_uuid: leadUuid || "",
+                            agent_id: agentId,
                           }).unwrap();
                           toast.success("Call initiated successfully");
 
@@ -718,38 +724,105 @@ export const LeadDetailsPage = () => {
                                       ? res
                                       : [];
 
-                              const foundRecord = recordsList.find((r: any) => r && r.recording_url);
+                              const foundRecord = recordsList.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
                               if (foundRecord) {
                                 console.log("Found call record:", foundRecord);
-                                console.log("Call ID:", foundRecord.call_id || foundRecord.id, "Recording URL:", foundRecord.recording_url);
-                                if (callRecordsPollingRef.current) {
-                                  clearInterval(callRecordsPollingRef.current);
-                                  callRecordsPollingRef.current = null;
-                                }
 
-                                const callId = foundRecord.call_id || foundRecord.id || "1";
+                                const callId = String(foundRecord.call_id || foundRecord.id || "1");
                                 const cleanPhone = (num: string) => String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
                                 const fromNumber = cleanPhone(foundRecord.agent_number || foundRecord.from_number || lead.phone_number || (lead as any).phone || "");
                                 const toNumber = cleanPhone(foundRecord.client_number || foundRecord.to_number || "1800-123-4567");
                                 const leadName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead";
-                                const cleanUrl = String(foundRecord.recording_url).replace(/["']+/g, "").trim();
 
-                                try {
-                                  toast.info("Analyzing call recording with AI...");
-                                  await analyzeCall({
+                                const answeredSeconds = Number(foundRecord.answered_seconds ?? 0);
+
+                                if (foundRecord.answered_seconds !== undefined && answeredSeconds <= 0) {
+                                  // 1. MISSED / UNANSWERED / DISCONNECTED CALL (answered_seconds === 0)
+                                  if (callRecordsPollingRef.current) {
+                                    clearInterval(callRecordsPollingRef.current);
+                                    callRecordsPollingRef.current = null;
+                                  }
+
+                                  try {
+                                    const callerUserId = currentUser?.id ? Number(currentUser.id) : 0;
+                                    const callerRoleId = currentUser?.role_id ? Number(currentUser.role_id) : (currentRole?.id ? Number(currentRole.id) : 0);
+                                    const createdOnDate = foundRecord.created_on || foundRecord.start_time || foundRecord.call_start_time || new Date().toISOString();
+
+                                    await createCall({
+                                      lead_uuid: lead.uuid || leadUuid,
+                                      call_id: callId,
+                                      from_number: fromNumber,
+                                      to_number: toNumber,
+                                      call_duration_in_seconds: 0,
+                                      call_summary: "",
+                                      call_remarks: "",
+                                      manual_call_notes: "",
+                                      caller_user_id: callerUserId,
+                                      caller_role_id: callerRoleId,
+                                      call_s3_data: "",
+                                      lead_call_status_id: 2,
+                                      created_on: createdOnDate,
+                                    }).unwrap();
+
+                                    toast.info("Call was not answered / disconnected. Missed call record saved.");
+                                    refetch();
+                                  } catch (createCallErr: any) {
+                                    console.error("Failed to create missed call record:", createCallErr);
+                                    toast.error(createCallErr?.data?.message || "Failed to log missed call");
+                                  }
+                                } else {
+                                  // 2. ANSWERED CALL (answered_seconds > 0) -> Wait for recording_url to be ready
+                                  const cleanUrl = foundRecord.recording_url ? String(foundRecord.recording_url).replace(/["']+/g, "").trim() : "";
+                                  if (!cleanUrl) {
+                                    console.log("Call was answered, waiting for recording_url to become available...");
+                                    return; // Continue polling next cycle
+                                  }
+
+                                  if (callRecordsPollingRef.current) {
+                                    clearInterval(callRecordsPollingRef.current);
+                                    callRecordsPollingRef.current = null;
+                                  }
+
+                                  const payload = {
                                     call_id: callId,
                                     lead_uuid: lead.uuid || leadUuid,
                                     lead_name: leadName,
                                     from_number: fromNumber,
                                     to_number: toNumber,
                                     file: cleanUrl,
-                                  }).unwrap();
+                                  };
 
-                                  toast.success("Call analysis completed successfully!");
-                                  refetch();
-                                } catch (processErr: any) {
-                                  console.error("Error processing call recording:", processErr);
-                                  toast.error(processErr?.data?.message || processErr?.message || "Failed to analyze call recording");
+                                  const maxRetries = 3;
+                                  const delayMs = 5000;
+
+                                  // Wait initial 5 seconds before first call
+                                  await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+                                  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                                    try {
+                                      toast.info(
+                                        attempt === 1
+                                          ? "Analyzing call recording with AI..."
+                                          : `Retrying AI call analysis (${attempt}/${maxRetries})...`
+                                      );
+
+                                      await analyzeCall(payload).unwrap();
+                                      toast.success("Call analysis completed successfully!");
+                                      refetch();
+                                      break;
+                                    } catch (processErr: any) {
+                                      console.error(`Error analyzing call recording (Attempt ${attempt}/${maxRetries}):`, processErr);
+                                      if (attempt < maxRetries) {
+                                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                                      } else {
+                                        toast.error(
+                                          processErr?.data?.message ||
+                                          processErr?.message ||
+                                          "Failed to analyze call recording after 3 attempts"
+                                        );
+                                      }
+                                    }
+                                  }
                                 }
                               }
                             } catch (pollErr) {
@@ -1053,8 +1126,15 @@ export const LeadDetailsPage = () => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col">
               {/* Tab triggers */}
               <div className="border-b border-zinc-200 dark:border-zinc-800">
-                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-5">
-                  {["activity", "calls", "chats", "visits", "enquiries"].map((tab) => {
+                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6">
+                  {["activity", "calls", "chats", "visits", "surgeries", "enquiries"].map((tab) => {
+                    const label =
+                      tab === "visits"
+                        ? "Appointments"
+                        : tab === "surgeries"
+                        ? "Surgeries"
+                        : tab.charAt(0).toUpperCase() + tab.slice(1);
+
                     return (
                       <TabsTrigger
                         key={tab}
@@ -1071,7 +1151,7 @@ export const LeadDetailsPage = () => {
                           cursor-pointer
                         "
                       >
-                        {tab === "visits" ? "Appointments" : (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                        {label}
                       </TabsTrigger>
                     );
                   })}
@@ -1129,6 +1209,16 @@ export const LeadDetailsPage = () => {
                         String(id)
                       );
                     }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="surgeries" className="mt-0">
+                  <LeadSurgeriesTab
+                    lead={lead ? {
+                      ...lead,
+                      branch_id: lead.branch_id ?? stateBranchId,
+                      specialisation_id: lead.specialisation_id ?? stateSpecialisationId,
+                    } : lead}
                   />
                 </TabsContent>
 

@@ -16,6 +16,7 @@ import type {
   ProjectEmAndRmData,
   CreateSurgeryRequest,
   CreateSurgeryResponse,
+  GetSurgeriesByLeadUuidResponse,
 } from "../types";
 
 export const leadsApi = baseApi.injectEndpoints({
@@ -231,6 +232,24 @@ export const leadsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, arg) => [
         "Leads",
         { type: "Leads", id: arg.lead_uuid },
+        { type: "Leads", id: `surgeries-${arg.lead_uuid}` },
+      ],
+    }),
+    getSurgeriesByLeadUuid: builder.query<
+      GetSurgeriesByLeadUuidResponse,
+      { lead_uuid: string; offset?: number }
+    >({
+      query: (body) => ({
+        url: "/leadSurgeries/getSurgeriesByLeadUuid",
+        method: "POST",
+        body: {
+          offset: 0,
+          ...body,
+        },
+      }),
+      providesTags: (result, error, arg) => [
+        { type: "Leads", id: `surgeries-${arg.lead_uuid}` },
+        "Leads",
       ],
     }),
   }),
@@ -255,4 +274,6 @@ export const {
   useLazyGetLeadsQuery,
   useGetAllProjectEmAndRmDataQuery,
   useCreateSurgeryMutation,
+  useGetSurgeriesByLeadUuidQuery,
+  useLazyGetSurgeriesByLeadUuidQuery,
 } = leadsApi;

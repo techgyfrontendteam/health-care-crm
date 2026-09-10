@@ -9,13 +9,14 @@ export const GlobalApiLoader = () => {
     const mutations = state.baseApi.mutations;
 
     const isAnyQueryPending = Object.values(queries).some(
-      (query: any) => query?.status === "pending" && query?.endpointName !== "getLeadById"
+      (query: any) => query?.status === "pending" && query?.endpointName !== "getLeadById" && query?.endpointName !== "getCallRecords"
     );
     const isAnyMutationPending = Object.values(mutations).some(
       (mutation: any) =>
         mutation?.status === "pending" &&
         mutation?.endpointName !== "deviceHeartbeat" &&
-        mutation?.endpointName !== "registerDevice"
+        mutation?.endpointName !== "registerDevice" &&
+        mutation?.endpointName !== "getCallRecords"
     );
 
     return isAnyQueryPending || isAnyMutationPending;

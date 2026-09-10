@@ -9,8 +9,9 @@ import {
   Plus,
   Loader2,
   Lock,
+  Pencil,
 } from 'lucide-react';
-import { useCreateFollowUpMutation } from '../../../follow-ups/api/followUpsApi';
+import { useCreateFollowUpMutation, useUpdateFollowUpMutation } from '../../../follow-ups/api/followUpsApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
 import { usePermissions } from '../../../../hooks/usePermissions';
 import { PERMISSIONS } from '../../../../config/permissions';
@@ -37,19 +38,17 @@ const getInitials = (name: string) => {
 };
 
 const getStatusBadgeStyle = (status: string) => {
-  switch (status.toUpperCase()) {
-    case 'UPCOMING':
-    case 'SCHEDULED':
-      return 'bg-blue-50 text-[#063669] dark:bg-blue-950/50 dark:text-blue-400 border-blue-200 dark:border-blue-900';
-    case 'MISSED':
-    case 'OVERDUE':
-      return 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200 dark:border-rose-900';
-    case 'COMPLETED':
-    case 'DONE':
-      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900';
-    default:
-      return 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
+  const s = status.toUpperCase();
+  if (s.includes('UPCOMING') || s.includes('SCHEDULED')) {
+    return 'bg-blue-50 text-[#063669] dark:bg-blue-950/50 dark:text-blue-400 border-blue-200 dark:border-blue-900';
   }
+  if (s.includes('MISSED') || s.includes('OVERDUE')) {
+    return 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200 dark:border-rose-900';
+  }
+  if (s.includes('COMPLETED') || s.includes('DONE')) {
+    return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900';
+  }
+  return 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
 };
 
 interface FollowUpListItem {
@@ -64,6 +63,7 @@ interface FollowUpListItem {
   status: string;
   typeName?: string;
   remarks?: string;
+  user_id?: number;
 }
 
 export const LeadFollowUpsTab = ({
@@ -74,11 +74,14 @@ export const LeadFollowUpsTab = ({
   setCreateModalOpen,
 }: LeadFollowUpsTabProps) => {
   const [createFollowUp, { isLoading: isCreating }] = useCreateFollowUpMutation();
+  const [updateFollowUp, { isLoading: isUpdating }] = useUpdateFollowUpMutation();
   const { masterData: lookupMasterData, getRmLabel, getProjectLabel } = useMasterDataLookup();
   const { roleCode, can, user: currentUser } = usePermissions();
 
   const [internalModalOpen, setInternalModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<FollowUpListItem | null>(null);
+  const [editingFollowUp, setEditingFollowUp] = useState<FollowUpListItem | null>(null);
+  const [editNotes, setEditNotes] = useState('');
 
   const isCreateModalOpen = createModalOpen !== undefined ? createModalOpen : internalModalOpen;
   const setIsCreateModalOpen = (open: boolean) => {
@@ -114,6 +117,11 @@ export const LeadFollowUpsTab = ({
     setIsCreateModalOpen(true);
   };
 
+  const handleOpenEdit = (item: FollowUpListItem) => {
+    setEditingFollowUp(item);
+    setEditNotes(item.remarks || '');
+  };
+
   const leadName = useMemo(() => {
     const fn = lead?.first_name ? lead.first_name.charAt(0).toUpperCase() + lead.first_name.slice(1) : "";
     const ln = lead?.last_name ? lead.last_name.charAt(0).toUpperCase() + lead.last_name.slice(1) : "";
@@ -135,48 +143,66 @@ export const LeadFollowUpsTab = ({
   const followupsList = useMemo<FollowUpListItem[]>(() => {
     const apiFollowups = lead?.follow_ups || lead?.followups;
     if (apiFollowups && apiFollowups.length > 0) {
+      const nowMs = Date.now();
+
       return apiFollowups.map((item: any) => {
         const typeObj = lookupMasterData?.lead_followup_types?.find((t: any) => t.id === item.followup_type_id);
         const statusObj = lookupMasterData?.lead_followup_statuses?.find((s: any) => s.id === item.followup_status_id);
-        
-        let statusLabel = "UPCOMING";
-        if (statusObj) {
-          const desc = statusObj.description.toUpperCase();
-          if (desc.includes("COMPLETED") || desc.includes("DONE")) statusLabel = "COMPLETED";
-          else if (desc.includes("MISSED") || desc.includes("OVERDUE")) statusLabel = "MISSED";
-          else if (desc.includes("UPCOMING") || desc.includes("SCHEDULED")) statusLabel = "UPCOMING";
-        } else {
-          if (item.followup_status_id === 2) statusLabel = "COMPLETED";
-          else if (item.followup_status_id === 4) statusLabel = "MISSED";
-          else statusLabel = "UPCOMING";
-        }
 
         // Date extraction matching Appointments style (Month + Day)
         let day = "01";
         let month = "JAN";
         let formattedDate = "";
         let formattedTime = "";
+        let isPast = false;
 
-        if (item.date_time) {
-          const validStr = item.date_time.replace(/Z/g, '').split('+')[0].replace(' ', 'T');
+        const rawDateTimeStr = item.date_time || item.followup_date_time || item.follow_up_time;
+
+        if (rawDateTimeStr) {
+          const validStr = String(rawDateTimeStr).replace(/Z/g, '').split('+')[0].replace(' ', 'T');
           const dateObj = new Date(validStr);
           if (!isNaN(dateObj.getTime())) {
             day = String(dateObj.getDate()).padStart(2, "0");
             month = dateObj.toLocaleString("default", { month: "short" }).toUpperCase();
             formattedDate = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
             formattedTime = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+            if (dateObj.getTime() < nowMs) {
+              isPast = true;
+            }
           } else {
-            const datePart = item.date_time.split(/[T ]/)[0];
+            const datePart = String(rawDateTimeStr).split(/[T ]/)[0];
             const [y, m, d] = datePart.split("-");
             day = (d || "01").padStart(2, "0");
             month = new Date(Number(y), Number(m) - 1, Number(d || 1))
               .toLocaleString("default", { month: "short" })
               .toUpperCase();
-            formattedDate = item.date_time;
+            formattedDate = String(rawDateTimeStr);
             formattedTime = "";
           }
         }
         
+        let statusLabel = "UPCOMING";
+        if (statusObj) {
+          const desc = statusObj.description.toUpperCase();
+          if (desc.includes("COMPLETED") || desc.includes("DONE")) {
+            statusLabel = "COMPLETED";
+          } else if (desc.includes("MISSED") || desc.includes("OVERDUE")) {
+            statusLabel = "MISSED FOLLOW-UP";
+          } else if (desc.includes("UPCOMING") || desc.includes("SCHEDULED")) {
+            statusLabel = isPast ? "MISSED FOLLOW-UP" : "UPCOMING";
+          } else {
+            statusLabel = isPast ? "MISSED FOLLOW-UP" : statusObj.description;
+          }
+        } else {
+          if (item.followup_status_id === 2) {
+            statusLabel = "COMPLETED";
+          } else if (item.followup_status_id === 4) {
+            statusLabel = "MISSED FOLLOW-UP";
+          } else {
+            statusLabel = isPast ? "MISSED FOLLOW-UP" : "UPCOMING";
+          }
+        }
+
         const assignedLabel = getRmLabel(item.user_id);
         
         return {
@@ -191,6 +217,7 @@ export const LeadFollowUpsTab = ({
           status: statusLabel,
           typeName: typeObj?.description,
           remarks: item.remarks || '',
+          user_id: item.user_id,
         };
       });
     }
@@ -225,6 +252,30 @@ export const LeadFollowUpsTab = ({
     } catch (err: any) {
       console.error("Failed to create follow-up:", err);
       toast.error(err?.data?.message || "Failed to create follow-up");
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingFollowUp) return;
+    try {
+      const targetUserId = currentUser?.id
+        ? Number(currentUser.id)
+        : lead?.assigned_to_rm !== undefined && lead?.assigned_to_rm !== null && Number(lead.assigned_to_rm) !== 0
+        ? Number(lead.assigned_to_rm)
+        : 1;
+
+      await updateFollowUp({
+        lead_uuid: lead.uuid,
+        followup_id: editingFollowUp.followup_id,
+        remarks: editNotes.trim(),
+        user_id: targetUserId,
+      }).unwrap();
+
+      toast.success("Follow-up note updated successfully.");
+      setEditingFollowUp(null);
+    } catch (err: any) {
+      console.error("Failed to update follow-up note:", err);
+      toast.error(err?.data?.message || "Failed to update follow-up note");
     }
   };
 
@@ -319,6 +370,18 @@ export const LeadFollowUpsTab = ({
                     )}
                   </div>
                 </div>
+
+                {/* Edit Icon Button */}
+                <div className="flex items-center gap-1 shrink-0 ml-3">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(item)}
+                    className="p-2 rounded-xl text-zinc-400 hover:text-[#063669] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    title="Edit Follow-up Note"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             );
           })
@@ -398,6 +461,125 @@ export const LeadFollowUpsTab = ({
                 className="rounded-xl text-xs font-bold h-9 px-5 cursor-pointer"
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* EDIT FOLLOW-UP NOTE MODAL                                   */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {editingFollowUp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-zinc-950 w-full max-w-lg rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col max-h-[90vh] relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Pencil className="h-5 w-5 text-[#063669] dark:text-blue-400" />
+                  Edit Follow-Up Note
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Update remarks and notes for {leadName}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingFollowUp(null)}
+                className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
+              {/* Lead Info block */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/40 dark:bg-zinc-900/50 border border-blue-100 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#063669] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                    {getInitials(leadName)}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                      {leadName}
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      Lead ID: {lead?.lead_id ? `#${lead.lead_id}` : (lead?.id || "N/A")} • {projectLabel}
+                    </p>
+                  </div>
+                </div>
+                <Lock className="w-4 h-4 text-zinc-400 shrink-0" />
+              </div>
+
+              {/* Read-only Follow-up Metadata */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" /> Scheduled Date &amp; Time
+                  </label>
+                  <div className="w-full h-11 px-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 flex items-center">
+                    {editingFollowUp.date} {editingFollowUp.time}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Follow-up Purpose
+                  </label>
+                  <div className="w-full h-11 px-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 flex items-center">
+                    {editingFollowUp.typeName || "Scheduled follow-up"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" /> Assigned Sales Executive
+                </label>
+                <div className="w-full h-11 px-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 flex items-center">
+                  {editingFollowUp.rmName || rmName}
+                </div>
+              </div>
+
+              {/* Editable Notes / Remarks */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                    Notes / Remarks <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-zinc-400 font-bold">{editNotes.length}/500</span>
+                </div>
+                <textarea
+                  rows={4}
+                  maxLength={500}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Enter notes (up to 500 characters)..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#063669] outline-none transition-all resize-none placeholder:text-zinc-400"
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-end gap-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingFollowUp(null)}
+                disabled={isUpdating}
+                className="rounded-xl text-xs font-bold h-10 px-5 cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleUpdate}
+                disabled={isUpdating}
+                className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white h-10 px-6 gap-2 cursor-pointer"
+              >
+                {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                Update Note
               </Button>
             </div>
           </div>
@@ -561,3 +743,4 @@ export const LeadFollowUpsTab = ({
     </div>
   );
 };
+

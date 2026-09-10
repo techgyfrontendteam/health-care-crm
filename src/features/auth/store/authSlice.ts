@@ -3,6 +3,7 @@ import { storage } from '../../../shared/utils/localStorage';
 
 export interface User {
   id: string;
+  agent_id?: number;
   email: string;
   name: string;
   first_name?: string;
@@ -111,8 +112,13 @@ const authSlice = createSlice({
       state.currentRole = null;
       state.isFirstLogin = false;
 
-      // Clear ALL localStorage
+      // Clear ALL localStorage and sessionStorage
       storage.clear();
+      try {
+        sessionStorage.removeItem('agent_id');
+      } catch (e) {
+        console.error('Error clearing sessionStorage:', e);
+      }
     },
   },
 });

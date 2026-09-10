@@ -115,6 +115,11 @@ export const UserTable = ({
             <span className="font-medium text-sm" style={{ color: '#434653' }}>{user.phone_number}</span>
           </div>
           <span className="text-xs pl-[18px]" style={{ color: '#94A3B8' }}>{user.email}</span>
+          {user.caller_id && (
+            <span className="text-[11px] pl-[18px] text-zinc-400 font-medium">
+              Caller ID: {user.caller_id}
+            </span>
+          )}
         </div>
       ),
     },
