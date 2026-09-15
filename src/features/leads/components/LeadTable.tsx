@@ -109,20 +109,20 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
                 </span>
               </>
             ) : (
-              <span>Assign Sales Head</span>
+              <span>Assign Sales Executive</span>
             )}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search Sales Head..."
+              placeholder="Search Sales Executive..."
               className="h-9 text-xs"
               value={search}
               onValueChange={setSearch}
             />
             <CommandEmpty className="py-3 text-xs text-center text-zinc-400">
-              {managers.length === 0 ? 'No Sales Heads for this project' : 'No Sales Head found'}
+              {managers.length === 0 ? 'No Sales Executives for this project' : 'No Sales Executive found'}
             </CommandEmpty>
             <CommandGroup className="max-h-48 overflow-y-auto">
               {filtered.map((m) => (
@@ -448,7 +448,7 @@ export const LeadTable = ({
 
   const columns: ColumnDef<Lead>[] = React.useMemo(() =>
     [
-      ...(can(PERMISSIONS.LEAD_BULK_ACTIONS) ? [
+      ...(can(PERMISSIONS.LEAD_BULK_ACTIONS) && (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? [
         {
           key: 'selection',
           header: (
@@ -663,40 +663,19 @@ export const LeadTable = ({
           );
         },
       },
-      // Conditional: RM for Admin/Super Admin (SADMIN, ADMIN)
-      ...((roleCode === 'SADMIN' || roleCode === 'ADMIN') ? [
-        {
-          key: 'assigned_to_rm',
-          header: 'ASSIGNED SALES HEAD',
-          width: '220px',
-          render: (l: Lead) => (
-            <RmAssigneeCell
-              lead={l}
-              onAssign={onAssignRm || (() => { })}
-              projectRmEm={projectRmEm}
-              disabled={!can(PERMISSIONS.LEAD_EDIT)}
-            />
-          ),
-        }
-      ] : []),
-      /* Assigned Sales Executive column commented out as requested
-      ...((roleCode === 'SADMIN' || roleCode === 'ADMIN' || roleCode === 'RELMNG') ? [
-        {
-          key: 'assigned_to_em',
-          header: 'ASSIGNED SALES EXECUTIVE',
-          width: '220px',
-          render: (l: Lead) => (
-            <EmAssigneeCell
-              lead={l}
-              onAssign={onAssignEm || (() => { })}
-              disabled={!can(PERMISSIONS.LEAD_EDIT)}
-              emLabel={getEmLabel(l.assigned_to_em)}
-              projectRmEm={projectRmEm}
-            />
-          ),
-        }
-      ] : []),
-      */
+      {
+        key: 'assigned_to_rm',
+        header: 'SALES EXECUTIVE',
+        width: '200px',
+        render: (l: Lead) => (
+          <RmAssigneeCell
+            lead={l}
+            onAssign={onAssignRm || (() => { })}
+            projectRmEm={projectRmEm}
+            disabled={!can(PERMISSIONS.LEAD_EDIT)}
+          />
+        ),
+      },
       {
         key: 'actions',
         header: 'ACTIONS',

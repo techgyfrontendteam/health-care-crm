@@ -83,7 +83,8 @@ export const BulkActionsBar = ({
                   className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2"
                 >
                   <UserCircle2 className="h-4 w-4" />
-                  Assign RM
+                                    {(() => { const { currentRole } = usePermissions(); const roleCode = currentRole?.code || ''; const label = (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? 'Assign Sales Executive' : 'Assign RM'; return label; })()}
+
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="center" side="top" sideOffset={16}>

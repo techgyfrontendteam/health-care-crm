@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../../../../utils";
 import type { Enquiry } from "../../types";
 import { useMasterDataLookup } from "../../../../shared/hooks/useMasterDataLookup";
-import { getProjectStatusOptions } from "../../../../utils";
 
 interface LeadEnquiriesTabProps {
   leadId?: string;
@@ -15,7 +14,7 @@ const getStatusBadgeClass = (status: string) => {
   const s = status.toUpperCase();
   if (s.includes("ACTIVE") || s.includes("NEW")) {
     return "bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800";
-  } else if (s.includes("DROP") || s.includes("JUNK") || s.includes("REJECT")) {
+  } else if (s.includes("DROP") || s.includes("JUNK") || s.includes("REJECT") || s.includes("CANCEL")) {
     return "bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700";
   } else {
     return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800";
@@ -41,18 +40,10 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
 
   const {
     getStatusLabel,
-    getProjectLabel,
-    getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
-    getEmLabel,
-    projectLeadStatuses,
   } = useMasterDataLookup();
-
-  const getEnquiryStatusLabel = (projectId: number, projectLeadStatusId: number) => {
-    const options = getProjectStatusOptions(projectId, projectLeadStatuses);
-    const matched = options.find((o: any) => o.id === projectLeadStatusId);
-    return matched ? matched.label : getStatusLabel(projectLeadStatusId);
-  };
 
   useEffect(() => {
     if (!containerRef.current || enquiries.length < 2) {
@@ -143,11 +134,10 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
 
         <div className="space-y-8 relative z-10">
           {enquiries.map((item, index) => {
-            const statusLabel = getEnquiryStatusLabel(item.project_id, item.project_lead_status_id);
-            const sourceLabel = item.source_id ? getSourceLabel(item.source_id) : '--';
-            const projectLabel = getProjectLabel(item.project_id);
-            const rmLabel = getRmLabel(item.assigned_to_rm);
-            const emLabel = getEmLabel(item.assigned_to_em);
+            const statusLabel = getStatusLabel(item.lead_status_id || item.project_lead_status_id);
+            const branchLabel = item.branch_id ? getBranchLabel(item.branch_id) : '--';
+            const specLabel = item.specialisation_id ? getSpecialisationLabel(item.specialisation_id) : '--';
+            const rmLabel = item.assigned_to_rm ? getRmLabel(item.assigned_to_rm) : '--';
             const dateStr = formatEnquiryDate(item.created_on);
 
             return (
@@ -172,7 +162,7 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
 
                 {/* Enquiry Card */}
                 <div className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-6 py-5">
-                  <div className="grid grid-cols-[1fr_1fr_1fr_0.8fr_1.2fr_1.2fr_0.8fr] gap-4 items-center">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.2fr_1.2fr_1.4fr_1fr_1.2fr_auto] gap-4 items-center">
                     {/* Lead ID */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
@@ -183,23 +173,23 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
                       </span>
                     </div>
 
-                    {/* Project */}
+                    {/* Branch */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                        Project
+                        Branch
                       </span>
                       <span className="text-xs font-bold text-[#191C1E] dark:text-zinc-200 block truncate">
-                        {projectLabel}
+                        {branchLabel}
                       </span>
                     </div>
 
-                    {/* Source */}
+                    {/* Department / Specialisation */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                        Source
+                        Department
                       </span>
                       <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 block truncate">
-                        {sourceLabel}
+                        {specLabel}
                       </span>
                     </div>
 
@@ -218,23 +208,13 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
                       </span>
                     </div>
 
-                    {/* Assigned RM */}
+                    {/* Sales Executive */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                        Assigned RM
+                        Sales Executive
                       </span>
                       <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 block truncate">
                         {rmLabel}
-                      </span>
-                    </div>
-
-                    {/* Assigned EM */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                        Assigned EM
-                      </span>
-                      <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 block truncate">
-                        {emLabel}
                       </span>
                     </div>
 
@@ -248,7 +228,7 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
                             navigate(`/leads/${item.uuid}`);
                           }
                         }}
-                        className="bg-[#0f3d6b] hover:bg-[#0f3d6b]/90 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                        className="bg-[#0f3d6b] hover:bg-[#0f3d6b]/90 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
                       >
                         View
                       </button>
@@ -263,3 +243,4 @@ export const LeadEnquiriesTab = ({ leadId, enquiries = [], onView }: LeadEnquiri
     </div>
   );
 };
+

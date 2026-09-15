@@ -494,7 +494,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             className="flex items-center gap-2 text-sm font-extrabold text-[#002d62] dark:text-blue-400 hover:underline transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-slate-500" />
-            Back to Sales Head Dashboard
+            Back to Sales Executive Dashboard
           </button>
 
           {/* Search bar */}
@@ -502,7 +502,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search sales heads..."
+              placeholder="Search sales executives..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
@@ -519,7 +519,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
           <div className="bg-slate-50/50 dark:bg-zinc-950/20 rounded-[20px] p-4 xl:p-6 space-y-3">
             {/* Header row */}
             <div className="grid grid-cols-6 text-[10px] font-extrabold text-slate-400 dark:text-zinc-500 tracking-wider uppercase px-6">
-              <div>Sales Head Name</div>
+              <div>Sales Executive Name</div>
               <div className="text-center">Leads</div>
               <div className="text-center">Follow Ups</div>
               <div className="text-center">Visits</div>
@@ -552,7 +552,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
           {/* Table Pagination */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 gap-4">
             <span className="text-[11px] font-extrabold text-slate-400 dark:text-zinc-500">
-              Showing 1 - {filteredLeaderboardList.length} of {filteredLeaderboardList.length} Sales Heads
+              Showing 1 - {filteredLeaderboardList.length} of {filteredLeaderboardList.length} Sales Executives
             </span>
             <div className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-zinc-450">
               <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-slate-400">
@@ -591,15 +591,15 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             className="flex items-center gap-2 text-sm font-extrabold text-[#002d62] dark:text-blue-400 hover:underline transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-slate-500" />
-            Back to Sales Head Dashboard
+            Back to Sales Executive Dashboard
           </button>
         </div>
 
         <UsersFeaturePage
           roleId={3}
-          roleLabel="Sales Head"
-          title="Sales Heads"
-          description="Manage Sales Heads registry and view their assigned leads."
+          roleLabel="Sales Executive"
+          title="Sales Executives"
+          description="Manage Sales Executives registry and view their assigned leads."
           permissionPrefix="manager"
         />
       </div>
@@ -617,7 +617,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             className="flex items-center gap-2 text-sm font-extrabold text-[#002d62] dark:text-blue-400 hover:underline transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-slate-500" />
-            Back to Sales Head Dashboard
+            Back to Sales Executive Dashboard
           </button>
 
           {/* Search bar */}
@@ -625,7 +625,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search sales heads..."
+              placeholder="Search sales executives..."
               value={escalationsSearchTerm}
               onChange={(e) => setEscalationsSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
@@ -648,7 +648,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                   <th className="py-4 px-4">Lead ID</th>
                   <th className="py-4 px-4">Customer Name</th>
                   <th className="py-4 px-4">Contact Details</th>
-                  <th className="py-4 px-4">Project</th>
                   <th className="py-4 px-4">Status</th>
                   <th className="py-4 px-4">Escalation Reason</th>
                   <th className="py-4 px-4">Assigned EM</th>
@@ -658,7 +657,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
               <tbody className="divide-y divide-zinc-50 dark:divide-zinc-850 text-xs font-bold text-slate-700 dark:text-zinc-300">
                 {filteredEscalationsList.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 dark:text-zinc-500 font-semibold">
+                    <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-zinc-500 font-semibold">
                       No active escalations found
                     </td>
                   </tr>
@@ -673,7 +672,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                           <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{item.email}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4">{item.project}</td>
                       <td className="py-4 px-4">
                         <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-black px-2.5 py-1 rounded-[6px]">
                           {item.status}
@@ -732,7 +730,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             className="flex items-center gap-2 text-sm font-extrabold text-[#002d62] dark:text-blue-400 hover:underline transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-slate-500" />
-            Back to Sales Head Dashboard
+            Back to Sales Executive Dashboard
           </button>
 
           {/* Search bar */}
@@ -740,7 +738,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search sales heads..."
+              placeholder="Search sales executives..."
               value={staleSearchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
@@ -763,7 +761,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                   <th className="py-4 px-4">Lead ID</th>
                   <th className="py-4 px-4">Customer Name</th>
                   <th className="py-4 px-4">Contact Details</th>
-                  <th className="py-4 px-4">Project</th>
                   <th className="py-4 px-4">Status</th>
                   <th className="py-4 px-4">Idle Duration</th>
                   <th className="py-4 px-4">Assigned EM</th>
@@ -773,7 +770,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
               <tbody className="divide-y divide-zinc-50 dark:divide-zinc-850 text-xs font-bold text-slate-700 dark:text-zinc-300">
                 {filteredStaleList.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 dark:text-zinc-550 font-semibold">
+                    <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-zinc-550 font-semibold">
                       No stale leads found
                     </td>
                   </tr>
@@ -788,7 +785,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                           <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{item.email}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4">{item.project}</td>
                       <td className="py-4 px-4">
                         <span className="bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[10px] font-black px-2.5 py-1 rounded-[6px]">
                           {item.status}
@@ -842,7 +838,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
       <div className="flex flex-col items-center justify-center min-h-[500px] w-full space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#002d62] dark:border-blue-400" />
         <span className="text-sm font-semibold text-slate-550 dark:text-zinc-400 animate-pulse">
-          Loading Sales Head dashboard...
+          Loading Sales Executive dashboard...
         </span>
       </div>
     );
@@ -852,7 +848,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] w-full space-y-4 text-center">
         <div className="text-red-500 dark:text-red-400 text-lg font-bold">
-          Failed to load Sales Head dashboard data.
+          Failed to load Sales Executive dashboard data.
         </div>
         <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md">
           Please check your connection or try selecting a different project/date filter.
@@ -868,7 +864,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-black text-[#002d62] dark:text-blue-400 tracking-tight flex items-center gap-3">
-            Sales Head Dashboard
+            Sales Executive Dashboard
           </h1>
           {isFetching && (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#002d62] dark:border-blue-400 border-t-transparent" />
@@ -881,7 +877,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             onClick={() => navigate("/relationship-managers/table")}
             className="bg-[#002d62] hover:bg-[#0c3669] text-white px-5 py-2.5 rounded-full text-xs font-bold transition-colors shadow-sm cursor-pointer"
           >
-            View Sales Heads
+            View Sales Executives
           </button>
         ) : (
           <button
@@ -913,7 +909,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                     <button
                       className="flex items-center justify-between w-40 bg-[#f8fafc] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/50 dark:border-zinc-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors shadow-sm cursor-pointer"
                     >
-                      <span className="truncate">{selectedRmLabel === "All" ? "All Sales Heads" : selectedRmLabel}</span>
+                      <span className="truncate">{selectedRmLabel === "All" ? "All Sales Executives" : selectedRmLabel}</span>
                       <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-2" />
                     </button>
                   </DropdownMenuTrigger>
@@ -925,7 +921,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
-                          placeholder="Search Sales Head..."
+                          placeholder="Search Sales Executive..."
                           value={rmSearchQuery}
                           onChange={(e) => setRmSearchQuery(e.target.value)}
                           onKeyDown={(e) => {
@@ -942,7 +938,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                       onClick={() => handleRmSelect({ id: null, name: "All" })}
                       className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer py-2.5 px-3 rounded-lg"
                     >
-                      <span>All Sales Heads</span>
+                      <span>All Sales Executives</span>
                       <div className={cn(
                         "h-4.5 w-4.5 rounded-[4px] border flex items-center justify-center transition-all shrink-0",
                         selectedRmId === null
@@ -956,7 +952,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                     <div className="border-b border-slate-100 dark:border-zinc-800 my-1"></div>
 
                     <div className="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                      SELECT SALES HEAD
+                      SELECT SALES EXECUTIVE
                     </div>
 
                     <div className="max-h-56 overflow-y-auto space-y-0.5 scrollbar-thin">

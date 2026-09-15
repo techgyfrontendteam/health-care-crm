@@ -127,19 +127,25 @@ export interface LeadFollowUp {
 
 export interface Enquiry {
   uuid: string;
-  lead_id: number;
+  lead_id: string | number;
   customer_uuid: string;
-  project_id: number;
-  project_lead_status_id: number;
+  branch_id?: number;
+  specialisation_id?: number;
+  lead_status_id?: number;
   lead_quality_id?: number;
   lead_priority_id?: number;
   assigned_to_rm?: number | null;
   assigned_to_em?: number | null;
-  junk_reason?: string;
+  project_id?: number;
+  project_lead_status_id?: number;
+  source_id?: number;
+  lead_note?: string | null;
+  junk_reason?: string | null;
   is_active?: number;
   created_by?: number;
   created_on: string;
-  source_id?: number;
+  updated_by?: number | null;
+  updated_on?: string | null;
 }
 
 export interface CreateLeadRequest {
@@ -360,9 +366,27 @@ export interface CreateSurgeryRequest {
   surgery_date_time: string;
   surgery_status_id: number;
   surgery_remarks: string;
+  surgery_cost: number;
 }
 
 export interface CreateSurgeryResponse {
+  message?: string;
+  data?: any;
+  [key: string]: any;
+}
+
+export interface UpdateSurgeryRequest {
+  surgery_id: number;
+  doctor_id: number;
+  surgery_type_id: number;
+  surgery_date_time: string;
+  surgery_status_id: number;
+  surgery_remarks?: string;
+  surgery_cost: number;
+  is_active?: number;
+}
+
+export interface UpdateSurgeryResponse {
   message?: string;
   data?: any;
   [key: string]: any;
@@ -381,6 +405,7 @@ export interface SurgeryDetail {
   surgery_status_code: string;
   surgery_status_name: string;
   surgery_remarks: string;
+  surgery_cost?: number;
   is_active: number;
   created_on: string;
   updated_on: string;

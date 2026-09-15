@@ -24,6 +24,7 @@ import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useGetAllDoctorsQuery } from "../../doctors/api/doctorsApiSlice";
 import type { ApiDoctor } from "../../doctors/types";
 import { cn } from "../../../utils";
+import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
 
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
@@ -162,15 +163,33 @@ export const ScheduleVisitDialog = ({
     }
   }, [derivedBranchId, effectiveLead, masterData?.branches]);
 
-  // Fetch doctors dynamically based on branch_id and specialization_id
+  // Fetch all doctors across the hospital
   const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({
-    branch_id: selectedBranchId ? Number(selectedBranchId) : 0,
-    specialization_id: derivedSpecId ? Number(derivedSpecId) : 0,
+    branch_id: 0,
+    specialization_id: 0,
   });
 
-  const doctorsList: ApiDoctor[] = useMemo(() => {
-    return doctorsResp?.data || [];
-  }, [doctorsResp]);
+  const doctorsList: any[] = useMemo(() => {
+    let list: any[] = [];
+    if (doctorsResp) {
+      if (Array.isArray(doctorsResp)) list = doctorsResp;
+      else if (Array.isArray(doctorsResp.data)) list = doctorsResp.data;
+      else if (Array.isArray((doctorsResp as any).doctors)) list = (doctorsResp as any).doctors;
+    }
+    const currentDocId = appointment?.doctor_id;
+    if (currentDocId && !list.some((d: any) => Number(d.id) === Number(currentDocId))) {
+      list = [
+        {
+          id: Number(currentDocId),
+          first_name: appointment.doctor_name || `Doctor #${currentDocId}`,
+          last_name: "",
+          specialization_id: derivedSpecId,
+        },
+        ...list,
+      ];
+    }
+    return list;
+  }, [doctorsResp, appointment, derivedSpecId]);
 
   const statuses =
     masterData?.appointment_status && masterData.appointment_status.length > 0
@@ -244,7 +263,7 @@ export const ScheduleVisitDialog = ({
         }
 
         reset({
-          doctor_id: appointment.doctor_id || undefined,
+          doctor_id: appointment.doctor_id ? Number(appointment.doctor_id) : undefined,
           visit_date_time: appointment.visit_date_time || "",
           visit_status:
             appointment.appointments_status_id ||
@@ -427,6 +446,7 @@ export const ScheduleVisitDialog = ({
                 )}
               </Label>
               <Select
+                key={`doctor-select-${watchDoctorId || "none"}-${doctorsList.length}`}
                 value={watchDoctorId ? String(watchDoctorId) : ""}
                 onValueChange={(val) => setValue("doctor_id", Number(val), { shouldValidate: true })}
                 disabled={isLoading || isLoadingDoctors}
@@ -437,7 +457,7 @@ export const ScheduleVisitDialog = ({
                       isLoadingDoctors
                         ? "Loading available doctors..."
                         : doctorsList.length === 0
-                        ? "No doctors found for this branch & department"
+                        ? "No doctors found"
                         : "-- Select Doctor * --"
                     }
                   />
@@ -480,58 +500,39 @@ export const ScheduleVisitDialog = ({
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Visit Date <span className="text-red-500">*</span>
                 </Label>
-                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 opacity-60" />
-                      {date ? format(date, "PPP") : "Select visit date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 z-[99999]"
-                    collisionPadding={12}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={(selectedDate) => {
-                        setDate(selectedDate);
-                        setTimeError("");
-                        if (selectedDate && hour && minute && period) {
-                          let hrs = parseInt(hour);
-                          if (period === "PM" && hrs !== 12) hrs += 12;
-                          if (period === "AM" && hrs === 12) hrs = 0;
+                <DatePicker
+                  value={date}
+                  onChange={(val, d) => {
+                    setDate(d);
+                    setTimeError("");
+                    if (d && hour && minute && period) {
+                      let hrs = parseInt(hour);
+                      if (period === "PM" && hrs !== 12) hrs += 12;
+                      if (period === "AM" && hrs === 12) hrs = 0;
 
-                          const selectedDateTime = new Date(selectedDate);
-                          selectedDateTime.setHours(hrs);
-                          selectedDateTime.setMinutes(parseInt(minute));
-                          selectedDateTime.setSeconds(0);
+                      const selectedDateTime = new Date(d);
+                      selectedDateTime.setHours(hrs);
+                      selectedDateTime.setMinutes(parseInt(minute));
+                      selectedDateTime.setSeconds(0);
 
-                          if (!isEdit && selectedDateTime < new Date()) {
-                            setTimeError("Cannot select a time in the past");
-                            toast.error("Cannot select a time in the past");
-                            setHour("");
-                            setMinute("");
-                            setPeriod("");
-                            setValue("visit_date_time", "");
-                          } else {
-                            setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
-                          }
-                        } else {
-                          setValue("visit_date_time", "");
-                        }
-                        setIsPopoverOpen(false);
-                      }}
-                      disabled={(d) =>
-                        !isEdit && d < new Date(new Date().setHours(0, 0, 0, 0))
+                      if (!isEdit && selectedDateTime < new Date()) {
+                        setTimeError("Cannot select a time in the past");
+                        toast.error("Cannot select a time in the past");
+                        setHour("");
+                        setMinute("");
+                        setPeriod("");
+                        setValue("visit_date_time", "");
+                      } else {
+                        setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
                       }
-                    />
-                  </PopoverContent>
-                </Popover>
+                    } else {
+                      setValue("visit_date_time", "");
+                    }
+                  }}
+                  disablePastDates={!isEdit}
+                  placeholder="Select visit date"
+                  error={errors.visit_date_time?.message}
+                />
                 {errors.visit_date_time && (
                   <p className="text-xs text-red-500">{errors.visit_date_time.message}</p>
                 )}
@@ -542,169 +543,52 @@ export const ScheduleVisitDialog = ({
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Visit Time <span className="text-red-500">*</span>
                 </Label>
-                <Popover open={isTimePopoverOpen} onOpenChange={setIsTimePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                    >
-                      <Clock className="mr-2 h-4 w-4 opacity-60" />
-                      {hour && minute && period ? `${hour}:${minute} ${period}` : "Select visit time"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="bottom"
-                    align="start"
-                    sideOffset={8}
-                    collisionPadding={12}
-                    className="w-[320px] p-4 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-zinc-50 z-[99999] rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-2xl"
-                  >
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-xs text-zinc-700 dark:text-zinc-300">Select Time</h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {/* Hour */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Hour</p>
-                          <div className="h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 p-1 space-y-0.5 custom-scrollbar">
-                            {Array.from({ length: 12 }, (_, i) => {
-                              const val = String(i + 1).padStart(2, "0");
-                              return (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => {
-                                    setHour(val);
-                                    setTimeError("");
-                                  }}
-                                  className={`w-full rounded-lg py-1.5 font-bold text-xs transition-all ${
-                                    hour === val
-                                      ? "bg-[#063669] text-white shadow-sm"
-                                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                  }`}
-                                >
-                                  {val}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                <TimePicker
+                  value={hour && minute && period ? `${hour}:${minute} ${period}` : ""}
+                  outputFormat="12h"
+                  placeholder="Select visit time"
+                  onChange={(val) => {
+                    if (!val) {
+                      setHour("");
+                      setMinute("");
+                      setPeriod("");
+                      setValue("visit_date_time", "");
+                      return;
+                    }
+                    const parts = val.split(" ");
+                    const timeParts = parts[0]?.split(":") || [];
+                    const h = timeParts[0] || "";
+                    const m = timeParts[1] || "";
+                    const p = (parts[1]?.toUpperCase() as "AM" | "PM") || "AM";
+                    setHour(h);
+                    setMinute(m);
+                    setPeriod(p);
+                    setTimeError("");
 
-                        {/* Minute */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Minute</p>
-                          <div className="h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 p-1 space-y-0.5 custom-scrollbar">
-                            {Array.from({ length: 60 }, (_, i) => {
-                              const val = String(i).padStart(2, "0");
-                              return (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => {
-                                    setMinute(val);
-                                    setTimeError("");
-                                  }}
-                                  className={`w-full rounded-lg py-1.5 font-bold text-xs transition-all ${
-                                    minute === val
-                                      ? "bg-[#063669] text-white shadow-sm"
-                                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                  }`}
-                                >
-                                  {val}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                    if (date && h && m && p) {
+                      let hrs = parseInt(h);
+                      if (p === "PM" && hrs !== 12) hrs += 12;
+                      if (p === "AM" && hrs === 12) hrs = 0;
 
-                        {/* AM PM */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Period</p>
-                          <div className="space-y-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPeriod("AM");
-                                setTimeError("");
-                              }}
-                              className={`w-full rounded-xl py-2 font-bold text-xs transition-all ${
-                                period === "AM"
-                                  ? "bg-[#063669] text-white shadow-sm"
-                                  : "border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                              }`}
-                            >
-                              AM
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPeriod("PM");
-                                setTimeError("");
-                              }}
-                              className={`w-full rounded-xl py-2 font-bold text-xs transition-all ${
-                                period === "PM"
-                                  ? "bg-[#063669] text-white shadow-sm"
-                                  : "border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                              }`}
-                            >
-                              PM
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      const selectedDateTime = new Date(date);
+                      selectedDateTime.setHours(hrs);
+                      selectedDateTime.setMinutes(parseInt(m));
+                      selectedDateTime.setSeconds(0);
 
-                      {timeError && (
-                        <p className="text-xs text-red-500 font-medium px-1">{timeError}</p>
-                      )}
-
-                      <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-zinc-400">Selected Time</p>
-                          <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                            {hour && minute && period ? `${hour}:${minute} ${period}` : "--:-- --"}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          className="px-4 rounded-xl h-8 text-xs font-bold bg-[#063669] text-white"
-                          onClick={() => {
-                            if (!date) {
-                              setTimeError("Please select a visit date first");
-                              toast.error("Please select a visit date first");
-                              return;
-                            }
-                            if (!hour || !minute || !period) {
-                              setTimeError("Please select a complete time");
-                              toast.error("Please select a complete time");
-                              return;
-                            }
-
-                            let hrs = parseInt(hour);
-                            if (period === "PM" && hrs !== 12) hrs += 12;
-                            if (period === "AM" && hrs === 12) hrs = 0;
-
-                            const selectedDateTime = new Date(date);
-                            selectedDateTime.setHours(hrs);
-                            selectedDateTime.setMinutes(parseInt(minute));
-                            selectedDateTime.setSeconds(0);
-
-                            if (!isEdit && selectedDateTime < new Date()) {
-                              setTimeError("Cannot select a time in the past");
-                              toast.error("Cannot select a time in the past");
-                              return;
-                            }
-
-                            setTimeError("");
-                            setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
-                            setIsTimePopoverOpen(false);
-                          }}
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                      if (!isEdit && selectedDateTime < new Date()) {
+                        setTimeError("Cannot select a time in the past");
+                        toast.error("Cannot select a time in the past");
+                        setValue("visit_date_time", "");
+                      } else {
+                        setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
+                      }
+                    } else {
+                      setValue("visit_date_time", "");
+                    }
+                  }}
+                  error={timeError}
+                />
+                {timeError && <p className="text-xs text-red-500">{timeError}</p>}
               </div>
             </div>
 

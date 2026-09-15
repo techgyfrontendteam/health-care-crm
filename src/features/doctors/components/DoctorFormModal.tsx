@@ -5,10 +5,18 @@ import { Dialog, DialogContent } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useCreateDoctorMutation } from "../api/doctorsApiSlice";
 import { toast } from "sonner";
+import { TimePicker } from "../../../shared/components/DateTimePicker";
 
 interface DoctorFormModalProps {
   open: boolean;
@@ -38,13 +46,13 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
     email: "",
     phone_number: "",
     education: "",
-    experience: 5,
-    consultation_fee: 1000,
+    experience: "",
+    consultation_fee: "",
     branch_id: 0,
     specialization_id: 0,
     service_id: 0,
-    available_start_time: "09:00",
-    available_end_time: "17:00",
+    available_start_time: "",
+    available_end_time: "",
     profile_img: "",
     country_code: "+91",
     image_url: "", // local preview
@@ -59,7 +67,6 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             s.id === doctor.specialization_id ||
             s.description?.toLowerCase() === doctor.specialization?.toLowerCase()
         )?.id ||
-        masterData?.specialisations?.[0]?.id ||
         0;
 
       const matchedBranchId =
@@ -69,7 +76,6 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             b.id === doctor.branch_id ||
             b.description?.toLowerCase() === doctor.hospital_branch?.toLowerCase()
         )?.id ||
-        masterData?.branches?.[0]?.id ||
         0;
 
       const matchedServiceId =
@@ -82,19 +88,18 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             (doctor.department === "IPD" && s.description?.toLowerCase().includes("ip") && !s.description?.toLowerCase().includes("op")) ||
             (doctor.department === "Both" && s.description?.toLowerCase().includes("both"))
         )?.id ||
-        masterData?.services?.[0]?.id ||
         0;
 
       const startT = doctor.available_start_time
         ? doctor.available_start_time.slice(0, 5)
         : doctor.working_hours
         ? doctor.working_hours.split(" - ")[0]
-        : "09:00";
+        : "";
       const endT = doctor.available_end_time
         ? doctor.available_end_time.slice(0, 5)
         : doctor.working_hours
         ? doctor.working_hours.split(" - ")[1]
-        : "17:00";
+        : "";
 
       setFormData({
         first_name: doctor.first_name || (doctor.name ? doctor.name.split(" ")[0] : ""),
@@ -102,17 +107,18 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         email: doctor.email || "",
         phone_number: doctor.phone_number || "",
         education: doctor.qualification || "",
-        experience: doctor.experience_years ?? 5,
-        consultation_fee: doctor.consultation_fee ?? 1000,
+        experience: doctor.experience_years !== undefined && doctor.experience_years !== null ? doctor.experience_years : "",
+        consultation_fee: doctor.consultation_fee !== undefined && doctor.consultation_fee !== null ? doctor.consultation_fee : "",
         branch_id: matchedBranchId,
         specialization_id: matchedSpecId,
         service_id: matchedServiceId,
-        available_start_time: startT || "09:00",
-        available_end_time: endT || "17:00",
+        available_start_time: startT || "",
+        available_end_time: endT || "",
         profile_img: doctor.image_url || "",
         country_code: "+91",
         image_url: doctor.image_url || "",
       });
+      setSelectedFile(null);
     } else {
       setFormData({
         first_name: "",
@@ -120,23 +126,45 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         email: "",
         phone_number: "",
         education: "",
-        experience: 5,
-        consultation_fee: 1000,
-        branch_id: masterData?.branches?.[0]?.id || 0,
-        specialization_id: masterData?.specialisations?.[0]?.id || 0,
-        service_id: masterData?.services?.[0]?.id || 0,
-        available_start_time: "09:00",
-        available_end_time: "17:00",
+        experience: "",
+        consultation_fee: "",
+        branch_id: 0,
+        specialization_id: 0,
+        service_id: 0,
+        available_start_time: "",
+        available_end_time: "",
         profile_img: "",
         country_code: "+91",
         image_url: "",
       });
+      setSelectedFile(null);
     }
   }, [doctor, open, masterData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let finalProfileImg = formData.profile_img;
+
+    if (!formData.specialization_id || Number(formData.specialization_id) === 0) {
+      toast.error("Please select a department (specialisation)");
+      return;
+    }
+    if (!formData.service_id || Number(formData.service_id) === 0) {
+      toast.error("Please select a service type");
+      return;
+    }
+    if (!formData.branch_id || Number(formData.branch_id) === 0) {
+      toast.error("Please select a hospital branch");
+      return;
+    }
+    if (!formData.available_start_time) {
+      toast.error("Please select available start time");
+      return;
+    }
+    if (!formData.available_end_time) {
+      toast.error("Please select available end time");
+      return;
+    }
 
     if (selectedFile) {
       setIsUploading(true);
@@ -157,19 +185,22 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
       setIsUploading(false);
     }
 
+    const startTFormatted = formData.available_start_time.length === 5 ? `${formData.available_start_time}:00` : formData.available_start_time;
+    const endTFormatted = formData.available_end_time.length === 5 ? `${formData.available_end_time}:00` : formData.available_end_time;
+
     const payload: CreateDoctorRequest = {
       first_name: formData.first_name,
       last_name: formData.last_name,
       email: formData.email,
       phone_number: formData.phone_number,
       education: formData.education,
-      experience: Number(formData.experience),
-      consultation_fee: Number(formData.consultation_fee),
+      experience: formData.experience === "" || formData.experience === undefined || formData.experience === null ? 0 : Number(formData.experience),
+      consultation_fee: formData.consultation_fee === "" || formData.consultation_fee === undefined || formData.consultation_fee === null ? 0 : Number(formData.consultation_fee),
       branch_id: Number(formData.branch_id),
       specialization_id: Number(formData.specialization_id),
       service_id: Number(formData.service_id),
-      available_start_time: `${formData.available_start_time}:00`,
-      available_end_time: `${formData.available_end_time}:00`,
+      available_start_time: startTFormatted,
+      available_end_time: endTFormatted,
       profile_img: finalProfileImg,
       country_code: formData.country_code,
     };
@@ -205,7 +236,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between pr-12">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-              {isEdit ? "Edit Doctor Profile" : "Register New Doctor"}
+              {isEdit ? "Edit Doctor Profile" : "Add Doctor"}
             </h2>
             <p className="text-xs text-zinc-500">
               {isEdit ? "Update doctor credentials and department details." : "Add a new healthcare practitioner to TechGy CRM."}
@@ -240,35 +271,39 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-bold">Department (Specialisation) *</Label>
-              <select
-                required
-                value={formData.specialization_id}
-                onChange={(e) => setFormData({ ...formData, specialization_id: Number(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+              <Select
+                value={formData.specialization_id ? String(formData.specialization_id) : ""}
+                onValueChange={(val) => setFormData((prev: any) => ({ ...prev, specialization_id: Number(val) }))}
               >
-                <option value={0} disabled>Select Department</option>
-                {masterData?.specialisations?.map((spec) => (
-                  <option key={spec.id} value={spec.id}>
-                    {spec.description}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                  <SelectValue placeholder="Select Department" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
+                  {masterData?.specialisations?.map((spec) => (
+                    <SelectItem key={spec.id} value={String(spec.id)} className="text-xs cursor-pointer py-2">
+                      {spec.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-xs font-bold">Service Type *</Label>
-              <select
-                required
-                value={formData.service_id}
-                onChange={(e) => setFormData({ ...formData, service_id: Number(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+              <Select
+                value={formData.service_id ? String(formData.service_id) : ""}
+                onValueChange={(val) => setFormData((prev: any) => ({ ...prev, service_id: Number(val) }))}
               >
-                <option value={0} disabled>Select Service Type</option>
-                {masterData?.services?.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.description}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                  <SelectValue placeholder="Select Service Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
+                  {masterData?.services?.map((st) => (
+                    <SelectItem key={st.id} value={String(st.id)} className="text-xs cursor-pointer py-2">
+                      {st.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -287,8 +322,16 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               <Label className="text-xs font-bold">Experience (Yrs)</Label>
               <Input
                 type="number"
-                value={formData.experience}
-                onChange={(e) => setFormData({ ...formData, experience: Number(e.target.value) })}
+                value={formData.experience !== undefined && formData.experience !== null ? formData.experience : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    experience: val === "" ? "" : Number(val),
+                  }));
+                }}
+                placeholder="e.g. 5"
+                min={0}
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
@@ -301,7 +344,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 required
                 value={formData.phone_number}
                 onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                placeholder="9876543210"
+                placeholder="e.g. 9876543210"
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
@@ -312,7 +355,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="doctor@techgyhealth.com"
+                placeholder="e.g. doctor@techgyhealth.com"
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
@@ -323,48 +366,54 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               <Label className="text-xs font-bold">Consultation Fee (₹)</Label>
               <Input
                 type="number"
-                value={formData.consultation_fee}
-                onChange={(e) => setFormData({ ...formData, consultation_fee: Number(e.target.value) })}
+                value={formData.consultation_fee !== undefined && formData.consultation_fee !== null ? formData.consultation_fee : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    consultation_fee: val === "" ? "" : Number(val),
+                  }));
+                }}
+                placeholder="e.g. 1000"
+                min={0}
                 className="mt-1 rounded-xl h-10 text-xs"
               />
             </div>
             <div>
               <Label className="text-xs font-bold">Hospital Branch</Label>
-              <select
-                required
-                value={formData.branch_id}
-                onChange={(e) => setFormData({ ...formData, branch_id: Number(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-10 px-3 text-xs font-medium focus:ring-2 focus:ring-primary outline-none"
+              <Select
+                value={formData.branch_id ? String(formData.branch_id) : ""}
+                onValueChange={(val) => setFormData((prev: any) => ({ ...prev, branch_id: Number(val) }))}
               >
-                <option value={0} disabled>Select Branch</option>
-                {masterData?.branches?.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.description}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                  <SelectValue placeholder="Select Branch" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
+                  {masterData?.branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={String(branch.id)} className="text-xs cursor-pointer py-2">
+                      {branch.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-bold">Available Start Time *</Label>
-              <Input
-                type="time"
-                required
+              <Label className="text-xs font-bold mb-1.5 block">Available Start Time *</Label>
+              <TimePicker
                 value={formData.available_start_time}
-                onChange={(e) => setFormData({ ...formData, available_start_time: e.target.value })}
-                className="mt-1 rounded-xl h-10 text-xs"
+                onChange={(val) => setFormData({ ...formData, available_start_time: val })}
+                placeholder="Select start time"
               />
             </div>
             <div>
-              <Label className="text-xs font-bold">Available End Time *</Label>
-              <Input
-                type="time"
-                required
+              <Label className="text-xs font-bold mb-1.5 block">Available End Time *</Label>
+              <TimePicker
                 value={formData.available_end_time}
-                onChange={(e) => setFormData({ ...formData, available_end_time: e.target.value })}
-                className="mt-1 rounded-xl h-10 text-xs"
+                onChange={(val) => setFormData({ ...formData, available_end_time: val })}
+                placeholder="Select end time"
               />
             </div>
           </div>

@@ -1,27 +1,20 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Loader2,
-  CalendarIcon,
-  Clock,
   Building,
   MapPin,
   Stethoscope,
   Sparkles,
   Activity,
   UserCheck,
+  IndianRupee,
 } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../../../components/ui/popover";
-import { Calendar } from "../../../components/ui/calendar";
+import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useGetAllDoctorsQuery } from "../../doctors/api/doctorsApiSlice";
-import { useCreateSurgeryMutation } from "../api/leadsApi";
-import type { Lead } from "../types";
+import { useCreateSurgeryMutation, useUpdateSurgeryMutation } from "../api/leadsApi";
+import type { Lead, SurgeryDetail } from "../types";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import {
@@ -37,6 +30,7 @@ export interface ScheduleSurgeryDialogProps {
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   lead: Lead | null;
+  surgery?: SurgeryDetail | null;
   onSuccess?: () => void;
 }
 
@@ -45,67 +39,38 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
   onOpenChange,
   onClose,
   lead,
+  surgery,
   onSuccess,
 }) => {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [isTimePopoverOpen, setIsTimePopoverOpen] = useState(false);
-
   // Master Data
   const { data: masterData, isLoading: isLoadingMasterData } = useGetAllMasterDataQuery();
 
   // Doctors list (fetch all doctors without filter as required)
-  const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({});
-  const [createSurgery, { isLoading: isSubmitting }] = useCreateSurgeryMutation();
+  const { data: doctorsResp, isLoading: isLoadingDoctors } = useGetAllDoctorsQuery({
+    branch_id: 0,
+    specialization_id: 0,
+  });
+  const [createSurgery, { isLoading: isCreating }] = useCreateSurgeryMutation();
+  const [updateSurgery, { isLoading: isUpdating }] = useUpdateSurgeryMutation();
+  const isSubmitting = isCreating || isUpdating;
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
     if (onClose) onClose();
   };
 
-  // Doctors list normalization
-  const doctorsList = useMemo(() => {
-    if (!doctorsResp) return [];
-    if (Array.isArray(doctorsResp)) return doctorsResp;
-    if (Array.isArray(doctorsResp.data)) return doctorsResp.data;
-    if (Array.isArray(doctorsResp.doctors)) return doctorsResp.doctors;
-    return [];
-  }, [doctorsResp]);
-
-  // Surgery Types from Master Data
-  const surgeryTypes = useMemo(() => {
-    const list =
-      masterData?.surgery_types ||
-      (masterData as any)?.surgery_type ||
-      [];
-    return Array.isArray(list) ? list : [];
-  }, [masterData]);
-
-  // Surgery Statuses from Master Data
-  const surgeryStatuses = useMemo(() => {
-    const list =
-      masterData?.surgery_statuses ||
-      (masterData as any)?.surgery_status ||
-      [];
-    return Array.isArray(list) ? list : [];
-  }, [masterData]);
-
-  // Form State
-  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
-  const [selectedSurgeryTypeId, setSelectedSurgeryTypeId] = useState<string>("");
-  const [selectedStatusId, setSelectedStatusId] = useState<string>("");
-  const [date, setDate] = useState<Date | undefined>();
-  const [hour, setHour] = useState("");
-  const [minute, setMinute] = useState("");
-  const [period, setPeriod] = useState<"AM" | "PM" | "">("");
-  const [timeError, setTimeError] = useState("");
-  const [remarks, setRemarks] = useState<string>("");
-
   // Derived location / branch / specialization details for badge card
   const derivedBranchId = useMemo(() => {
-    const bId = (lead as any)?.branch_id || (lead as any)?.location_id;
+    const bId =
+      (surgery as any)?.branch_id ||
+      (surgery as any)?.location_id ||
+      (lead as any)?.branch_id ||
+      (lead as any)?.location_id;
     if (bId && !isNaN(Number(bId)) && Number(bId) > 0) return Number(bId);
 
     const bName =
+      (surgery as any)?.hospital_branch ||
+      (surgery as any)?.branch ||
       (lead as any)?.hospital_branch ||
       (lead as any)?.branch ||
       (lead as any)?.branch_name;
@@ -118,10 +83,12 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
       if (found) return found.id;
     }
     return null;
-  }, [lead, masterData?.branches]);
+  }, [surgery, lead, masterData?.branches]);
 
   const derivedSpecId = useMemo(() => {
     const dept =
+      (surgery as any)?.specialisation_id ||
+      (surgery as any)?.specialization_id ||
       (lead as any)?.specialisation_id ||
       (lead as any)?.specialization_id ||
       (lead as any)?.department ||
@@ -136,72 +103,220 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
         s.code?.toLowerCase() === String(dept).toLowerCase()
     );
     return found ? found.id : 0;
-  }, [lead, masterData?.specialisations]);
+  }, [surgery, lead, masterData?.specialisations]);
 
   const branchObj = masterData?.branches?.find((b: any) => b.id === derivedBranchId);
-  const locationObj = masterData?.locations?.find((l: any) => l.id === (branchObj?.location_id || lead?.location_id));
+  const locationObj = masterData?.locations?.find((l: any) => l.id === (branchObj?.location_id || (lead as any)?.location_id));
   const specObj = masterData?.specialisations?.find((s: any) => s.id === derivedSpecId);
+
+  // Doctors list normalization with fallback for selected doctor
+  const doctorsList = useMemo(() => {
+    let list: any[] = [];
+    if (doctorsResp) {
+      if (Array.isArray(doctorsResp)) list = doctorsResp;
+      else if (Array.isArray(doctorsResp.data)) list = doctorsResp.data;
+      else if (Array.isArray(doctorsResp.doctors)) list = doctorsResp.doctors;
+    }
+    if (surgery?.doctor_id && !list.some((d: any) => Number(d.id) === Number(surgery.doctor_id))) {
+      list = [
+        {
+          id: surgery.doctor_id,
+          first_name: surgery.doctor_name || `Doctor #${surgery.doctor_id}`,
+          last_name: "",
+          specialization_id: derivedSpecId,
+        },
+        ...list,
+      ];
+    }
+    return list;
+  }, [doctorsResp, surgery, derivedSpecId]);
+
+  // Surgery Types from Master Data with fallback for selected surgery type
+  const surgeryTypes = useMemo(() => {
+    let list =
+      masterData?.surgery_types ||
+      (masterData as any)?.surgery_type ||
+      (masterData as any)?.lead_surgery_types ||
+      [];
+    list = Array.isArray(list) ? [...list] : [];
+    if (surgery?.surgery_type_id && !list.some((st: any) => Number(st.id) === Number(surgery.surgery_type_id))) {
+      list = [
+        {
+          id: surgery.surgery_type_id,
+          description: surgery.surgery_type_name || `Surgery Type #${surgery.surgery_type_id}`,
+        },
+        ...list,
+      ];
+    }
+    return list;
+  }, [masterData, surgery]);
+
+  const DEFAULT_SURGERY_STATUSES = [
+    { id: 1, code: "SCHDL", description: "Surgery Scheduled" },
+    { id: 2, code: "CMP", description: "Surgery Completed" },
+    { id: 3, code: "CANCEL", description: "Surgery Cancelled" },
+    { id: 4, code: "RESCHD", description: "Surgery Rescheduled" },
+  ];
+
+  // Surgery Statuses from Master Data with fallback for selected status
+  const surgeryStatuses = useMemo(() => {
+    let list =
+      masterData?.surgery_statuses ||
+      (masterData as any)?.surgery_status ||
+      (masterData as any)?.lead_surgery_statuses ||
+      [];
+    if (!Array.isArray(list) || list.length === 0) {
+      list = DEFAULT_SURGERY_STATUSES;
+    } else {
+      list = [...list];
+    }
+    if (surgery?.surgery_status_id && !list.some((st: any) => Number(st.id) === Number(surgery.surgery_status_id))) {
+      list = [
+        {
+          id: surgery.surgery_status_id,
+          code: surgery.surgery_status_code || "",
+          description: surgery.surgery_status_name || surgery.surgery_status_code || `Status #${surgery.surgery_status_id}`,
+        },
+        ...list,
+      ];
+    }
+    return list;
+  }, [masterData, surgery]);
+
+  // Form State
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
+  const [selectedSurgeryTypeId, setSelectedSurgeryTypeId] = useState<string>("");
+  const [selectedStatusId, setSelectedStatusId] = useState<string>("");
+  const [date, setDate] = useState<Date | undefined>();
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
+  const [period, setPeriod] = useState<"AM" | "PM" | "">("");
+  const [timeError, setTimeError] = useState("");
+  const [remarks, setRemarks] = useState<string>("");
+  const [surgeryCost, setSurgeryCost] = useState<string>("");
 
   // Initialize values on dialog open
   useEffect(() => {
     if (open) {
-      // Default to tomorrow 09:00 AM
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      setDate(tomorrow);
-      setHour("09");
-      setMinute("00");
-      setPeriod("AM");
-      setTimeError("");
-
-      // Default Doctor
-      if (lead?.doctor_name && doctorsList.length > 0) {
-        const docMatch = doctorsList.find((d: any) => {
-          const docFullName = `${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase();
-          return (
-            docFullName.includes(lead.doctor_name!.toLowerCase()) ||
-            lead.doctor_name!.toLowerCase().includes(docFullName)
-          );
-        });
-        if (docMatch) {
-          setSelectedDoctorId(String(docMatch.id));
+      if (surgery) {
+        // Edit Mode: Prepopulate from surgery
+        if (surgery.doctor_id !== undefined && surgery.doctor_id !== null) {
+          setSelectedDoctorId(String(surgery.doctor_id));
+        } else if (surgery.doctor_name && doctorsList.length > 0) {
+          const docMatch = doctorsList.find((d: any) => {
+            const docFullName = `${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase();
+            return (
+              docFullName.includes(surgery.doctor_name!.toLowerCase()) ||
+              surgery.doctor_name!.toLowerCase().includes(docFullName)
+            );
+          });
+          setSelectedDoctorId(docMatch ? String(docMatch.id) : String(doctorsList[0]?.id || ""));
         } else {
-          setSelectedDoctorId(String(doctorsList[0]?.id || ""));
+          setSelectedDoctorId("");
         }
-      } else if (doctorsList.length > 0) {
-        setSelectedDoctorId(String(doctorsList[0]?.id || ""));
-      } else {
-        setSelectedDoctorId("");
-      }
 
-      // Default Surgery Type
-      if (surgeryTypes.length > 0) {
-        setSelectedSurgeryTypeId(String(surgeryTypes[0].id));
-      } else {
-        setSelectedSurgeryTypeId("");
-      }
+        if (surgery.surgery_type_id !== undefined && surgery.surgery_type_id !== null) {
+          setSelectedSurgeryTypeId(String(surgery.surgery_type_id));
+        } else if (surgeryTypes.length > 0) {
+          setSelectedSurgeryTypeId(String(surgeryTypes[0].id));
+        } else {
+          setSelectedSurgeryTypeId("");
+        }
 
-      // Default Surgery Status
-      if (surgeryStatuses.length > 0) {
-        const defaultStatus =
-          surgeryStatuses.find((s: any) =>
-            (s.code || s.description || "").toUpperCase().includes("SCHD") ||
-            (s.description || "").toUpperCase().includes("SCHEDULE")
-          ) || surgeryStatuses[0];
-        setSelectedStatusId(String(defaultStatus.id));
-      } else {
-        setSelectedStatusId("");
-      }
+        if (surgery.surgery_status_id !== undefined && surgery.surgery_status_id !== null) {
+          setSelectedStatusId(String(surgery.surgery_status_id));
+        } else if (surgeryStatuses.length > 0) {
+          setSelectedStatusId(String(surgeryStatuses[0].id));
+        } else {
+          setSelectedStatusId("");
+        }
 
-      setRemarks("");
+        setRemarks(surgery.surgery_remarks || "");
+        setSurgeryCost(
+          surgery.surgery_cost !== undefined && surgery.surgery_cost !== null
+            ? String(surgery.surgery_cost)
+            : ""
+        );
+        setTimeError("");
+
+        if (surgery.surgery_date_time) {
+          try {
+            const validStr = surgery.surgery_date_time.replace(/Z/g, "").split("+")[0].replace(" ", "T");
+            const d = new Date(validStr);
+            if (!isNaN(d.getTime())) {
+              setDate(d);
+              let h = d.getHours();
+              const p = h >= 12 ? "PM" : "AM";
+              h = h % 12;
+              h = h ? h : 12;
+              setHour(String(h).padStart(2, "0"));
+              setMinute(String(d.getMinutes()).padStart(2, "0"));
+              setPeriod(p);
+            }
+          } catch (e) {
+            console.error("Error parsing surgery date:", e);
+          }
+        }
+      } else {
+        // Create Mode: Default to tomorrow 09:00 AM
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setDate(tomorrow);
+        setHour("09");
+        setMinute("00");
+        setPeriod("AM");
+        setTimeError("");
+
+        // Default Doctor
+        if (lead?.doctor_name && doctorsList.length > 0) {
+          const docMatch = doctorsList.find((d: any) => {
+            const docFullName = `${d.first_name || ""} ${d.last_name || ""}`.trim().toLowerCase();
+            return (
+              docFullName.includes(lead.doctor_name!.toLowerCase()) ||
+              lead.doctor_name!.toLowerCase().includes(docFullName)
+            );
+          });
+          if (docMatch) {
+            setSelectedDoctorId(String(docMatch.id));
+          } else {
+            setSelectedDoctorId(String(doctorsList[0]?.id || ""));
+          }
+        } else if (doctorsList.length > 0) {
+          setSelectedDoctorId(String(doctorsList[0]?.id || ""));
+        } else {
+          setSelectedDoctorId("");
+        }
+
+        // Default Surgery Type
+        if (surgeryTypes.length > 0) {
+          setSelectedSurgeryTypeId(String(surgeryTypes[0].id));
+        } else {
+          setSelectedSurgeryTypeId("");
+        }
+
+        // Default Surgery Status
+        if (surgeryStatuses.length > 0) {
+          const defaultStatus =
+            surgeryStatuses.find((s: any) =>
+              (s.code || s.description || "").toUpperCase().includes("SCHD") ||
+              (s.description || "").toUpperCase().includes("SCHEDULE")
+            ) || surgeryStatuses[0];
+          setSelectedStatusId(String(defaultStatus.id));
+        } else {
+          setSelectedStatusId("");
+        }
+
+        setRemarks("");
+        setSurgeryCost("");
+      }
     }
-  }, [open, lead, doctorsList, surgeryTypes, surgeryStatuses]);
+  }, [open, surgery, lead, doctorsList, surgeryTypes, surgeryStatuses]);
 
   // Form Submit Handler
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!lead?.uuid) {
+    if (!surgery && !lead?.uuid) {
       toast.error("Invalid lead record. Please try again.");
       return;
     }
@@ -231,30 +346,68 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
     selectedDateTime.setMinutes(parseInt(minute));
     selectedDateTime.setSeconds(0);
 
-    if (selectedDateTime < now) {
+    if (!surgery && selectedDateTime < now) {
       toast.error("Cannot schedule surgery in the past");
       return;
     }
 
-    const payload = {
-      lead_uuid: lead.uuid,
-      doctor_id: Number(selectedDoctorId),
-      surgery_type_id: Number(selectedSurgeryTypeId),
-      surgery_date_time: selectedDateTime.toISOString(),
-      surgery_status_id: Number(selectedStatusId || 1),
-      surgery_remarks: remarks.trim(),
-    };
+    if (!surgeryCost || isNaN(Number(surgeryCost)) || Number(surgeryCost) < 0) {
+      toast.error("Please enter a valid surgery cost");
+      return;
+    }
 
-    console.log("=== [API] createSurgery Payload ===", payload);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const formattedDateTime = `${selectedDateTime.getFullYear()}-${pad(
+      selectedDateTime.getMonth() + 1
+    )}-${pad(selectedDateTime.getDate())} ${pad(selectedDateTime.getHours())}:${pad(
+      selectedDateTime.getMinutes()
+    )}:${pad(selectedDateTime.getSeconds())}`;
 
-    try {
-      const res = await createSurgery(payload).unwrap();
-      toast.success(res?.message || "Surgery scheduled successfully!");
-      handleClose();
-      if (onSuccess) onSuccess();
-    } catch (err: any) {
-      console.error("Failed to schedule surgery:", err);
-      toast.error(err?.data?.message || err?.message || "Failed to schedule surgery");
+    if (surgery) {
+      const payload = {
+        surgery_id: Number(surgery.surgery_id || surgery.id),
+        doctor_id: Number(selectedDoctorId),
+        surgery_type_id: Number(selectedSurgeryTypeId),
+        surgery_date_time: formattedDateTime,
+        surgery_status_id: Number(selectedStatusId || 1),
+        surgery_remarks: remarks.trim(),
+        surgery_cost: Number(surgeryCost),
+        is_active: surgery.is_active ?? 1,
+      };
+
+      console.log("=== [API] updateSurgery Payload ===", payload);
+
+      try {
+        const res = await updateSurgery(payload).unwrap();
+        toast.success(res?.message || "Surgery updated successfully!");
+        handleClose();
+        if (onSuccess) onSuccess();
+      } catch (err: any) {
+        console.error("Failed to update surgery:", err);
+        toast.error(err?.data?.message || err?.message || "Failed to update surgery");
+      }
+    } else {
+      const payload = {
+        lead_uuid: lead!.uuid,
+        doctor_id: Number(selectedDoctorId),
+        surgery_type_id: Number(selectedSurgeryTypeId),
+        surgery_date_time: selectedDateTime.toISOString(),
+        surgery_status_id: Number(selectedStatusId || 1),
+        surgery_remarks: remarks.trim(),
+        surgery_cost: Number(surgeryCost),
+      };
+
+      console.log("=== [API] createSurgery Payload ===", payload);
+
+      try {
+        const res = await createSurgery(payload).unwrap();
+        toast.success(res?.message || "Surgery scheduled successfully!");
+        handleClose();
+        if (onSuccess) onSuccess();
+      } catch (err: any) {
+        console.error("Failed to schedule surgery:", err);
+        toast.error(err?.data?.message || err?.message || "Failed to schedule surgery");
+      }
     }
   };
 
@@ -268,10 +421,12 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <Activity className="h-5 w-5 text-[#063669] dark:text-blue-400" />
-              Schedule Surgery
+              {surgery ? "Edit Surgery" : "Schedule Surgery"}
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {lead
+              {surgery
+                ? `Update surgery details for ${lead?.first_name || ""} ${lead?.last_name || ""}`.trim()
+                : lead
                 ? `Schedule a surgery for ${lead.first_name || ""} ${lead.last_name || ""}`.trim()
                 : "Schedule a surgery for a lead"}
             </p>
@@ -323,6 +478,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                 )}
               </Label>
               <Select
+                key={`doctor-${selectedDoctorId}-${doctorsList.length}`}
                 value={selectedDoctorId}
                 onValueChange={setSelectedDoctorId}
                 disabled={isSubmitting || isLoadingDoctors}
@@ -343,6 +499,9 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                     const specTitle =
                       masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)
                         ?.description || "";
+                    const nameStr = doc.first_name?.startsWith("Dr.")
+                      ? `${doc.first_name} ${doc.last_name || ""}`.trim()
+                      : `Dr. ${doc.first_name || ""} ${doc.last_name || ""}`.trim();
                     return (
                       <SelectItem
                         key={doc.id}
@@ -350,9 +509,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                         className="text-black dark:text-white cursor-pointer py-2"
                       >
                         <div className="flex flex-col">
-                          <span className="font-semibold text-xs">
-                            Dr. {doc.first_name} {doc.last_name}
-                          </span>
+                          <span className="font-semibold text-xs">{nameStr}</span>
                           {(doc.education || specTitle) && (
                             <span className="text-[10px] text-zinc-400">
                               {[doc.education, specTitle].filter(Boolean).join(" • ")}
@@ -380,6 +537,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                 )}
               </Label>
               <Select
+                key={`type-${selectedSurgeryTypeId}-${surgeryTypes.length}`}
                 value={selectedSurgeryTypeId}
                 onValueChange={setSelectedSurgeryTypeId}
                 disabled={isSubmitting || isLoadingMasterData}
@@ -402,7 +560,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                       value={String(st.id)}
                       className="text-black dark:text-white cursor-pointer text-xs py-2"
                     >
-                      {st.description || st.code || `Type ${st.id}`}
+                      {st.description || st.name || st.code || `Type ${st.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -416,33 +574,15 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Surgery Date <span className="text-red-500">*</span>
                 </Label>
-                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 opacity-60" />
-                      {date ? format(date, "PPP") : "Select surgery date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-950 dark:text-zinc-50 z-[99999]"
-                    collisionPadding={12}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={(selectedDate) => {
-                        setDate(selectedDate);
-                        setTimeError("");
-                        setIsPopoverOpen(false);
-                      }}
-                      disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePicker
+                  value={date}
+                  onChange={(val, d) => {
+                    setDate(d);
+                    setTimeError("");
+                  }}
+                  disablePastDates={!surgery}
+                  placeholder="Select surgery date"
+                />
               </div>
 
               {/* Time Picker */}
@@ -450,168 +590,28 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Surgery Time <span className="text-red-500">*</span>
                 </Label>
-                <Popover open={isTimePopoverOpen} onOpenChange={setIsTimePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start text-left font-medium h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                    >
-                      <Clock className="mr-2 h-4 w-4 opacity-60" />
-                      {hour && minute && period ? `${hour}:${minute} ${period}` : "Select surgery time"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="bottom"
-                    align="start"
-                    sideOffset={8}
-                    collisionPadding={12}
-                    className="w-[320px] p-4 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-zinc-50 z-[99999] rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-2xl"
-                  >
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-xs text-zinc-700 dark:text-zinc-300">Select Time</h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {/* Hour */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Hour</p>
-                          <div className="h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 p-1 space-y-0.5 custom-scrollbar">
-                            {Array.from({ length: 12 }, (_, i) => {
-                              const val = String(i + 1).padStart(2, "0");
-                              return (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => {
-                                    setHour(val);
-                                    setTimeError("");
-                                  }}
-                                  className={`w-full rounded-lg py-1.5 font-bold text-xs transition-all ${
-                                    hour === val
-                                      ? "bg-[#063669] text-white shadow-sm"
-                                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                  }`}
-                                >
-                                  {val}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Minute */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Minute</p>
-                          <div className="h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 p-1 space-y-0.5 custom-scrollbar">
-                            {Array.from({ length: 60 }, (_, i) => {
-                              const val = String(i).padStart(2, "0");
-                              return (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => {
-                                    setMinute(val);
-                                    setTimeError("");
-                                  }}
-                                  className={`w-full rounded-lg py-1.5 font-bold text-xs transition-all ${
-                                    minute === val
-                                      ? "bg-[#063669] text-white shadow-sm"
-                                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                  }`}
-                                >
-                                  {val}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* AM PM */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Period</p>
-                          <div className="space-y-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPeriod("AM");
-                                setTimeError("");
-                              }}
-                              className={`w-full rounded-xl py-2 font-bold text-xs transition-all ${
-                                period === "AM"
-                                  ? "bg-[#063669] text-white shadow-sm"
-                                  : "border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                              }`}
-                            >
-                              AM
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPeriod("PM");
-                                setTimeError("");
-                              }}
-                              className={`w-full rounded-xl py-2 font-bold text-xs transition-all ${
-                                period === "PM"
-                                  ? "bg-[#063669] text-white shadow-sm"
-                                  : "border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                              }`}
-                            >
-                              PM
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {timeError && (
-                        <p className="text-xs text-red-500 font-medium px-1">{timeError}</p>
-                      )}
-
-                      <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-zinc-400">Selected Time</p>
-                          <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                            {hour && minute && period ? `${hour}:${minute} ${period}` : "--:-- --"}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          className="px-4 rounded-xl h-8 text-xs font-bold bg-[#063669] text-white"
-                          onClick={() => {
-                            if (!date) {
-                              setTimeError("Please select a date first");
-                              toast.error("Please select a date first");
-                              return;
-                            }
-                            if (!hour || !minute || !period) {
-                              setTimeError("Please select a complete time");
-                              toast.error("Please select a complete time");
-                              return;
-                            }
-
-                            let hrs = parseInt(hour);
-                            if (period === "PM" && hrs !== 12) hrs += 12;
-                            if (period === "AM" && hrs === 12) hrs = 0;
-
-                            const selectedDateTime = new Date(date);
-                            selectedDateTime.setHours(hrs);
-                            selectedDateTime.setMinutes(parseInt(minute));
-                            selectedDateTime.setSeconds(0);
-
-                            if (selectedDateTime < new Date()) {
-                              setTimeError("Cannot select a time in the past");
-                              toast.error("Cannot select a time in the past");
-                              return;
-                            }
-
-                            setTimeError("");
-                            setIsTimePopoverOpen(false);
-                          }}
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <TimePicker
+                  value={hour && minute && period ? `${hour}:${minute} ${period}` : ""}
+                  outputFormat="12h"
+                  placeholder="Select surgery time"
+                  onChange={(val) => {
+                    if (!val) {
+                      setHour("");
+                      setMinute("");
+                      setPeriod("");
+                      return;
+                    }
+                    const parts = val.split(" ");
+                    const timeParts = parts[0]?.split(":") || [];
+                    const h = timeParts[0] || "";
+                    const m = timeParts[1] || "";
+                    const p = (parts[1]?.toUpperCase() as "AM" | "PM") || "AM";
+                    setHour(h);
+                    setMinute(m);
+                    setPeriod(p);
+                    setTimeError("");
+                  }}
+                />
               </div>
             </div>
 
@@ -629,6 +629,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                 )}
               </Label>
               <Select
+                key={`status-${selectedStatusId}-${surgeryStatuses.length}`}
                 value={selectedStatusId}
                 onValueChange={setSelectedStatusId}
                 disabled={isSubmitting || isLoadingMasterData}
@@ -651,11 +652,38 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
                       value={String(st.id)}
                       className="text-black dark:text-white cursor-pointer text-xs py-2"
                     >
-                      {st.description || st.code || `Status ${st.id}`}
+                      {st.description || st.name || st.code || `Status ${st.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Surgery Cost */}
+            <div className="space-y-1.5">
+              <Label htmlFor="surgery_cost" className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <IndianRupee className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400" />
+                  Surgery Cost <span className="text-red-500">*</span>
+                </span>
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+                  <span className="text-xs font-bold">₹</span>
+                </div>
+                <input
+                  id="surgery_cost"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Enter surgery cost (e.g. 50000)"
+                  disabled={isSubmitting}
+                  value={surgeryCost}
+                  onChange={(e) => setSurgeryCost(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-3 h-11 text-xs font-medium focus:ring-1 focus:ring-[#063669] outline-none transition-all placeholder:text-zinc-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  required
+                />
+              </div>
             </div>
 
             {/* Surgery Remarks */}
@@ -700,7 +728,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
             className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white h-10 px-6 gap-2"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Schedule Surgery
+            {surgery ? "Update Surgery" : "Schedule Surgery"}
           </Button>
         </div>
       </div>

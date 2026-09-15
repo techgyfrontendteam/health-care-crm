@@ -19,6 +19,7 @@ import { Button } from "../../../components/ui/button";
 import { toast } from "sonner";
 import {
   useGetLeadsQuery,
+  useGetLeadByIdQuery,
   useCreateLeadMutation,
   useUpdateLeadMutation,
   useBulkAssignLeadsToRmMutation,
@@ -72,10 +73,10 @@ export const LeadsPage = () => {
   const canVerifyJunk = isAdmin && !isSADMIN;
   const isRM = currentRole?.code === "RELMNG";
   const isEM = currentRole?.code === "EXPMNG";
-  const showTabs = isAdmin || isRM;
+  const showTabs = isAdmin;
 
   const { activeTab, tabFilters } = useAppSelector((state) => state.leads);
-  const tabKey = showTabs ? String(activeTab) : "all";
+  const tabKey = isRM ? "0" : (showTabs ? String(activeTab) : "all");
   const currentFilters = tabFilters[tabKey];
 
   const {
@@ -132,6 +133,10 @@ export const LeadsPage = () => {
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [showRandomConfirm, setShowRandomConfirm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const { data: fullEditingLead, isLoading: isLoadingFullLead } = useGetLeadByIdQuery(
+    { uuid: editingLead?.uuid || "" },
+    { skip: !editingLead?.uuid, refetchOnMountOrArgChange: true }
+  );
   const [deleteUuid, setDeleteUuid] = useState<string | null>(null);
   const [schedulingLead, setSchedulingLead] = useState<Lead | null>(null);
   const [activityLead, setActivityLead] = useState<Lead | null>(null);
@@ -264,7 +269,7 @@ export const LeadsPage = () => {
   } = useGetLeadsByRmIdQuery({
     assigned_to_rm: Number(currentUser?.id || 0),
     offset: serverOffset,
-    is_em_assigned: activeTab,
+    is_em_assigned: 0,
     status: queryStatusIds,
     project: queryProjectIds,
     em: queryEmIds,
@@ -1238,7 +1243,10 @@ export const LeadsPage = () => {
 
       <AppDrawer
         open={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setEditingLead(null);
+        }}
         title={editingLead ? "Edit Lead" : "New Lead"}
         description={
           editingLead
@@ -1247,12 +1255,22 @@ export const LeadsPage = () => {
         }
       >
         {isDrawerOpen && (
-          <LeadForm
-            onSubmit={handleFormSubmit}
-            isLoading={isCreating || isUpdating}
-            initialValues={editingLead || (projectIds && projectIds.length === 1 ? { project_id: Number(projectIds[0]) } : undefined)}
-            isEdit={!!editingLead}
-          />
+          isLoadingFullLead && editingLead ? (
+            <div className="flex flex-col items-center justify-center p-12 space-y-3">
+              <Loader2 className="h-8 w-8 animate-spin text-[#063669]" />
+              <p className="text-sm text-zinc-500 font-medium">Loading lead details...</p>
+            </div>
+          ) : (
+            <LeadForm
+              onSubmit={handleFormSubmit}
+              isLoading={isCreating || isUpdating}
+              initialValues={
+                (editingLead ? (fullEditingLead || editingLead) : undefined) ||
+                (projectIds && projectIds.length === 1 ? { project_id: Number(projectIds[0]) } : undefined)
+              }
+              isEdit={!!editingLead}
+            />
+          )
         )}
       </AppDrawer>
 

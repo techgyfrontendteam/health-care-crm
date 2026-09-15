@@ -96,11 +96,7 @@ const getFormSchema = (isEdit: boolean, roleId: number) => {
         .min(1, "Email address is required")
         .max(100, "Email cannot exceed 100 characters")
         .email("Please enter a valid email format (e.g., user@example.com)"),
-      caller_id: z
-        .string()
-        .trim()
-        .min(1, "Caller ID is required")
-        .regex(/^\d+$/, "Caller ID must contain only numbers"),
+      caller_id: z.string().optional(),
       login_id: z.string().optional(),
       password: z.string().optional(),
       role_id: z.number({ error: "Role is required" }),
@@ -123,7 +119,7 @@ type FormValues = {
   last_name: string;
   phone_number: string;
   email: string;
-  caller_id: string;
+  caller_id?: string;
   login_id?: string;
   password?: string;
   role_id: number;
@@ -216,7 +212,7 @@ export const UserForm = ({
       last_name: initialValues?.last_name || "",
       phone_number: initialValues?.phone_number || "",
       email: initialValues?.email || "",
-      caller_id: initialValues?.caller_id ? String(initialValues.caller_id) : "",
+      caller_id: "918069879539",
       login_id: initialValues?.login_id || "",
       role_id: initialValues?.role_id || roleId,
       reporting_manager_id: initialValues?.reporting_manager_id || null,
@@ -230,7 +226,7 @@ export const UserForm = ({
       last_name: initialValues?.last_name || "",
       phone_number: initialValues?.phone_number || "",
       email: initialValues?.email || "",
-      caller_id: initialValues?.caller_id ? String(initialValues.caller_id) : "",
+      caller_id: "918069879539",
       login_id: initialValues?.login_id || "",
       role_id: initialValues?.role_id || roleId,
       reporting_manager_id: initialValues?.reporting_manager_id || null,
@@ -248,7 +244,7 @@ export const UserForm = ({
       login_id: values.email.toLowerCase(),
       role_id: roleId,
       project_ids: project_id ? [project_id] : [],
-      caller_id: values.caller_id.trim(),
+      caller_id: "918069879539",
       assign_extension: true,
       route_call_through: 2,
       block_web_login: false,
@@ -448,39 +444,7 @@ export const UserForm = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="caller_id"
-              render={({ field, fieldState }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel className="text-[11px] font-black text-zinc-400 uppercase tracking-widest px-1">
-                    Caller ID
-                  </FormLabel>
-                  <div className="relative group">
-                    <Radio className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-[#0f3d6b] transition-colors" />
-                    <FormControl>
-                      <Input
-                        placeholder="918069879539"
-                        {...field}
-                        maxLength={20}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
-                          field.onChange(value);
-                        }}
-                        disabled={isLoading}
-                        onKeyDown={handleKeyDown}
-                        className={cn(
-                          "pl-11 h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm placeholder:text-zinc-400/40",
-                          fieldState.invalid &&
-                          "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
-                        )}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
 
             {/* Project Selection (Commented out) */}
             {/*

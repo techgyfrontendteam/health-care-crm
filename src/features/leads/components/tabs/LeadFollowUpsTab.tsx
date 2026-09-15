@@ -17,6 +17,7 @@ import { usePermissions } from '../../../../hooks/usePermissions';
 import { PERMISSIONS } from '../../../../config/permissions';
 import { toast } from 'sonner';
 import { Button } from '../../../../components/ui/button';
+import { DatePicker, TimePicker } from '../../../../shared/components/DateTimePicker';
 
 interface LeadFollowUpsTabProps {
   lead: any;
@@ -640,11 +641,11 @@ export const LeadFollowUpsTab = ({
                     <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                       Schedule Date <span className="text-red-500">*</span>
                     </label>
-                    <input 
-                      type="date"
+                    <DatePicker 
                       value={formDate}
-                      onChange={(e) => setFormDate(e.target.value)}
-                      className="w-full h-11 px-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669]"
+                      onChange={(val) => setFormDate(val)}
+                      disablePastDates
+                      placeholder="Select schedule date"
                     />
                   </div>
                   
@@ -652,11 +653,10 @@ export const LeadFollowUpsTab = ({
                     <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                       Time <span className="text-red-500">*</span>
                     </label>
-                    <input 
-                      type="time"
+                    <TimePicker 
                       value={formTime}
-                      onChange={(e) => setFormTime(e.target.value)}
-                      className="w-full h-11 px-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669]"
+                      onChange={(val) => setFormTime(val)}
+                      placeholder="Select schedule time"
                     />
                   </div>
                 </div>

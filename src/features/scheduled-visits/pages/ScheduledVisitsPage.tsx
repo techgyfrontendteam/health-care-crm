@@ -410,7 +410,7 @@ export const ScheduledVisitsPage = () => {
       offset: 0,
       start_date: apiStartDate,
       end_date: apiEndDate,
-      appointments_status_id: selectedStatusId,
+      appointments_status_id: selectedStatusId || "",
     }),
     [queryUserIds, apiStartDate, apiEndDate, selectedStatusId]
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Search, X } from 'lucide-react';
+import { DatePicker } from '../DateTimePicker';
 
 interface SearchInputProps {
   value: string;
@@ -46,21 +47,23 @@ interface DateRangeFilterProps {
 export const DateRangeFilter = ({ fromDate, toDate, onFromChange, onToChange }: DateRangeFilterProps) => {
   return (
     <div className="flex items-center gap-2">
-      <Input
-        type="date"
-        value={fromDate}
-        onChange={(e) => onFromChange(e.target.value)}
-        className="w-36 text-sm"
-        placeholder="From"
-      />
-      <span className="text-zinc-400 text-sm">–</span>
-      <Input
-        type="date"
-        value={toDate}
-        onChange={(e) => onToChange(e.target.value)}
-        className="w-36 text-sm"
-        placeholder="To"
-      />
+      <div className="w-40">
+        <DatePicker
+          value={fromDate}
+          onChange={(val) => onFromChange(val)}
+          placeholder="From Date"
+          className="h-9 text-xs"
+        />
+      </div>
+      <span className="text-zinc-400 text-xs font-semibold">–</span>
+      <div className="w-40">
+        <DatePicker
+          value={toDate}
+          onChange={(val) => onToChange(val)}
+          placeholder="To Date"
+          className="h-9 text-xs"
+        />
+      </div>
     </div>
   );
 };

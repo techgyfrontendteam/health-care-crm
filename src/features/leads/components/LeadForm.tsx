@@ -27,12 +27,9 @@ import {
   CommandItem,
   CommandList,
 } from '../../../components/ui/command';
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from '../../../components/ui/popover';
+import { Popover, PopoverTrigger, PopoverContent } from '../../../components/ui/popover';
 import { Loader2, User, ClipboardList, Check, ChevronsUpDown, Stethoscope } from 'lucide-react';
+import { DatePicker, TimePicker } from '../../../shared/components/DateTimePicker';
 import { useGetAllUsersQuery, useGetAllUsersByRoleIdQuery, useGetReporteesQuery } from '../../users/api/usersApi';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useGetAllMasterDataQuery } from '../../master/api/masterApi';
@@ -42,10 +39,10 @@ import { useGetAllDoctorsQuery } from '../../doctors/api/doctorsApiSlice';
 import type { ApiDoctor } from '../../doctors/types';
 
 const formSchema = z.object({
-  first_name: z.string().max(30, 'First name must be less than 30 characters').optional().or(z.literal('')),
+  first_name: z.string().min(1, 'First name is required').max(30, 'First name must be less than 30 characters'),
   last_name: z.string().max(30, 'Last name must be less than 30 characters').optional().or(z.literal('')),
   phone_number: z.string().min(1, 'Mobile number is required').regex(/^[0-9]\d{9}$/, 'Phone Number Should be 10 digits'),
-  email_address: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
+  email_address: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
   source_id: z.number({ error: 'Source is required' }).optional(),
   source_employee_user_id: z.number({ error: 'Invalid employee selection' }).nullable().optional(),
   project_id: z.number({ error: 'Project is required' }).nullable().optional(),
@@ -106,46 +103,164 @@ export const LeadForm = ({
   const [isRmOpen, setIsRmOpen] = React.useState(false);
   const [isEmOpen, setIsEmOpen] = React.useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: initialValues?.first_name || '',
-      last_name: initialValues?.last_name || '',
-      phone_number: initialValues?.phone_number || '',
-      email_address: initialValues?.email_address || '',
-      source_id: initialValues?.source_id || undefined,
-      source_employee_user_id: initialValues?.source_employee_user_id || (isEdit ? null : Number(currentUser?.id)),
-      project_id: initialValues?.project_id || undefined,
-      location_id: initialValues?.location_id || null,
-      branch_id: initialValues?.branch_id || null,
-      department: initialValues?.specialisation_id ? String(initialValues.specialisation_id) : (initialValues?.department || (initialValues as any)?.specialization || ''),
-      doctor_id: initialValues?.doctor_id || null,
-      appointment_date: initialValues?.appointment_date || '',
-      appointment_time: initialValues?.appointment_time || '',
-      appointment_note: (initialValues?.appointment_note && initialValues?.appointment_note.toLowerCase() !== 'kukatpally' && initialValues?.appointment_note !== initialValues?.address) ? initialValues.appointment_note : '',
-      assigned_to_rm: initialValues?.assigned_to_rm || null,
-      assigned_to_em: initialValues?.assigned_to_em || null,
-      occupation: initialValues?.occupation || '',
-      address: initialValues?.address || '',
-      city: initialValues?.city || '',
-      state: initialValues?.state || '',
-      state_id: initialValues?.state_id || undefined,
-      country: initialValues?.country || '',
-      zip: initialValues?.zip || '',
-      dob: initialValues?.dob ? (initialValues.dob.includes('T') ? initialValues.dob.split('T')[0] : initialValues.dob) : '',
-      income: initialValues?.income || undefined,
-    },
-  });
+  // Helper to extract clean initial form values
+  const getMappedInitialValues = React.useCallback((init: any): FormValues => {
+    if (!init) {
+      return {
+        first_name: '',
+        last_name: '',
+        phone_number: '',
+        email_address: '',
+        source_id: undefined,
+        source_employee_user_id: isEdit ? null : (currentUser?.id ? Number(currentUser.id) : null),
+        project_id: availableProjects.length === 1 ? availableProjects[0].id : undefined,
+        location_id: 0,
+        branch_id: null,
+        department: '',
+        doctor_id: null,
+        appointment_date: '',
+        appointment_time: '',
+        appointment_note: '',
+        assigned_to_rm: null,
+        assigned_to_em: null,
+        occupation: '',
+        address: '',
+        city: '',
+        state: '',
+        state_id: undefined,
+        country: '',
+        zip: '',
+        dob: '',
+        income: undefined,
+      };
+    }
 
-  React.useEffect(() => {
-    if (!isEdit && !form.getValues('project_id')) {
-      if (initialValues?.project_id) {
-        form.setValue('project_id', initialValues.project_id);
-      } else if (availableProjects.length === 1) {
-        form.setValue('project_id', availableProjects[0].id);
+    // 1. Resolve Location & Branch
+    let resolvedBranchId = init.branch_id || null;
+    if (!resolvedBranchId && (init.hospital_branch || init.branch || init.branch_name) && masterData?.branches) {
+      const bName = init.hospital_branch || init.branch || init.branch_name;
+      const foundBranch = masterData.branches.find(
+        (b: any) =>
+          b.description?.toLowerCase() === String(bName).toLowerCase() ||
+          b.code?.toLowerCase() === String(bName).toLowerCase()
+      );
+      if (foundBranch) resolvedBranchId = foundBranch.id;
+    }
+
+    let resolvedLocationId = init.location_id || null;
+    if (!resolvedLocationId && resolvedBranchId && masterData?.branches) {
+      const bObj = masterData.branches.find((b: any) => b.id === resolvedBranchId);
+      if (bObj) resolvedLocationId = bObj.location_id;
+    }
+
+    // 2. Resolve Department / Specialisation
+    let resolvedDept = "";
+    if (init.specialisation_id) {
+      resolvedDept = String(init.specialisation_id);
+    } else if (init.specialization_id) {
+      resolvedDept = String(init.specialization_id);
+    } else if (init.department || init.specialization) {
+      const dName = init.department || init.specialization;
+      const foundSpec = masterData?.specialisations?.find(
+        (s: any) =>
+          s.description?.toLowerCase() === String(dName).toLowerCase() ||
+          s.code?.toLowerCase() === String(dName).toLowerCase()
+      );
+      resolvedDept = foundSpec ? String(foundSpec.id) : String(dName);
+    }
+
+    // 3. Resolve Doctor
+    let resolvedDoctorId = init.doctor_id || null;
+    if (!resolvedDoctorId && init.visits && Array.isArray(init.visits) && init.visits.length > 0 && init.visits[0].doctor_id) {
+      resolvedDoctorId = init.visits[0].doctor_id;
+    }
+
+    // 4. Resolve Date & Time
+    let resolvedDate = init.appointment_date || "";
+    let resolvedTime = init.appointment_time || "";
+
+    if (!resolvedDate || !resolvedTime) {
+      const candidateDateTime =
+        init.appointment_date_time ||
+        init.visit_date_time ||
+        (init.visits && Array.isArray(init.visits) && init.visits[0]?.visit_date_time) ||
+        init.appointment_date;
+
+      if (candidateDateTime) {
+        try {
+          const cleanStr = String(candidateDateTime).replace(/Z/g, "").split("+")[0].replace(" ", "T");
+          const d = new Date(cleanStr);
+          if (!isNaN(d.getTime())) {
+            if (!resolvedDate) {
+              const yyyy = d.getFullYear();
+              const mm = String(d.getMonth() + 1).padStart(2, "0");
+              const dd = String(d.getDate()).padStart(2, "0");
+              resolvedDate = `${yyyy}-${mm}-${dd}`;
+            }
+            if (!resolvedTime) {
+              let h = d.getHours();
+              const m = String(d.getMinutes()).padStart(2, "0");
+              const p = h >= 12 ? "PM" : "AM";
+              h = h % 12 || 12;
+              resolvedTime = `${String(h).padStart(2, "0")}:${m} ${p}`;
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
     }
-  }, [availableProjects, isEdit, form, initialValues]);
+
+    // 5. Clean Note
+    let resolvedNote = init.appointment_note || init.lead_note || init.notes || (init as any).note || "";
+    if (resolvedNote && resolvedNote.toLowerCase() === "kukatpally") {
+      resolvedNote = "";
+    }
+    if (resolvedNote && init.address && resolvedNote.trim().toLowerCase() === init.address.trim().toLowerCase()) {
+      resolvedNote = "";
+    }
+
+    return {
+      first_name: init.first_name || "",
+      last_name: init.last_name || "",
+      phone_number: init.phone_number || "",
+      email_address: init.email_address || init.email || "",
+      source_id: init.source_id || undefined,
+      source_employee_user_id: init.source_employee_user_id || (isEdit ? null : (currentUser?.id ? Number(currentUser.id) : null)),
+      project_id: init.project_id || (availableProjects.length === 1 ? availableProjects[0].id : undefined),
+      location_id: resolvedLocationId,
+      branch_id: resolvedBranchId,
+      department: resolvedDept,
+      doctor_id: resolvedDoctorId,
+      appointment_date: resolvedDate,
+      appointment_time: resolvedTime,
+      appointment_note: resolvedNote,
+      assigned_to_rm: init.assigned_to_rm || null,
+      assigned_to_em: init.assigned_to_em || null,
+      occupation: init.occupation || "",
+      address: init.address || "",
+      city: init.city || "",
+      state: init.state || "",
+      state_id: init.state_id || undefined,
+      country: init.country || "",
+      zip: init.zip || "",
+      dob: init.dob ? (init.dob.includes("T") ? init.dob.split("T")[0] : init.dob) : "",
+      income: init.income || undefined,
+    };
+  }, [masterData?.branches, masterData?.specialisations, isEdit, currentUser?.id, availableProjects]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getMappedInitialValues(initialValues),
+  });
+
+  // Re-sync form whenever initialValues or masterData changes
+  React.useEffect(() => {
+    if (initialValues) {
+      const mapped = getMappedInitialValues(initialValues);
+      form.reset(mapped);
+    }
+  }, [initialValues, getMappedInitialValues, form]);
 
   const selectedProjectId = form.watch('project_id');
   const selectedLocationId = form.watch('location_id');
@@ -535,7 +650,7 @@ export const LeadForm = ({
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
                     value={field.value ? String(field.value) : ""}
-                    disabled={isLoading || isEM}
+                    disabled={isLoading || isEdit || isEM}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
@@ -565,7 +680,7 @@ export const LeadForm = ({
                     <Select
                       onValueChange={(v) => field.onChange(Number(v))}
                       value={field.value ? String(field.value) : ""}
-                      disabled={isLoading || isEM}
+                      disabled={isLoading || isEdit || isEM}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
@@ -606,7 +721,7 @@ export const LeadForm = ({
                     <Select
                       onValueChange={(v) => field.onChange(v)}
                       value={currentDeptValue}
-                      disabled={isLoading || isEM}
+                      disabled={isLoading || isEdit || isEM}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
@@ -627,110 +742,115 @@ export const LeadForm = ({
               }}
             />
 
-            <FormField
-              control={form.control}
-              name="doctor_id"
-              render={({ field }) => (
-                <FormItem className="space-y-1.5">
-                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
-                    Select Doctor
-                  </FormLabel>
-                  <Select
-                    onValueChange={(v) => field.onChange(v ? Number(v) : null)}
-                    value={field.value ? String(field.value) : ""}
-                    disabled={isLoading || isEM || isLoadingDoctors}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
-                        <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {isLoadingDoctors ? (
-                        <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Loading doctors...</span>
-                        </div>
-                      ) : doctorsList.length === 0 ? (
-                        <div className="p-3 text-xs text-zinc-500 text-center">
-                          No doctors available for selected department / branch
-                        </div>
-                      ) : (
-                        doctorsList.map((doc: ApiDoctor) => {
-                          const specName = masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)?.description;
-                          const docName = `Dr. ${doc.first_name || ''} ${doc.last_name || ''}`.trim();
-                          return (
-                            <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
-                              {docName} {specName ? `(${specName})` : ''}
-                            </SelectItem>
-                          );
-                        })
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isEdit && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="doctor_id"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1.5">
+                      <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
+                        Select Doctor
+                      </FormLabel>
+                      <Select
+                        onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                        value={field.value ? String(field.value) : ""}
+                        disabled={isLoading || isEM || isLoadingDoctors}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
+                            <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
+                          {isLoadingDoctors ? (
+                            <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Loading doctors...</span>
+                            </div>
+                          ) : doctorsList.length === 0 ? (
+                            <div className="p-3 text-xs text-zinc-500 text-center">
+                              No doctors available for selected department / branch
+                            </div>
+                          ) : (
+                            doctorsList.map((doc: ApiDoctor) => {
+                              const specName = masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)?.description;
+                              const docName = `Dr. ${doc.first_name || ''} ${doc.last_name || ''}`.trim();
+                              return (
+                                <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
+                                  {docName} {specName ? `(${specName})` : ''}
+                                </SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="appointment_date"
-                render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Appointment Date</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        disabled={isLoading || isEM}
-                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 h-11 font-medium"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="appointment_time"
-                render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Time *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        {...field}
-                        disabled={isLoading || isEM}
-                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 h-11 font-medium"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="appointment_date"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Appointment Date</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={(val) => field.onChange(val)}
+                            disabled={isLoading || isEM}
+                            disablePastDates
+                            placeholder="Select appointment date"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="appointment_time"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Time *</FormLabel>
+                        <FormControl>
+                          <TimePicker
+                            value={field.value}
+                            onChange={(val) => field.onChange(val)}
+                            disabled={isLoading || isEM}
+                            placeholder="Select appointment time"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <FormField
-              control={form.control}
-              name="appointment_note"
-              render={({ field }) => (
-                <FormItem className="space-y-1.5">
-                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Lead Note</FormLabel>
-                  <FormControl>
-                    <textarea
-                      placeholder="Type Lead Note"
-                      {...field}
-                      disabled={isLoading || isEM}
-                      rows={3}
-                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-medium focus:ring-[#063669]/20 outline-none transition-all placeholder:text-[#94A3B8]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="appointment_note"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1.5">
+                      <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Lead Note</FormLabel>
+                      <FormControl>
+                        <textarea
+                          placeholder="Type Lead Note"
+                          {...field}
+                          disabled={isLoading || isEM}
+                          rows={3}
+                          className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-medium focus:ring-[#063669]/20 outline-none transition-all placeholder:text-[#94A3B8]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
           </div>
 
           {/* 
@@ -953,7 +1073,15 @@ export const LeadForm = ({
             <FormField control={form.control} name="dob" render={({ field }) => (
               <FormItem className="space-y-1.5">
                 <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>Date of Birth</FormLabel>
-                <FormControl><Input type="date" {...field} disabled={isLoading || isEM} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 h-11 font-medium" /></FormControl>
+                <FormControl>
+                  <DatePicker
+                    value={field.value}
+                    onChange={(val) => field.onChange(val)}
+                    disabled={isLoading || isEM}
+                    placeholder="Select date of birth"
+                    maxDate={new Date()}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

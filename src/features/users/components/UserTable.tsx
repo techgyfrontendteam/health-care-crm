@@ -124,15 +124,6 @@ export const UserTable = ({
       ),
     },
     {
-      key: 'project_name' as keyof User,
-      header: 'Project',
-      render: (user) => (
-        <span className="text-sm font-semibold" style={{ color: '#434653' }}>
-          {user.project_name || user.projectName || '—'}
-        </span>
-      ),
-    },
-    {
       key: 'created_on',
       header: 'Creation Date',
       sortable: true,
@@ -140,24 +131,9 @@ export const UserTable = ({
         <span className="text-sm font-medium" style={{ color: '#64748B' }}>{formatDate(user.created_on)}</span>
       ),
     },
-    ...(permissionPrefix === 'manager' ? [{
-      key: 'em_count' as keyof User,
-      header: <div style={{ textAlign: 'center', width: '100%' }}>Assigned Sales Executive</div>,
-      render: (user: User) => (
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '0 -16px', padding: '0 16px' }}>
-          <span
-            className="cursor-pointer underline underline-offset-2 font-semibold"
-            onClick={() => { if (user.role_id === 3) setViewAgentsManager(user); }}
-            style={{ color: '#063669' }}
-          >
-            {user.reportee_count ?? 0}
-          </span>
-        </div>
-      ),
-    }] : []),
     ...(permissionPrefix === 'agent' ? [{
       key: 'reporting_manager_id' as keyof User,
-      header: 'Assigned Sales Head',
+      header: 'Assigned Sales Executive',
       render: (user: User) => {
         const rmName = getRmLabel(user.reporting_manager_id);
         return (
@@ -222,7 +198,7 @@ export const UserTable = ({
       <div className="px-8 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Active {permissionPrefix === "manager" ? "Sales Heads" : "Experience Managers"}
+            Active {permissionPrefix === "manager" ? "Sales Executives" : "Experience Managers"}
           </h2>
           <div className="h-2 w-2 rounded-full bg-red-500 mt-1" />
         </div>

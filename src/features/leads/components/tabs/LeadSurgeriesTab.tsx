@@ -10,6 +10,7 @@ import {
   Activity,
   Calendar as CalendarIcon,
   ShieldCheck,
+  Pencil,
 } from 'lucide-react';
 import { ScheduleSurgeryDialog } from '../ScheduleSurgeryDialog';
 import { useGetSurgeriesByLeadUuidQuery } from '../../api/leadsApi';
@@ -47,6 +48,7 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
   const { data: masterData } = useGetAllMasterDataQuery();
 
   const [openSurgeryDialog, setOpenSurgeryDialog] = useState(false);
+  const [selectedSurgery, setSelectedSurgery] = useState<SurgeryDetail | null>(null);
 
   // Fetch doctors to resolve doctor names and details if needed
   const { data: doctorsResp } = useGetAllDoctorsQuery({
@@ -93,7 +95,10 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
           </p>
           {!isSADMIN && (
             <button
-              onClick={() => setOpenSurgeryDialog(true)}
+              onClick={() => {
+                setSelectedSurgery(null);
+                setOpenSurgeryDialog(true);
+              }}
               className="px-4 py-2 rounded-xl text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
             >
               + Schedule Surgery
@@ -110,7 +115,10 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
             </h3>
             {!isSADMIN && (
               <button
-                onClick={() => setOpenSurgeryDialog(true)}
+                onClick={() => {
+                  setSelectedSurgery(null);
+                  setOpenSurgeryDialog(true);
+                }}
                 className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 dark:bg-rose-950/50 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-rose-200 dark:border-rose-900/50"
               >
                 + Schedule Surgery
@@ -221,6 +229,12 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
                           <Clock className="h-3.5 w-3.5 text-zinc-400" />
                           {formatSurgeryTime(s.surgery_date_time)}
                         </span>
+
+                        {typeof s.surgery_cost === "number" && !isNaN(s.surgery_cost) && (
+                          <span className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                            <span>₹{Number(s.surgery_cost).toLocaleString("en-IN")}</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Remarks */}
@@ -234,6 +248,19 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
                       )}
                     </div>
                   </div>
+
+                  {!isSADMIN && (
+                    <button
+                      onClick={() => {
+                        setSelectedSurgery(s);
+                        setOpenSurgeryDialog(true);
+                      }}
+                      className="p-2 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors shrink-0 ml-3 cursor-pointer"
+                      title="Edit Surgery"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -243,10 +270,25 @@ export const LeadSurgeriesTab: React.FC<LeadSurgeriesTabProps> = ({ lead }) => {
 
       <ScheduleSurgeryDialog
         open={openSurgeryDialog}
-        onOpenChange={setOpenSurgeryDialog}
-        lead={lead}
+        onOpenChange={(open) => {
+          setOpenSurgeryDialog(open);
+          if (!open) setSelectedSurgery(null);
+        }}
+        onClose={() => {
+          setOpenSurgeryDialog(false);
+          setSelectedSurgery(null);
+        }}
+        lead={{
+          ...lead,
+          branch_id: apiSurgeries?.branch_id ?? lead?.branch_id,
+          specialisation_id: apiSurgeries?.specialisation_id ?? lead?.specialisation_id,
+          first_name: apiSurgeries?.lead_first_name ?? lead?.first_name,
+          last_name: apiSurgeries?.lead_last_name ?? lead?.last_name,
+        }}
+        surgery={selectedSurgery}
         onSuccess={() => {
           refetch();
+          setSelectedSurgery(null);
         }}
       />
     </div>

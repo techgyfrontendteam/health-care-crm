@@ -24,6 +24,7 @@ import {
   useCreateFollowUpMutation,
 } from "../api";
 import { useGetReporteesQuery } from "../../users/api/usersApi";
+import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
 
 // Date utility functions
 const getDaysInMonth = (year: number, month: number) => {
@@ -449,7 +450,7 @@ export const FollowUpsPage: React.FC = () => {
             const label = getRmLabel(queryUserIds[0]);
             if (label !== '--') return label;
           }
-          return "Sales Head";
+          return "Sales Executive";
         })(),
         assignedEm: (() => {
           if ((item as any).user_id) {
@@ -687,7 +688,7 @@ export const FollowUpsPage: React.FC = () => {
   // Dynamic Options lists
   const relationshipManagers = useMemo(() => {
     const list = rms.map((r) => `${r.first_name} ${r.last_name}`.trim());
-    return ["All Sales Heads", ...list];
+    return ["All Sales Executives", ...list];
   }, [rms]);
 
   const experienceManagers = useMemo(() => {
@@ -735,7 +736,7 @@ export const FollowUpsPage: React.FC = () => {
             <>
               <div className="relative" ref={rmDropdownRef}>
                 <span className="text-[9px] font-black text-slate-400 block mb-1 uppercase tracking-wider">
-                  SALES HEAD
+                  SALES EXECUTIVE
                 </span>
                 <button
                   type="button"
@@ -749,7 +750,7 @@ export const FollowUpsPage: React.FC = () => {
                     {selectedRmIds.length === 0
                       ? "None Selected"
                       : isAllRmsSelected
-                      ? "All Sales Heads"
+                      ? "All Sales Executives"
                       : selectedRmIds.length === 1
                       ? `${rms.find((r: any) => Number(r.id) === selectedRmIds[0])?.first_name || ""} ${rms.find((r: any) => Number(r.id) === selectedRmIds[0])?.last_name || ""}`.trim()
                       : `${selectedRmIds.length} Selected`}
@@ -782,7 +783,7 @@ export const FollowUpsPage: React.FC = () => {
                           {isAllRmsSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           {isPartialRmsSelected && <Minus className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <span>Select All Sales Heads</span>
+                        <span>Select All Sales Executives</span>
                       </div>
                       <span className="text-[10px] text-slate-400 font-semibold">{rms.length}</span>
                     </div>
@@ -790,13 +791,13 @@ export const FollowUpsPage: React.FC = () => {
                     {/* RM List Items with Checkboxes */}
                     {rms.length === 0 ? (
                       <div className="px-3 py-4 text-center text-xs text-slate-400 font-medium">
-                        No Sales Heads found
+                        No Sales Executives found
                       </div>
                     ) : (
                       rms.map((rm: any) => {
                         const rmId = Number(rm.id);
                         const isSelected = selectedRmIds.includes(rmId);
-                        const fullName = `${rm.first_name || ""} ${rm.last_name || ""}`.trim() || "Sales Head";
+                        const fullName = `${rm.first_name || ""} ${rm.last_name || ""}`.trim() || "Sales Executive";
                         return (
                           <div
                             key={rmId}
@@ -971,7 +972,7 @@ export const FollowUpsPage: React.FC = () => {
 
                   {/* Assignee */}
                   <p className="text-[11px] text-[#64748B] font-medium pt-0.5">
-                    {item.assignedEm || item.assignedRm || "Sales Head"}
+                    {item.assignedEm || item.assignedRm || "Sales Executive"}
                   </p>
                 </div>
               </div>
@@ -1081,12 +1082,11 @@ export const FollowUpsPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                         NEXT SCHEDULE DATE
                       </label>
-                      <input
-                        type="date"
-                        required={scheduleNextFollowUp}
+                      <DatePicker
                         value={nextFollowUpDate}
-                        onChange={(e) => setNextFollowUpDate(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62]"
+                        onChange={(val) => setNextFollowUpDate(val)}
+                        disablePastDates
+                        placeholder="Select date"
                       />
                     </div>
 
@@ -1095,12 +1095,10 @@ export const FollowUpsPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                         NEXT SCHEDULE TIME
                       </label>
-                      <input
-                        type="time"
-                        required={scheduleNextFollowUp}
+                      <TimePicker
                         value={nextFollowUpTime}
-                        onChange={(e) => setNextFollowUpTime(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62]"
+                        onChange={(val) => setNextFollowUpTime(val)}
+                        placeholder="Select time"
                       />
                     </div>
 
@@ -1193,13 +1191,13 @@ export const FollowUpsPage: React.FC = () => {
               {/* RM and EM Selects */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Sales Head</label>
+                  <label className="text-xs font-semibold text-slate-600">Sales Executive</label>
                   <select
                     value={createFormRm}
                     onChange={(e) => setCreateFormRm(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565]"
                   >
-                    <option value="">Select Sales Head</option>
+                    <option value="">Select Sales Executive</option>
                     {rms.map(r => (
                       <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>
                     ))}
@@ -1224,46 +1222,31 @@ export const FollowUpsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600">Follow-up Date</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      required
-                      value={createFormDate}
-                      onChange={(e) => setCreateFormDate(e.target.value)}
-                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565] cursor-pointer"
-                      style={{ colorScheme: "light" }}
-                    />
-                    <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <DatePicker
+                    value={createFormDate}
+                    onChange={(val) => setCreateFormDate(val)}
+                    disablePastDates
+                    placeholder="Select date"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600">Follow-up Time</label>
-                  <div className="flex bg-[#f8fafc] border border-slate-200 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-[#0B3565]">
-                    <input
-                      type="text"
-                      placeholder="00:00"
-                      required
-                      value={createFormTime}
-                      onChange={(e) => setCreateFormTime(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-transparent text-sm font-medium text-slate-700 focus:outline-none"
-                    />
-                    <div className="flex items-center text-xs font-bold border-l border-slate-200 divide-x divide-slate-200 shrink-0">
-                      <button 
-                        type="button" 
-                        onClick={() => setCreateAmPm('AM')}
-                        className={`px-3 py-2.5 transition-colors ${createAmPm === 'AM' ? 'bg-[#002d62] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-                      >
-                        AM
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => setCreateAmPm('PM')}
-                        className={`px-3 py-2.5 transition-colors ${createAmPm === 'PM' ? 'bg-[#002d62] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-                      >
-                        PM
-                      </button>
-                    </div>
-                  </div>
+                  <TimePicker
+                    value={createFormTime ? `${createFormTime} ${createAmPm}` : ""}
+                    outputFormat="12h"
+                    placeholder="Select time"
+                    onChange={(val) => {
+                      if (!val) {
+                        setCreateFormTime("");
+                        return;
+                      }
+                      const parts = val.split(" ");
+                      setCreateFormTime(parts[0] || "");
+                      if (parts[1]) {
+                        setCreateAmPm(parts[1] as 'AM' | 'PM');
+                      }
+                    }}
+                  />
                 </div>
               </div>
 

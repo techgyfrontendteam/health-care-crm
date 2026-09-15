@@ -3,18 +3,16 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  DialogClose,
 } from "../../../components/ui/dialog";
 import {
   useGetLeadsByEmIdQuery,
   useGetLeadsByRmIdQuery,
 } from "../../leads/api/leadsApi";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
-import { Loader2, Layout, X, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { DataTable } from "../../../shared/components/DataTable/DataTable";
-import { cn } from "../../../utils";
 import { StatusBadge } from "../../../shared/components/StatusBadge/StatusBadge";
 import type { User as UserType } from "../types";
 import type { ColumnDef } from "../../../shared/components/DataTable/DataTable";
@@ -26,37 +24,6 @@ interface UserLeadsDialogProps {
   user: UserType | null;
 }
 
-const InitialsBadge = ({
-  name,
-  colorClass,
-}: {
-  name?: string;
-  colorClass: string;
-}) => {
-  if (!name)
-    return (
-      <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-400 border border-zinc-200">
-        --
-      </div>
-    );
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  return (
-    <div
-      className={cn(
-        "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/20",
-        colorClass,
-      )}
-    >
-      {initials}
-    </div>
-  );
-};
-
 export const UserLeadsDialog = ({
   open,
   onClose,
@@ -67,13 +34,14 @@ export const UserLeadsDialog = ({
   const limit = 10;
   const {
     getStatusLabel,
-    getProjectLabel,
     getSourceLabel,
+    getBranchLabel,
+    getSpecialisationLabel,
     getRmLabel,
-    isLoading: isLookupLookup,
+    isLoading: isLookupLoading,
   } = useMasterDataLookup();
 
-  // Fetch leads for this EM
+  // Fetch leads for this RM or EM
   const isRM = user?.role_id === 3;
 
   // RM API
@@ -108,88 +76,153 @@ export const UserLeadsDialog = ({
   const isLoading = isRM ? rmLoading : emLoading;
   const isFetching = isRM ? rmFetching : emFetching;
 
+  const fallback = (value: React.ReactNode) => value ?? '--';
+
   const columns: ColumnDef<Lead>[] = [
     {
       key: "lead_id",
       header: "LEAD ID",
-      width: "120px",
-      render: (lead) => (
-        <span className="font-bold text-zinc-400 dark:text-zinc-600 text-xs tracking-tight">
-          #{lead.lead_id}
+      width: "110px",
+      render: (l: Lead) => (
+        <Link
+          to={`/leads/${l.uuid}`}
+          onClick={onClose}
+          className="text-secondary-foreground font-semibold hover:text-primary transition-colors text-xs"
+        >
+          #{fallback(l.lead_id)}
+        </Link>
+      ),
+    },
+    {
+      key: "customer_name",
+      header: "CUSTOMER NAME",
+      width: "150px",
+      render: (l: Lead) => (
+        <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">
+          {fallback(l.first_name)} {l.last_name || ''}
         </span>
       ),
     },
     {
-      key: "lead_name",
-      header: "LEAD NAME",
-      width: "240px",
-      render: (lead) => (
-        <div className="flex items-center gap-3">
-          <InitialsBadge
-            name={`${lead.first_name} ${lead.last_name}`}
-            colorClass="bg-[#E9ECEF] text-[#495057]"
-          />
-          <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm tracking-tight whitespace-nowrap">
-            {lead.first_name} {lead.last_name}
+      key: "contact_details",
+      header: "CONTACT DETAILS",
+      width: "150px",
+      render: (l: Lead) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium text-xs text-zinc-700 dark:text-zinc-300">
+            {fallback(l.phone_number)}
+          </span>
+          <span className="text-zinc-400 text-[11px] truncate">
+            {l.email_address || '--'}
           </span>
         </div>
       ),
     },
     {
-      key: "project_id",
-      header: "PROJECT INTEREST",
-      width: "200px",
-      render: (lead) => (
-        <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm tracking-tight">
-          {getProjectLabel(lead.project_id)}
-        </span>
-      ),
+      key: "created_on",
+      header: "CREATION DATE",
+      width: "140px",
+      render: (l: Lead) => {
+        if (!l.created_on) return <span className="text-xs text-zinc-500">--</span>;
+
+        const formatted = new Date(l.created_on).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+
+        return (
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {formatted}
+          </span>
+        );
+      },
     },
     {
       key: "source_id",
       header: "SOURCE",
-      width: "140px",
-      render: (lead) => (
-        <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full inline-flex border border-zinc-200 dark:border-zinc-700">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">
-            {getSourceLabel(lead.source_id)}
+      width: "130px",
+      render: (l: Lead) => {
+        const sourceText = l.source || getSourceLabel(l.source_id);
+        return (
+          <span className="inline-block px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-source-bg text-primary">
+            {sourceText && sourceText !== '--' ? sourceText.split(' ')[0] : '--'}
           </span>
+        );
+      },
+    },
+    {
+      key: "branch_id",
+      header: "BRANCH",
+      width: "140px",
+      render: (l: Lead) => (
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          {l.branch_id ? getBranchLabel(l.branch_id) : (l.hospital_branch || l.branch || l.branch_name || '--')}
+        </span>
+      ),
+    },
+    {
+      key: "specialisation_id",
+      header: "DEPARTMENT",
+      width: "150px",
+      render: (l: Lead) => (
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          {l.specialisation_id ? getSpecialisationLabel(l.specialisation_id) : (l.specialization || l.department || '--')}
+        </span>
+      ),
+    },
+    {
+      key: "doctor_name",
+      header: "DOCTOR NAME",
+      width: "150px",
+      render: (l: Lead) => (
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          {l.doctor_name || (l as any).doctor || '--'}
+        </span>
+      ),
+    },
+    {
+      key: "enquiries",
+      header: <div className="text-center w-full">ENQUIRIES</div>,
+      width: "110px",
+      render: (l: Lead) => (
+        <div className="text-center w-full">
+          <Link
+            to={`/leads/${l.uuid}?tab=enquiries`}
+            onClick={onClose}
+            className="font-bold text-xs text-[#0f3d6b] hover:text-[#0f3d6b]/80 underline decoration-[#0f3d6b] transition-colors"
+          >
+            {l.enquiries ?? l.enquires?.length ?? 0}
+          </Link>
         </div>
       ),
     },
     {
-      key: "lead_status_id",
-      header: "CURRENT STAGE",
-      width: "160px",
-      render: (lead) => (
-        <StatusBadge status={getStatusLabel(lead.project_lead_status_id)} />
+      key: "project_lead_status_id",
+      header: "STATUS",
+      width: "140px",
+      render: (l: Lead) => (
+        <StatusBadge status={getStatusLabel(l.project_lead_status_id || l.lead_status_id)} />
       ),
     },
     {
       key: "assigned_to_rm",
-      header: "ASSIGNE",
-      width: "80px",
-      render: (lead) => {
-        const rmLabel = getRmLabel(lead.assigned_to_rm);
+      header: "SALES EXECUTIVE",
+      width: "150px",
+      render: (l: Lead) => {
+        const rmLabel = getRmLabel(l.assigned_to_rm);
         return (
-          <div className="flex items-center justify-center">
-            <InitialsBadge
-              name={rmLabel === "--" ? undefined : rmLabel}
-              colorClass={
-                rmLabel === "--"
-                  ? "bg-zinc-100 text-zinc-400"
-                  : "bg-[#212529] text-white"
-              }
-            />
-          </div>
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {rmLabel}
+          </span>
         );
       },
     },
     {
       key: "actions",
       header: "ACTIONS",
-      width: "180px",
-      render: (lead) => (
+      width: "130px",
+      render: (lead: Lead) => (
         <Button
           variant="outline"
           size="sm"
@@ -197,9 +230,9 @@ export const UserLeadsDialog = ({
             onClose();
             navigate(`/leads/${lead.uuid}`);
           }}
-          className="h-8 text-[11px] font-bold uppercase rounded-xl border-zinc-200 dark:border-zinc-800 text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all px-4 shadow-none"
+          className="h-8 text-[11px] font-bold uppercase rounded-xl border-zinc-200 dark:border-zinc-800 text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all px-3 shadow-none"
         >
-          View Lead Details
+          View Details
         </Button>
       ),
     },
@@ -207,16 +240,16 @@ export const UserLeadsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl overflow-hidden flex flex-col p-0 gap-0 border-none shadow-3xl bg-white dark:bg-zinc-950 rounded-[28px]">
+      <DialogContent className="max-w-[92vw] w-full xl:max-w-7xl overflow-hidden flex flex-col p-0 gap-0 border-none shadow-3xl bg-white dark:bg-zinc-950 rounded-[28px] max-h-[90vh]">
         {/* Header Section */}
-        <div className="px-12 pt-12 pb-6 flex items-center justify-between relative">
+        <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
           <div>
-            <DialogTitle className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-1">
+            <DialogTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-1">
               Lead Registry
             </DialogTitle>
-            <p className="text-sm text-zinc-400 dark:text-zinc-500 font-medium">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
               Listing leads for{" "}
-              <span className="text-zinc-900 dark:text-zinc-100">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {user?.first_name} {user?.last_name}
               </span>
             </p>
@@ -224,9 +257,8 @@ export const UserLeadsDialog = ({
         </div>
 
         {/* List Section */}
-
-        <div className="flex-1 overflow-visible bg-white dark:bg-zinc-950 px-6">
-          {isLoading || isFetching || isLookupLookup ? (
+        <div className="flex-1 overflow-x-auto overflow-y-auto bg-white dark:bg-zinc-950 px-6 py-4">
+          {isLoading || isFetching || isLookupLoading ? (
             <div className="flex flex-col items-center justify-center py-32 gap-4 text-zinc-300">
               <Loader2 className="h-10 w-10 animate-spin text-zinc-200" />
               <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-400">
@@ -245,7 +277,7 @@ export const UserLeadsDialog = ({
               onLimitChange={() => { }}
               rowKey={(l) => l.uuid}
               variant="embed"
-              emptyMessage="No leads found" // ✅ This controls your message
+              emptyMessage="No leads found"
             />
           )}
         </div>
