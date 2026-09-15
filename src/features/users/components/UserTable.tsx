@@ -222,7 +222,7 @@ export const UserTable = ({
       <div className="px-8 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Active {permissionPrefix === "manager" ? "Relationship" : "Experience"} Managers
+            Active {permissionPrefix === "manager" ? "Sales Heads" : "Experience Managers"}
           </h2>
           <div className="h-2 w-2 rounded-full bg-red-500 mt-1" />
         </div>

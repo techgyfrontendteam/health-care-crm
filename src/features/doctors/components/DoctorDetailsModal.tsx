@@ -30,24 +30,50 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
   onClose,
   onEdit,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [doctor?.id, doctor?.image_url]);
+
   if (!doctor) return null;
+
+  const getInitials = (doc: Doctor) => {
+    const firstName = doc.first_name || (doc.name ? doc.name.trim().split(/\s+/)[0] : "");
+    const lastName = doc.last_name || (doc.name ? doc.name.trim().split(/\s+/).slice(1).join(" ") : "");
+
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    const cleanName = (doc.name || "").trim();
+    if (cleanName.length >= 2) {
+      const parts = cleanName.split(/\s+/);
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      }
+      return `${cleanName[0]}${cleanName[cleanName.length - 1]}`.toUpperCase();
+    }
+    return cleanName ? cleanName.toUpperCase() : "DR";
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
         {/* Banner / Header */}
         <div className="bg-gradient-to-r from-[#063669] to-[#0f3d6b] p-6 text-white relative">
-
           <div className="flex items-center gap-5">
-            <img
-              src={doctor.image_url}
-              alt={doctor.name}
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-white/30 shadow-md shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop";
-              }}
-            />
+            {doctor.image_url && !imageError ? (
+              <img
+                src={doctor.image_url}
+                alt={doctor.name}
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-white/30 shadow-md shrink-0"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center font-black text-2xl text-white shadow-md shrink-0">
+                {getInitials(doctor)}
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-white/20 text-white tracking-wider">
@@ -84,13 +110,13 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
               </div>
             </div>
 
-            {(doctor.working_hours || doctor.room_number) && (
+            {doctor.working_hours && (
               <div className="flex items-start gap-3">
                 <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-zinc-400">Working Hours & OPD/IPD Room</p>
+                  <p className="text-xs font-bold text-zinc-400">Working Hours</p>
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {doctor.working_hours || "Regular Hours"} {doctor.room_number ? `· ${doctor.room_number}` : ""}
+                    {doctor.working_hours}
                   </p>
                 </div>
               </div>

@@ -8,8 +8,10 @@ export interface Doctor {
   last_name?: string;
   title?: string; // e.g. "Dr."
   specialization: string;
+  specialization_id?: number;
   department: DepartmentType;
   service_type?: string;
+  service_id?: number;
   qualification: string;
   experience_years: number;
   email: string;
@@ -17,9 +19,12 @@ export interface Doctor {
   image_url: string;
   consultation_fee: number;
   working_hours?: string;
+  available_start_time?: string;
+  available_end_time?: string;
   room_number?: string;
   bio?: string;
   hospital_branch?: string;
+  branch_id?: number;
   is_active: number;
   created_at: string;
 }

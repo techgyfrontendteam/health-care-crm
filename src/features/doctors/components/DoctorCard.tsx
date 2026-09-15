@@ -28,6 +28,26 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
     }
   };
 
+  const [imageError, setImageError] = React.useState(false);
+
+  const getInitials = (doc: Doctor) => {
+    const firstName = doc.first_name || (doc.name ? doc.name.trim().split(/\s+/)[0] : "");
+    const lastName = doc.last_name || (doc.name ? doc.name.trim().split(/\s+/).slice(1).join(" ") : "");
+
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    const cleanName = (doc.name || "").trim();
+    if (cleanName.length >= 2) {
+      const parts = cleanName.split(/\s+/);
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      }
+      return `${cleanName[0]}${cleanName[cleanName.length - 1]}`.toUpperCase();
+    }
+    return cleanName ? cleanName.toUpperCase() : "DR";
+  };
+
   return (
     <div className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group relative overflow-hidden">
       <div>
@@ -35,16 +55,18 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="relative shrink-0">
-              <img
-                src={doctor.image_url}
-                alt={doctor.name}
-                className="w-14 h-14 rounded-2xl object-cover border-2 border-slate-100 dark:border-zinc-800 shadow-sm"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop";
-                }}
-              />
-
+              {doctor.image_url && !imageError ? (
+                <img
+                  src={doctor.image_url}
+                  alt={doctor.name}
+                  className="w-14 h-14 rounded-2xl object-cover border-2 border-slate-100 dark:border-zinc-800 shadow-sm"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#063669] dark:text-blue-400 flex items-center justify-center font-bold text-base border border-blue-100 dark:border-blue-900 shadow-xs">
+                  {getInitials(doctor)}
+                </div>
+              )}
             </div>
 
             <div className="min-w-0 flex-1">
@@ -94,7 +116,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
 
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 truncate">
             <MapPin className="h-3.5 w-3.5 text-[#063669] dark:text-blue-400 shrink-0" />
-            <span className="truncate text-[11px] font-bold text-zinc-800 dark:text-zinc-200">{doctor.room_number || doctor.hospital_branch || "Main OPD"}</span>
+            <span className="truncate text-[11px] font-bold text-zinc-800 dark:text-zinc-200">{doctor.hospital_branch || "Main Branch"}</span>
           </div>
         </div>
 

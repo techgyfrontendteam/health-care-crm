@@ -18,6 +18,7 @@ import { Button } from "../../../components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
 import { useInitiateClickToCallMutation, useGetCallRecordsMutation, useCreateCallMutation } from "../api/callsApi";
+import { useGetUserByIdMutation } from "../../auth/api/authApi";
 import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
 import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiSlice";
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
@@ -252,6 +253,7 @@ export const LeadDetailsPage = () => {
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
   const [initiateClickToCall] = useInitiateClickToCallMutation();
+  const [getUserById] = useGetUserByIdMutation();
   const [getCallRecords] = useGetCallRecordsMutation();
   const [createCall] = useCreateCallMutation();
   const [uploadFile] = useUploadFileMutation();
@@ -683,7 +685,29 @@ export const LeadDetailsPage = () => {
                         }
 
                         const sessionAgentId = typeof window !== 'undefined' ? sessionStorage.getItem('agent_id') : null;
-                        const agentId = Number(currentUser?.id || currentUser?.agent_id || sessionAgentId || 0);
+                        let agentId: number | null = currentUser?.agent_id ? Number(currentUser.agent_id) : (sessionAgentId ? Number(sessionAgentId) : null);
+
+                        // If agent_id is not already present, fetch from getUserById
+                        if (!agentId && currentUser?.id) {
+                          try {
+                            const userDetails = await getUserById({ id: Number(currentUser.id) }).unwrap();
+                            if (userDetails?.agent_id !== undefined && userDetails?.agent_id !== null) {
+                              agentId = Number(userDetails.agent_id);
+                              try {
+                                sessionStorage.setItem('agent_id', String(agentId));
+                              } catch (e) {
+                                console.error('Error saving agent_id to sessionStorage:', e);
+                              }
+                            }
+                          } catch (err) {
+                            console.error("Failed to fetch user details for agent_id", err);
+                          }
+                        }
+
+                        if (!agentId) {
+                          toast.error("Telephony Agent ID is not configured for your account. Please contact your administrator.");
+                          return;
+                        }
 
                         try {
                           await initiateClickToCall({ 

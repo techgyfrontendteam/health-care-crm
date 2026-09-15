@@ -64,20 +64,13 @@ export const LoginPage = () => {
     const isFirst = Number(response.is_first_login) === 1;
     const loginUserId = Number(response.id);
 
-    try {
-      sessionStorage.setItem('agent_id', String(loginUserId));
-    } catch (e) {
-      console.error('Error saving agent_id to sessionStorage:', e);
-    }
-
-    // 1. Set credentials first so the token is available for subsequent API calls
+    // 1. Set initial credentials so the token is available for subsequent API calls
     login(
       response.token,
       response.refreshToken,
       isFirst,
       {
         id: String(response.id),
-        agent_id: loginUserId,
         email: response.login_id,
         name: `${response.first_name} ${response.last_name}`,
         role_id: response.role_id,
@@ -86,9 +79,24 @@ export const LoginPage = () => {
       }
     );
 
-    // Fetch user details to get profile picture
+    // Fetch user details to get agent_id and profile picture
     try {
       const userDetails = await getUserById({ id: response.id }).unwrap();
+      const realAgentId = userDetails.agent_id !== undefined && userDetails.agent_id !== null ? Number(userDetails.agent_id) : undefined;
+
+      if (realAgentId !== undefined) {
+        try {
+          sessionStorage.setItem('agent_id', String(realAgentId));
+        } catch (e) {
+          console.error('Error saving agent_id to sessionStorage:', e);
+        }
+      } else {
+        try {
+          sessionStorage.removeItem('agent_id');
+        } catch (e) {
+          console.error('Error removing agent_id from sessionStorage:', e);
+        }
+      }
 
       login(
         response.token,
@@ -96,7 +104,7 @@ export const LoginPage = () => {
         isFirst,
         {
           id: String(response.id),
-          agent_id: loginUserId,
+          agent_id: realAgentId,
           email: response.login_id,
           name: `${response.first_name} ${response.last_name}`,
           role_id: response.role_id,
@@ -105,7 +113,7 @@ export const LoginPage = () => {
         }
       );
     } catch (err) {
-      console.error('Failed to fetch user details for profile picture', err);
+      console.error('Failed to fetch user details for agent_id and profile picture', err);
     }
 
     // 2. Now fetch roles (token will be injected by baseApi)

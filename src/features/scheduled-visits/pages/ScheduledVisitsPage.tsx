@@ -5,7 +5,6 @@ import { useGetVisitsByUserIdQuery } from "../../leads/api/leadsApi";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import {
   Calendar as CalendarIcon,
-  Plus,
   Search,
   MapPin,
   Clock,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
-import { ScheduleVisitDialog } from "../../leads/components/ScheduleVisitDialog";
 import {
   useGetAllUsersByRoleIdQuery,
   useGetReporteesQuery,
@@ -307,7 +305,6 @@ export const ScheduledVisitsPage = () => {
   // 4. Branch & Search Filters
   const [branchFilter, setBranchFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   // Click outside listener for dropdowns
   useEffect(() => {
@@ -428,9 +425,6 @@ export const ScheduledVisitsPage = () => {
 
   // Log API response to console
   useEffect(() => {
-    console.log("=== [API] appointments/getVisitsByUserId ===");
-    console.log("Request Payload:", queryPayload);
-    console.log("Response Data:", visitsData);
     if (visitsError) {
       console.error("API Error:", visitsError);
     }
@@ -497,7 +491,7 @@ export const ScheduledVisitsPage = () => {
     <div className="flex flex-col h-full bg-transparent pt-6 pb-20 px-4 sm:px-6 space-y-6 font-['Inter']">
       
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* Header Row: Title & Action Button                      */}
+      {/* Header Row: Title */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -508,15 +502,6 @@ export const ScheduledVisitsPage = () => {
             Track and manage patient hospital visits &amp; OPD appointments.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsScheduleOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-5 h-9 bg-[#063669] hover:bg-[#052b53] text-white rounded-full text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-xs"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>Schedule Appointment</span>
-        </button>
       </div>
 
       {/* ═══════════════════════════════════════════════════════ */}
@@ -886,14 +871,6 @@ export const ScheduledVisitsPage = () => {
           <div className="bg-white dark:bg-zinc-900 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-12 text-center text-xs font-semibold text-slate-400 dark:text-zinc-500 flex flex-col items-center justify-center gap-3">
             <CalendarIcon className="w-9 h-9 text-slate-300 dark:text-zinc-700" />
             <span>No appointments found for the selected filters.</span>
-            <button
-              type="button"
-              onClick={() => setIsScheduleOpen(true)}
-              className="flex items-center gap-1.5 bg-[#063669] hover:bg-[#052b53] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Schedule New Appointment
-            </button>
           </div>
         ) : (
           paginatedVisits.map((visit: any, index: number) => {
@@ -1041,19 +1018,6 @@ export const ScheduledVisitsPage = () => {
             </Button>
           </div>
         </div>
-      )}
-
-      {/* Schedule Dialog context */}
-      {isScheduleOpen && (
-        <ScheduleVisitDialog
-          open={isScheduleOpen}
-          onClose={() => setIsScheduleOpen(false)}
-          lead={null as any}
-          siteVisitStatuses={appointmentStatuses}
-          rms={rms}
-          onSubmit={async () => {}}
-          isLoading={false}
-        />
       )}
     </div>
   );

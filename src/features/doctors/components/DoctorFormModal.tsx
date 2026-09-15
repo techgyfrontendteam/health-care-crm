@@ -52,19 +52,63 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
 
   useEffect(() => {
     if (doctor) {
+      const matchedSpecId =
+        doctor.specialization_id ||
+        masterData?.specialisations?.find(
+          (s) =>
+            s.id === doctor.specialization_id ||
+            s.description?.toLowerCase() === doctor.specialization?.toLowerCase()
+        )?.id ||
+        masterData?.specialisations?.[0]?.id ||
+        0;
+
+      const matchedBranchId =
+        doctor.branch_id ||
+        masterData?.branches?.find(
+          (b) =>
+            b.id === doctor.branch_id ||
+            b.description?.toLowerCase() === doctor.hospital_branch?.toLowerCase()
+        )?.id ||
+        masterData?.branches?.[0]?.id ||
+        0;
+
+      const matchedServiceId =
+        doctor.service_id ||
+        masterData?.services?.find(
+          (s) =>
+            s.id === doctor.service_id ||
+            s.description?.toLowerCase() === doctor.service_type?.toLowerCase() ||
+            (doctor.department === "OPD" && s.description?.toLowerCase().includes("op") && !s.description?.toLowerCase().includes("ip")) ||
+            (doctor.department === "IPD" && s.description?.toLowerCase().includes("ip") && !s.description?.toLowerCase().includes("op")) ||
+            (doctor.department === "Both" && s.description?.toLowerCase().includes("both"))
+        )?.id ||
+        masterData?.services?.[0]?.id ||
+        0;
+
+      const startT = doctor.available_start_time
+        ? doctor.available_start_time.slice(0, 5)
+        : doctor.working_hours
+        ? doctor.working_hours.split(" - ")[0]
+        : "09:00";
+      const endT = doctor.available_end_time
+        ? doctor.available_end_time.slice(0, 5)
+        : doctor.working_hours
+        ? doctor.working_hours.split(" - ")[1]
+        : "17:00";
+
       setFormData({
-        first_name: doctor.first_name || "",
-        last_name: doctor.last_name || "",
+        first_name: doctor.first_name || (doctor.name ? doctor.name.split(" ")[0] : ""),
+        last_name: doctor.last_name || (doctor.name ? doctor.name.split(" ").slice(1).join(" ") : ""),
         email: doctor.email || "",
         phone_number: doctor.phone_number || "",
         education: doctor.qualification || "",
-        experience: doctor.experience_years || 5,
-        consultation_fee: doctor.consultation_fee || 1000,
-        branch_id: 0, 
-        specialization_id: 0,
-        service_id: 0,
-        available_start_time: "09:00",
-        available_end_time: "17:00",
+        experience: doctor.experience_years ?? 5,
+        consultation_fee: doctor.consultation_fee ?? 1000,
+        branch_id: matchedBranchId,
+        specialization_id: matchedSpecId,
+        service_id: matchedServiceId,
+        available_start_time: startT || "09:00",
+        available_end_time: endT || "17:00",
         profile_img: doctor.image_url || "",
         country_code: "+91",
         image_url: doctor.image_url || "",

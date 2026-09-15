@@ -862,10 +862,10 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
   }
 
   return (
-    <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 xl:space-y-8 2xl:space-y-10 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+    <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-4 px-3 sm:px-5 md:px-6 py-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
 
       {/* Page Title & Top Actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-black text-[#002d62] dark:text-blue-400 tracking-tight flex items-center gap-3">
             Sales Head Dashboard
@@ -1004,10 +1004,10 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             )}
           </div>
 
-          {/* Right Side: Project and Date Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-
-            {/* Project Filter Button */}
+          {/* Right Side: Date Filter */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Project Filter Button (COMMENTED OUT) */}
+            {/*
             {roleCode !== "RELMNG" && (
               <button
                 onClick={() => {
@@ -1023,6 +1023,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
+            */}
 
             {/* Date Range Button */}
             <button
@@ -1030,7 +1031,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                 setDialogTabs(["date"]);
                 setIsFilterDialogOpen(true);
               }}
-              className="flex items-center gap-2 bg-[#f8fafc] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors shadow-sm cursor-pointer min-w-[130px] justify-between"
+              className="flex items-center gap-2 bg-[#f8fafc] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors shadow-xs cursor-pointer min-w-[130px] justify-between"
             >
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -1041,10 +1042,9 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
         </div>
       )}
 
-      {/* Row 1: Leaderboard & Calls Summary */}
+      {/* Top Performer Leaderboard Card (COMMENTED OUT) */}
+      {/*
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Top Performer Leaderboard */}
         <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 xl:p-8 shadow-sm flex flex-col justify-between min-h-[280px]">
           <div className="flex items-center justify-between border-b border-slate-50 dark:border-zinc-800/50 pb-4">
             <div>
@@ -1074,9 +1074,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                   key={rm.rank}
                   className="flex items-center justify-between py-2 px-3 rounded-xl transition-all duration-200 gap-4"
                 >
-                  {/* Left side: Avatar & Name */}
                   <div className="flex items-center gap-3">
-                    {/* Rank Badge to the left of avatar */}
                     <div className={cn(
                       "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-sm shrink-0",
                       rm.rank === 1 ? "bg-[#002d62]" : "bg-slate-300 dark:bg-zinc-600 text-slate-700 dark:text-zinc-200"
@@ -1084,7 +1082,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                       #{rm.rank}
                     </div>
 
-                    {/* Avatar Image or Initials */}
                     <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center font-bold text-xs shrink-0 border border-slate-200/50 dark:border-zinc-750 shadow-sm overflow-hidden">
                       {rm.avatarUrl ? (
                         <img src={rm.avatarUrl} alt={rm.name} className="w-full h-full object-cover" />
@@ -1098,7 +1095,6 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                     </div>
                   </div>
 
-                  {/* Stats layout */}
                   <div className="flex items-center justify-end gap-5 sm:gap-7 md:gap-9 text-left flex-1 min-w-0 pr-1">
                     <div className="min-w-[40px]">
                       <span className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 tracking-widest uppercase mb-0.5">Leads</span>
@@ -1122,17 +1118,24 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             )}
           </div>
         </div>
+      </div>
+      */}
 
-        {/* Team Calls Summary (Deep Blue Premium Card) */}
-        <div className="bg-[#002d62] dark:bg-zinc-950 border border-[#002d62] dark:border-zinc-900 rounded-[24px] p-6 xl:p-8 shadow-md text-white flex flex-col justify-between min-h-[280px]">
-          <div>
-            <h2 className="text-sm xl:text-base font-extrabold uppercase tracking-wider text-blue-200 dark:text-zinc-400">
+      {/* Row 1: Compact Overview & Calls Metrics Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {/* Team Calls Summary */}
+        <div className="bg-[#002d62] dark:bg-zinc-950 border border-[#002d62] dark:border-zinc-800 rounded-2xl p-4.5 shadow-sm text-white flex flex-col justify-between min-h-[170px] hover:shadow-md transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-blue-200 dark:text-zinc-400">
               Team Calls Summary
             </h2>
+            <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-blue-100">
+              All Channels
+            </span>
           </div>
 
-          <div className="my-auto py-4 flex items-baseline gap-2">
-            <span className="text-5xl font-black tracking-tight">
+          <div className="my-2 flex items-baseline gap-2">
+            <span className="text-3xl sm:text-4xl font-black tracking-tight">
               {rmData.teamCallsSummary.connectedCalls}
             </span>
             <span className="text-[10px] font-bold text-blue-200 dark:text-zinc-400 uppercase tracking-widest">
@@ -1140,30 +1143,76 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
             </span>
           </div>
 
-          {/* Sub-cards grid */}
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-2xl p-4 border border-white/5 dark:border-zinc-800 flex flex-col justify-between min-h-[88px] text-left">
-              <span className="block text-[9px] text-blue-200 dark:text-zinc-450 uppercase font-bold tracking-wider">Connected Calls</span>
-              <span className="text-2xl font-black mt-2">
+          {/* Sub-cards */}
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-xl p-2.5 border border-white/5 dark:border-zinc-800 text-left">
+              <span className="block text-[9px] text-blue-200 dark:text-zinc-400 uppercase font-bold tracking-wider">Connected</span>
+              <span className="text-lg font-black mt-0.5 block">
                 {rmData.teamCallsSummary.connectedCalls - rmData.teamCallsSummary.missedCalls}
               </span>
             </div>
-            <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-2xl p-4 border border-white/5 dark:border-zinc-800 flex flex-col justify-between min-h-[88px] text-left">
-              <span className="block text-[9px] text-blue-200 dark:text-zinc-450 uppercase font-bold tracking-wider">Missed Calls</span>
-              <span className="text-2xl font-black mt-2">{rmData.teamCallsSummary.missedCalls}</span>
+            <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-xl p-2.5 border border-white/5 dark:border-zinc-800 text-left">
+              <span className="block text-[9px] text-blue-200 dark:text-zinc-400 uppercase font-bold tracking-wider">Missed</span>
+              <span className="text-lg font-black mt-0.5 block text-rose-300 dark:text-rose-400">{rmData.teamCallsSummary.missedCalls}</span>
             </div>
           </div>
         </div>
 
+        {/* Escalated Card */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs flex flex-col justify-between min-h-[170px] hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">Escalated</h3>
+            <button
+              onClick={() => navigate("/relationship-managers/escalated")}
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
+            >
+              View All &rarr;
+            </button>
+          </div>
+          <div className="my-auto py-2">
+            <span className="text-3xl sm:text-4xl font-black text-red-600 dark:text-red-500 block">
+              {String(rmData.escalated.count).padStart(2, "0")}
+            </span>
+            <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 mt-1 block">
+              Active Escalations Requiring Attention
+            </span>
+          </div>
+          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-[10px] text-slate-400">
+            Escalated lead inquiries &amp; pending reviews
+          </div>
+        </div>
+
+        {/* Stale Card */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs flex flex-col justify-between min-h-[170px] hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">Stale Leads</h3>
+            <button
+              onClick={() => navigate("/relationship-managers/stale")}
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
+            >
+              View All &rarr;
+            </button>
+          </div>
+          <div className="my-auto py-2">
+            <span className="text-3xl sm:text-4xl font-black text-[#002d62] dark:text-blue-400 block">
+              {rmData.stale.count}
+            </span>
+            <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 mt-1 block">
+              &gt; 14 Days Idle
+            </span>
+          </div>
+          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-[10px] text-slate-400">
+            Leads without active touchpoints
+          </div>
+        </div>
       </div>
 
       {/* Row 2: Team-wide Lead Status & Lead Quality Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         {/* Team-wide Lead Status */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 xl:p-10 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base xl:text-lg font-extrabold text-slate-800 dark:text-zinc-100 tracking-tight">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-zinc-100 tracking-tight">
               Status wise Leads count
             </h2>
             <button
@@ -1171,20 +1220,20 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                 setIsStatusPopupOpen(true);
                 setPopupSearch("");
               }}
-              className="text-sm font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
             >
-              View All
+              View All &rarr;
             </button>
           </div>
 
-          <div className="space-y-5 xl:space-y-6 my-auto">
+          <div className="space-y-4 my-auto">
             {rmData.teamWideLeadStatus.slice(0, 4).map((status) => (
-              <div key={status.label} className="space-y-2">
+              <div key={status.label} className="space-y-1.5">
                 <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  <span className="tracking-wider text-[10px] xl:text-xs">
-                    {status.label} <span className="text-slate-400 dark:text-zinc-500">({status.count})</span>
+                  <span className="tracking-wider text-[11px]">
+                    {status.label} <span className="text-slate-400 dark:text-zinc-500 font-normal">({status.count})</span>
                   </span>
-                  <span className="text-slate-900 dark:text-zinc-100 font-extrabold">{status.percentage}%</span>
+                  <span className="text-slate-900 dark:text-zinc-100 font-extrabold text-xs">{status.percentage}%</span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                   <div
@@ -1199,114 +1248,67 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
         {/* Lead Quality Distribution (Recharts Donut) */}
         <LeadQualityDistribution data={rmData.leadQuality} />
-
       </div>
 
-      {/* Row 3: Bottom grid with columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Column 1: Escalated & Stale stacked */}
-        <div className="flex flex-col gap-6">
-          {/* Escalated Card */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between h-[158px] hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 tracking-tight">Escalated</h3>
-              <button
-                onClick={() => navigate("/relationship-managers/escalated")}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
-              >
-                View All
-              </button>
+      {/* Top Objections Card (COMMENTED OUT) */}
+      {/*
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between min-h-[340px]">
+        <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 uppercase tracking-tight border-b border-slate-50 dark:border-zinc-800/50 pb-3">
+          Top Objections
+        </h3>
+        <div className="flex-1 mt-4 space-y-4">
+          {rmData.topObjections.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[200px] text-slate-400 dark:text-zinc-500 font-semibold text-xs">
+              No objections data is available
             </div>
-            <div className="flex items-baseline gap-3 mt-4">
-              <span className="text-4xl font-black text-red-600 dark:text-red-500">
-                {String(rmData.escalated.count).padStart(2, "0")}
-              </span>
-              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
-                Active Escalations
-              </span>
-            </div>
-          </div>
-
-          {/* Stale Card */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between h-[158px] hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 tracking-tight">Stale</h3>
-              <button
-                onClick={() => navigate("/relationship-managers/stale")}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
-              >
-                View All
-              </button>
-            </div>
-            <div className="flex items-baseline gap-3 mt-4">
-              <span className="text-4xl font-black text-blue-600 dark:text-blue-500">
-                {rmData.stale.count}
-              </span>
-              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
-                &gt; 14 Days Idle
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Column 2: Top Objections Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between min-h-[340px]">
-          <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 uppercase tracking-tight border-b border-slate-50 dark:border-zinc-800/50 pb-3">
-            Top Objections
-          </h3>
-          <div className="flex-1 mt-4 space-y-4">
-            {rmData.topObjections.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-slate-400 dark:text-zinc-500 font-semibold text-xs">
-                No objections data is available
-              </div>
-            ) : (
-              rmData.topObjections.slice(0, 5).map((objection, index) => (
-                <div key={index} className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-zinc-300">
-                    <span className="truncate max-w-[85%]">{objection.label}</span>
-                    <span className="text-slate-900 dark:text-zinc-100">{objection.percentage}%</span>
-                  </div>
-                  <ReportProgressBar value={objection.percentage} />
+          ) : (
+            rmData.topObjections.slice(0, 5).map((objection, index) => (
+              <div key={index} className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  <span className="truncate max-w-[85%]">{objection.label}</span>
+                  <span className="text-slate-900 dark:text-zinc-100">{objection.percentage}%</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Column 3: Top Bookings - EM Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between min-h-[340px]">
-          <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 uppercase tracking-tight border-b border-slate-50 dark:border-zinc-800/50 pb-3">
-            Top Bookings – EM
-          </h3>
-          <div className="flex-1 mt-4 space-y-3">
-            {rmData.topBookings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-slate-400 dark:text-zinc-500 font-semibold text-xs">
-                No bookings data is available
+                <ReportProgressBar value={objection.percentage} />
               </div>
-            ) : (
-              rmData.topBookings.map((em, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-zinc-800/30 border border-slate-100/50 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-zinc-300 shrink-0">
-                      {em.name?.split(" ").map((n: string) => n?.[0] || "").join("") || ""}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-800 dark:text-zinc-150">{em.name}</h4>
-                      <p className="text-[9px] font-bold text-slate-400 dark:text-zinc-500">{em.role}</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-black text-blue-600 dark:text-blue-400 px-2.5">{em.bookings}</span>
-                </div>
-              ))
-            )}
-          </div>
+            ))
+          )}
         </div>
-
       </div>
+      */}
+
+      {/* Top Bookings – EM Card (COMMENTED OUT) */}
+      {/*
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between min-h-[340px]">
+        <h3 className="text-sm font-extrabold text-slate-800 dark:text-zinc-100 uppercase tracking-tight border-b border-slate-50 dark:border-zinc-800/50 pb-3">
+          Top Bookings – EM
+        </h3>
+        <div className="flex-1 mt-4 space-y-3">
+          {rmData.topBookings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[200px] text-slate-400 dark:text-zinc-500 font-semibold text-xs">
+              No bookings data is available
+            </div>
+          ) : (
+            rmData.topBookings.map((em, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-zinc-800/30 border border-slate-100/50 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-zinc-300 shrink-0">
+                    {em.name?.split(" ").map((n: string) => n?.[0] || "").join("") || ""}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-extrabold text-slate-800 dark:text-zinc-150">{em.name}</h4>
+                    <p className="text-[9px] font-bold text-slate-400 dark:text-zinc-500">{em.role}</p>
+                  </div>
+                </div>
+                <span className="text-sm font-black text-blue-600 dark:text-blue-400 px-2.5">{em.bookings}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      */}
 
       {/* Reused Report Filter Dialog */}
       <ReportFilterDialog
