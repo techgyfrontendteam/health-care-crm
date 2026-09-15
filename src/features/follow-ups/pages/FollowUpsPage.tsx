@@ -703,7 +703,7 @@ export const FollowUpsPage: React.FC = () => {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 bg-[#002d62] text-white px-5 py-3.5 rounded-full shadow-xl z-50 flex items-center gap-3 animate-in slide-in-from-top duration-300 font-bold text-xs">
+        <div className="fixed top-20 right-6 bg-[#0022ff] text-white px-5 py-3.5 rounded-full shadow-xl z-50 flex items-center gap-3 animate-in slide-in-from-top duration-300 font-bold text-xs">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -712,7 +712,7 @@ export const FollowUpsPage: React.FC = () => {
       {/* Header Block */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[#002d62] tracking-tight">Followups</h1>
+          <h1 className="text-2xl font-bold text-[#0022ff] tracking-tight">Followups</h1>
           <p className="text-xs text-slate-400 font-medium">Track and manage lead follow-ups efficiently.</p>
         </div>
         <button
@@ -721,7 +721,7 @@ export const FollowUpsPage: React.FC = () => {
             setCreateFormDate(todayStr);
             setIsGeneralCreateModalOpen(true);
           }}
-          className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="flex items-center gap-2 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create Follow-Up
@@ -744,7 +744,7 @@ export const FollowUpsPage: React.FC = () => {
                     setIsRmDropdownOpen(!isRmDropdownOpen);
                     setIsEmDropdownOpen(false);
                   }}
-                  className="flex items-center gap-2.5 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[170px] justify-between"
+                  className="flex items-center gap-2.5 bg-[#f8f9fa] hover:bg-[#eef2f6] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[170px] justify-between"
                 >
                   <span className="truncate max-w-[125px]">
                     {selectedRmIds.length === 0
@@ -756,7 +756,7 @@ export const FollowUpsPage: React.FC = () => {
                       : `${selectedRmIds.length} Selected`}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#063669]">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#0022ff]">
                       {selectedRmIds.length}/{rms.length}
                     </span>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
@@ -768,15 +768,15 @@ export const FollowUpsPage: React.FC = () => {
                     {/* Select All Option */}
                     <div
                       onClick={handleToggleSelectAllRms}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#063669] hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 pb-2.5 mb-1"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#0022ff] hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 pb-2.5 mb-1"
                     >
                       <div className="flex items-center gap-2.5">
                         <div
                           className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                             isAllRmsSelected
-                              ? "bg-[#063669] border-[#063669] text-white"
+                              ? "bg-[#0022ff] border-[#0022ff] text-white"
                               : isPartialRmsSelected
-                              ? "bg-blue-100 border-[#063669] text-[#063669]"
+                              ? "bg-blue-100 border-[#0022ff] text-[#0022ff]"
                               : "border-slate-300 bg-white"
                           }`}
                         >
@@ -807,7 +807,7 @@ export const FollowUpsPage: React.FC = () => {
                             <div
                               className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
                                 isSelected
-                                  ? "bg-[#063669] border-[#063669] text-white"
+                                  ? "bg-[#0022ff] border-[#0022ff] text-white"
                                   : "border-slate-300 bg-white"
                               }`}
                             >
@@ -836,7 +836,7 @@ export const FollowUpsPage: React.FC = () => {
                     setIsEmDropdownOpen(!isEmDropdownOpen);
                     setIsRmDropdownOpen(false);
                   }}
-                  className="flex items-center gap-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[150px] justify-between"
+                  className="flex items-center gap-2 bg-[#f8f9fa] hover:bg-[#eef2f6] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[150px] justify-between"
                 >
                   <span className="truncate max-w-[120px]">{selectedEm === "All Managers" ? "All Sales Executives" : selectedEm}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
@@ -874,7 +874,7 @@ export const FollowUpsPage: React.FC = () => {
                 setQuickSelect(appliedQuickSelect);
                 setIsDateModalOpen(true);
               }}
-              className="flex items-center gap-3 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-colors cursor-pointer min-w-[140px] min-h-[42px]"
+              className="flex items-center gap-3 bg-[#f8f9fa] hover:bg-[#eef2f6] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-colors cursor-pointer min-w-[140px] min-h-[42px]"
             >
               <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
               <span>{appliedQuickSelect ? appliedQuickSelect : formatShortDateSpan(startDate, endDate)}</span>
@@ -883,7 +883,7 @@ export const FollowUpsPage: React.FC = () => {
         </div>
 
         {/* Scheduled / Completed / Missed Segmented Pill Tab */}
-        <div className="bg-[#f1f5f9] p-1 rounded-full flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
+        <div className="bg-[#eef2f6] p-1 rounded-full flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
           {(["Scheduled", "Completed", "Missed"] as const).map((tab) => (
             <button
               key={tab}
@@ -907,7 +907,7 @@ export const FollowUpsPage: React.FC = () => {
           placeholder="Search leads....."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-13 pr-6 py-3 w-full rounded-full border border-slate-200/80 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62] placeholder-slate-400 shadow-sm transition-all"
+          className="pl-13 pr-6 py-3 w-full rounded-full border border-slate-200/80 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0022ff] placeholder-slate-400 shadow-sm transition-all"
         />
       </div>
 
@@ -915,7 +915,7 @@ export const FollowUpsPage: React.FC = () => {
       <div className="space-y-4 pt-2">
         {isFollowupsLoading ? (
           <div className="bg-white border border-slate-200/80 rounded-[20px] p-12 text-center text-xs font-semibold text-slate-500 shadow-xs flex flex-col items-center justify-center gap-3">
-            <div className="w-7 h-7 border-3 border-[#063669] border-t-transparent rounded-full animate-spin" />
+            <div className="w-7 h-7 border-3 border-[#0022ff] border-t-transparent rounded-full animate-spin" />
             <span>Fetching follow-ups from server...</span>
           </div>
         ) : filteredFollowUps.length === 0 ? (
@@ -927,7 +927,7 @@ export const FollowUpsPage: React.FC = () => {
                 setCreateFormDate(todayStr);
                 setIsGeneralCreateModalOpen(true);
               }}
-              className="flex items-center gap-1.5 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               Create Follow-Up
@@ -937,19 +937,19 @@ export const FollowUpsPage: React.FC = () => {
           filteredFollowUps.map((item) => (
             <div
               key={item.id}
-              className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:shadow-md transition-shadow"
+              className="bg-white border border-[#e2e8f0] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:shadow-md transition-shadow"
             >
               {/* Left Side: Avatar & Details */}
               <div className="flex items-center gap-5">
                 {/* Initials Avatar Squircle */}
-                <div className="w-14 h-14 rounded-[20px] flex items-center justify-center font-bold text-[16px] bg-[#EFF6FF] text-[#1E40AF] shrink-0 border border-blue-50/50 shadow-sm">
+                <div className="w-14 h-14 rounded-[20px] flex items-center justify-center font-bold text-[16px] bg-[#f8f9fa] text-[#0022ff] shrink-0 border border-blue-50/50 shadow-sm">
                   {getInitials(item.leadName)}
                 </div>
 
                 {/* Text details */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-[16px] leading-[24px] text-[#063669]">
+                    <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-[16px] leading-[24px] text-[#0022ff]">
                       {item.leadName}
                     </h4>
                     <span className="text-[12px] text-[#64748B] font-medium">
@@ -987,7 +987,7 @@ export const FollowUpsPage: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => openCompleteModal(item)}
-                      className="text-[#0B3565] hover:underline font-bold text-[11px] uppercase tracking-wider transition-colors cursor-pointer"
+                      className="text-[#0022ff] hover:underline font-bold text-[11px] uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       POST CALL FOLLOW UP
                     </button>
@@ -1007,7 +1007,7 @@ export const FollowUpsPage: React.FC = () => {
                       navigate(`/leads`);
                     }
                   }}
-                  className="bg-[#0B3565] text-white text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-[#072445] transition-colors shadow-md"
+                  className="bg-[#0022ff] text-white text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-[#001bd1] transition-colors shadow-md"
                 >
                   View Lead
                 </button>
@@ -1024,11 +1024,11 @@ export const FollowUpsPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-50 pb-4">
               <div>
-                <h2 className="text-base font-extrabold text-[#002d62]">
+                <h2 className="text-base font-extrabold text-[#0022ff]">
                   Log Interaction Outcome
                 </h2>
                 <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
-                  Log the results for lead: <span className="font-extrabold text-[#002d62]">{completingFollowUp?.leadName}</span> ({completingFollowUp?.leadId})
+                  Log the results for lead: <span className="font-extrabold text-[#0022ff]">{completingFollowUp?.leadName}</span> ({completingFollowUp?.leadId})
                 </p>
               </div>
               <button
@@ -1052,18 +1052,18 @@ export const FollowUpsPage: React.FC = () => {
                   value={outcomeNotes}
                   onChange={(e) => setOutcomeNotes(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62] resize-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0022ff] resize-none"
                 />
               </div>
 
               {/* Next Schedule Toggle */}
-              <div className="bg-[#f8fafc] p-4 rounded-2xl border border-slate-200/50 space-y-4">
+              <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-slate-200/50 space-y-4">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={scheduleNextFollowUp}
                     onChange={(e) => setScheduleNextFollowUp(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#002d62] focus:ring-[#002d62] border-slate-300"
+                    className="w-4 h-4 rounded text-[#0022ff] focus:ring-[#0022ff] border-slate-300"
                   />
                   <div>
                     <span className="text-xs font-black text-slate-700">
@@ -1112,7 +1112,7 @@ export const FollowUpsPage: React.FC = () => {
                         value={nextFollowUpRemarks}
                         onChange={(e) => setNextFollowUpRemarks(e.target.value)}
                         rows={2}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62] resize-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0022ff] resize-none"
                       />
                     </div>
                   </div>
@@ -1130,7 +1130,7 @@ export const FollowUpsPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#002d62] hover:bg-[#08305c] text-white px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md"
+                  className="bg-[#0022ff] hover:bg-[#001bd1] text-white px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md"
                 >
                   Save Outcome & Complete
                 </button>
@@ -1148,7 +1148,7 @@ export const FollowUpsPage: React.FC = () => {
           <div className="relative bg-white w-full max-w-[500px] mx-4 rounded-[20px] shadow-2xl p-6 md:p-8 flex flex-col gap-5 animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="font-['Plus_Jakarta_Sans'] font-extrabold text-[18px] text-[#002d62]">
+              <h3 className="font-['Plus_Jakarta_Sans'] font-extrabold text-[18px] text-[#0022ff]">
                 Create a new follow-up
               </h3>
               <button
@@ -1171,7 +1171,7 @@ export const FollowUpsPage: React.FC = () => {
                     required
                     value={selectedLeadUuid}
                     onChange={(e) => setSelectedLeadUuid(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565] appearance-none"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] appearance-none"
                   >
                     <option value="" disabled>Search and select lead...</option>
                     {leads.map((l: any) => {
@@ -1195,7 +1195,7 @@ export const FollowUpsPage: React.FC = () => {
                   <select
                     value={createFormRm}
                     onChange={(e) => setCreateFormRm(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff]"
                   >
                     <option value="">Select Sales Executive</option>
                     {rms.map(r => (
@@ -1208,7 +1208,7 @@ export const FollowUpsPage: React.FC = () => {
                   <select
                     value={createFormEm}
                     onChange={(e) => setCreateFormEm(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff]"
                   >
                     <option value="">Select Sales Executive</option>
                     {ems.map(e => (
@@ -1259,7 +1259,7 @@ export const FollowUpsPage: React.FC = () => {
                   placeholder="Briefly describe the objective..."
                   value={createRemarks}
                   onChange={(e) => setCreateRemarks(e.target.value)}
-                  className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-[#f8fafc] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3565] resize-none"
+                  className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] resize-none"
                 />
               </div>
 
@@ -1268,7 +1268,7 @@ export const FollowUpsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="w-full bg-[#002d62] text-white text-sm font-bold py-3.5 rounded-xl hover:bg-[#08305c] transition-all disabled:opacity-50 cursor-pointer shadow-md"
+                  className="w-full bg-[#0022ff] text-white text-sm font-bold py-3.5 rounded-xl hover:bg-[#001bd1] transition-all disabled:opacity-50 cursor-pointer shadow-md"
                 >
                   {isCreating ? 'Scheduling...' : 'Create follow-up'}
                 </button>
@@ -1297,7 +1297,7 @@ export const FollowUpsPage: React.FC = () => {
               {/* Left Sidebar */}
               <div className="w-[220px] border-r border-zinc-100 dark:border-zinc-850 p-5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col justify-between">
                 <div className="space-y-5">
-                  <button className="w-full flex items-center gap-2.5 px-4 py-3 bg-[#0f3d6b] text-white rounded-xl text-sm font-semibold shadow-sm transition-all duration-200">
+                  <button className="w-full flex items-center gap-2.5 px-4 py-3 bg-[#0022ff] text-white rounded-xl text-sm font-semibold shadow-sm transition-all duration-200">
                     <Calendar className="w-4 h-4" />
                     Date Range
                   </button>
@@ -1329,7 +1329,7 @@ export const FollowUpsPage: React.FC = () => {
                   <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 mb-1">
                     SELECTED SPAN
                   </span>
-                  <span className="block text-xs font-extrabold text-[#0f3d6b] dark:text-blue-400 px-2">
+                  <span className="block text-xs font-extrabold text-[#0022ff] dark:text-blue-400 px-2">
                     {formatSelectedSpan(tempStartDate, tempEndDate)}
                   </span>
                 </div>
@@ -1396,7 +1396,7 @@ export const FollowUpsPage: React.FC = () => {
                       >
                         {/* Circle highlight container */}
                         {(isSelectedStart || isSelectedEnd) && (
-                          <div className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-[#0f3d6b] dark:bg-[#1a5b9b] z-0 shadow-sm animate-in zoom-in-75 duration-150" />
+                          <div className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-[#0022ff] dark:bg-[#0022ff] z-0 shadow-sm animate-in zoom-in-75 duration-150" />
                         )}
                         <span className={cn(
                           "relative z-10",
@@ -1428,7 +1428,7 @@ export const FollowUpsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleApplyDateRange}
-                  className="px-6 py-2.5 bg-[#0f3d6b] hover:bg-[#0c3156] text-white rounded-full text-sm font-bold shadow-md transition-colors animate-in fade-in duration-200"
+                  className="px-6 py-2.5 bg-[#0022ff] hover:bg-[#001bd1] text-white rounded-full text-sm font-bold shadow-md transition-colors animate-in fade-in duration-200"
                 >
                   Apply Selection
                 </button>

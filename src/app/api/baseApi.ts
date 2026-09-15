@@ -6,10 +6,11 @@ import { Mutex } from 'async-mutex';
 
 // Create a new mutex
 const mutex = new Mutex();
+const DEMO_TOKEN = 'demo-session-token';
 
 const baseQuery = fetchBaseQuery({
   // baseUrl: 'http://localhost:3000',
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://y7lidobvl7.execute-api.ap-south-1.amazonaws.com',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://y7lidobvl7.execute-api.ap-south-1.amazonaws.com',
   // baseUrl: 'https://nonslippery-monumentally-lane.ngrok-free.dev',
   prepareHeaders: (headers, { getState }) => {
     const stateToken = (getState() as any)?.auth?.token;
@@ -35,12 +36,16 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
   let result = await baseQuery(args, api, extraOptions);
 
   const url = typeof args === 'string' ? args : args.url;
+  const activeToken = (api.getState() as any)?.auth?.token;
+  const isDemoSession = activeToken === DEMO_TOKEN;
   const isAuthEndpoint =
     url.includes('/auth/login') ||
     url.includes('/auth/refreshToken') ||
     url.includes('/auth/forgotPassword');
 
-  if (result.error && result.error.status === 401 && !isAuthEndpoint) {
+  // Demo sessions intentionally have no backend-issued JWT. API failures may
+  // render empty/error states, but must never destroy the local demo session.
+  if (result.error && result.error.status === 401 && !isAuthEndpoint && !isDemoSession) {
     // Checking whether the mutex is locked
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
@@ -98,6 +103,6 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 export const baseApi = createApi({
   reducerPath: 'baseApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps', 'Appointments'],
+  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps', 'Appointments', 'Doctors'],
   endpoints: () => ({}),
 });

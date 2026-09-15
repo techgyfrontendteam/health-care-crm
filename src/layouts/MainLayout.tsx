@@ -27,6 +27,9 @@ import {
   Contact,
   IndianRupee,
   TrendingUp,
+  Search,
+  Globe2,
+  ShieldCheck,
 } from "lucide-react";
 import { SidebarNotifications } from "./components/SidebarNotifications";
 import { usePermissions } from "../hooks/usePermissions";
@@ -63,6 +66,7 @@ export const MainLayout = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -240,21 +244,21 @@ export const MainLayout = () => {
   const navItemsByRole: Record<string, { label: string; path: string; icon: React.ReactNode }[]> = {
     // Super Admin & Admin — full set, in spec order
     SADMIN: [
+      { label: 'Dashboard', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       // { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
       { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
-      { label: 'Sales Executive', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
     ],
     ADMIN: [
+      { label: 'Dashboard', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       // { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
       { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
-      { label: 'Sales Executive', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
@@ -304,20 +308,28 @@ export const MainLayout = () => {
     return "User";
   };
 
+  const handleGlobalSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = globalSearch.trim();
+    if (!query) return;
+    navigate('/leads', { state: { globalSearch: query } });
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <GlobalApiLoader />
       {/* Sidebar */}
       <aside
         className={cn(
-          "bg-white/80 dark:bg-white/80 backdrop-blur-md border-r border-border min-h-screen hidden md:flex flex-col transition-all duration-300 relative z-50",
-          isSidebarOpen ? "w-64" : "w-16",
+          "bg-white border-r border-[#e2e8f0] min-h-screen hidden md:flex flex-col transition-all duration-300 relative z-50",
+          isSidebarOpen ? "w-60" : "w-[72px]",
         )}
       >
         {/* Toggle Button */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-5 bg-white rounded-full p-1 border border-border text-primary hover:bg-accent transition-colors z-10 shadow-sm"
+          className="absolute -right-3 bottom-24 flex h-8 w-8 items-center justify-center bg-white border border-[#e2e8f0] text-slate-600 hover:border-[#0022ff] hover:text-[#0022ff] transition-colors z-10 shadow-sm"
+          aria-label={isSidebarOpen ? "Collapse navigation" : "Expand navigation"}
         >
           {isSidebarOpen ? (
             <ChevronLeft size={16} />
@@ -328,24 +340,22 @@ export const MainLayout = () => {
 
         <div
           className={cn(
-            "p-6 flex flex-col justify-center h-20 whitespace-nowrap overflow-hidden transition-all duration-300",
+            "flex h-[72px] shrink-0 flex-col justify-center whitespace-nowrap overflow-hidden border-b border-[#e2e8f0] px-6 transition-all duration-300",
             isSidebarOpen ? "items-start" : "items-center",
           )}
         >
           {isSidebarOpen ? (
-            <div className="flex flex-col opacity-100">
-              <h2 className="text-2xl font-bold text-primary tracking-tight leading-none">
-                TechGy CRM
-              </h2>
-            </div>
+            <img
+              src="/techgy-link-logo.png"
+              alt="TechGy Link"
+              className="h-[54px] w-auto max-w-[196px] object-contain object-left"
+            />
           ) : (
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center font-bold text-white shrink-0">
-              TG
-            </div>
+            <img src="/techgy-link-mark.png" alt="TechGy Link" className="h-14 w-14 max-w-none object-contain" />
           )}
         </div>
 
-        <nav className="flex-1 mt-6 px-3 space-y-2 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 mt-3 px-3 space-y-1.5 overflow-y-auto overflow-x-hidden" aria-label="Primary navigation">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path + '/'));
             return (
@@ -354,17 +364,17 @@ export const MainLayout = () => {
                 to={item.path}
                 title={!isSidebarOpen ? item.label : undefined}
                 className={cn(
-                  "flex items-center rounded-xl transition-all duration-200 group",
+                  "flex items-center rounded-md transition-colors duration-200 group",
                   isActive
-                    ? "bg-[#002d62] text-white font-bold"
-                    : "text-muted-foreground hover:bg-slate-100 hover:text-[#002d62]",
+                    ? "bg-[#0022ff] text-white font-semibold"
+                    : "text-slate-700 hover:bg-[#f8f9fa] hover:text-[#111625]",
                   isSidebarOpen ? "space-x-4 px-4 py-3" : "justify-center w-10 h-10 mx-auto px-0 py-0",
                 )}
               >
                 <div
                   className={cn(
                     "shrink-0 transition-colors duration-200",
-                    isActive ? "text-white" : "text-muted-foreground group-hover:text-[#002d62]",
+                    isActive ? "text-white" : "text-slate-500 group-hover:text-[#111625]",
                   )}
                 >
                   {item.icon}
@@ -382,57 +392,68 @@ export const MainLayout = () => {
           })}
         </nav>
 
-        {/* User Profile - Bottom of Sidebar */}
+        {/* Security status - Bottom of Sidebar */}
         <div className="mt-auto p-4 flex flex-col gap-2 border-t border-border">
-          
-          <SidebarNotifications isSidebarOpen={isSidebarOpen} />
-
-          {isSidebarOpen ? (
-            <div className="w-full">
-              <button
-                onClick={() => setIsProfileOpen(true)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-all duration-200 w-full text-left cursor-pointer group border border-transparent hover:border-slate-100"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#002d62] to-[#1a4d9e] text-xs font-black text-white uppercase shrink-0 shadow-sm overflow-hidden">
-                  {user?.profile_pic_location ? (
-                    <img src={user.profile_pic_location} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    getInitials()
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[13px] font-bold text-slate-800 truncate leading-tight group-hover:text-[#002d62] transition-colors">
-                    {displayName}
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-semibold truncate leading-none mt-0.5">
-                    {getRoleLabel()}
-                  </span>
-                </div>
-                <ChevronRight size={14} className="text-slate-300 shrink-0 group-hover:text-[#002d62] transition-colors" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsProfileOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#002d62] to-[#1a4d9e] text-xs font-black text-white uppercase shrink-0 cursor-pointer shadow-sm hover:shadow-md transition-all hover:scale-105 border-2 border-white overflow-hidden"
-            >
-              {user?.profile_pic_location ? (
-                <img src={user.profile_pic_location} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                getInitials()
-              )}
-            </button>
-          )}
+          <div
+            className={cn(
+              "flex min-h-10 items-center text-slate-600",
+              isSidebarOpen ? "gap-3 px-3" : "justify-center"
+            )}
+            title="Secure healthcare workspace"
+          >
+            <ShieldCheck className="h-[19px] w-[19px] shrink-0 text-slate-500" />
+            {isSidebarOpen && (
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[#111625]">Secure workspace</p>
+                <p className="text-[10px] text-slate-400">Protected session</p>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header Removed as requested */}
+        <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#e2e8f0] bg-white px-5 lg:px-7">
+          <form onSubmit={handleGlobalSearch} className="relative w-full max-w-sm lg:max-w-md">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+            <Globe2
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#0022ff]"
+              strokeWidth={1.8}
+            />
+            <input
+              type="search"
+              value={globalSearch}
+              onChange={(event) => setGlobalSearch(event.target.value)}
+              placeholder="Search leads by name, phone or ID"
+              aria-label="Search leads"
+              className="h-11 w-full rounded-md border border-[#e2e8f0] bg-[#f8f9fa] pl-11 pr-11 text-sm text-[#111625] outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0022ff] focus:bg-white focus:ring-2 focus:ring-[#0022ff]/10"
+            />
+          </form>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <SidebarNotifications isSidebarOpen={false} placement="navbar" />
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="flex h-11 w-11 items-center justify-center border border-transparent transition-colors hover:border-[#e2e8f0] hover:bg-[#f8f9fa]"
+              aria-label={`Open ${displayName} profile`}
+              title={displayName}
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#111625] text-[11px] font-bold uppercase text-white overflow-hidden">
+                {user?.profile_pic_location ? (
+                  <img src={user.profile_pic_location} alt="" className="h-full w-full object-cover" />
+                ) : getInitials()}
+              </div>
+            </button>
+          </div>
+        </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background dark:bg-background p-6 relative">
-          <Outlet />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-5 lg:p-6 relative">
+          <div className="crm-page-frame mx-auto w-full max-w-[1600px]">
+            <Outlet />
+          </div>
         </main>
       </div>
 
@@ -446,7 +467,7 @@ export const MainLayout = () => {
           />
 
           {/* Modal Container */}
-          <div className="bg-white rounded-[24px] w-full max-w-[380px] overflow-hidden border border-slate-100 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-200">
+          <div className="crm-popup bg-white rounded-md w-full max-w-[380px] overflow-hidden border border-slate-200 shadow-2xl relative z-10">
             {/* Title / Close Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-100">
               <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Profile</h3>
@@ -614,7 +635,7 @@ export const MainLayout = () => {
           {/* Modal Container */}
           <form
             onSubmit={handleUpdatePassword}
-            className="bg-white rounded-[24px] w-full max-w-[380px] overflow-hidden border border-slate-100 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-200"
+            className="crm-popup bg-white rounded-md w-full max-w-[380px] overflow-hidden border border-slate-200 shadow-2xl relative z-10"
           >
             {/* Title / Close Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-100">

@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -11,7 +11,7 @@
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
 
-  --color-primary: #063669;
+  --color-primary: #0022ff;
   --color-primary-foreground: hsl(var(--primary-foreground));
 
   --color-secondary: hsl(var(--secondary));
@@ -54,8 +54,8 @@
 @layer base {
   :root {
     /* App Background */
-    --background: 210 18% 96%;
-    --foreground: 204 9% 11%;
+    --background: 0 0% 100%;
+    --foreground: 225 38% 11%;
 
     /* Glass surfaces (navbar, sidebar, cards, inputs, tables) */
     --card: 0 0% 100%;
@@ -65,7 +65,7 @@
     --popover-foreground: 204 9% 11%;
 
     /* Primary (selected nav, headings) */
-    --primary: 211 89% 22%;
+    --primary: 232 100% 50%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary (subtle backgrounds) */
@@ -73,22 +73,22 @@
     --secondary-foreground: 215 19% 35%;
 
     /* Muted (light UI areas) */
-    --muted: 0 0% 100%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 98%;
+    --muted-foreground: 220 12% 40%;
 
     /* Accent (hover states) */
-    --accent: 210 18% 92%;
-    --accent-foreground: 204 9% 11%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 225 38% 11%;
 
     /* Destructive */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     /* Borders & Inputs */
-    --border: 210 16% 85%;
+    --border: 214 32% 91%;
     --border-2: 211 80% 90%;
     --input: 0 0% 100% / 0.7;
-    --ring: 211 89% 22%;
+    --ring: 232 100% 50%;
 
     --source-bg: 224 100% 92%;
     --radius: 0.5rem;
@@ -96,8 +96,8 @@
 
   /* Using SAME theme for dark (as you requested) */
   .dark {
-    --background: 210 18% 96%;
-    --foreground: 204 9% 11%;
+    --background: 0 0% 100%;
+    --foreground: 225 38% 11%;
 
     --card: 0 0% 100%;
     --card-foreground: 204 9% 11%;
@@ -105,25 +105,25 @@
     --popover: 0 0% 100%;
     --popover-foreground: 204 9% 11%;
 
-    --primary: 211 89% 22%;
+    --primary: 232 100% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 100%;
     --secondary-foreground: 215 19% 35%;
 
-    --muted: 0 0% 100%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 98%;
+    --muted-foreground: 220 12% 40%;
 
-    --accent: 210 18% 92%;
-    --accent-foreground: 204 9% 11%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 225 38% 11%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 16% 85%;
+    --border: 214 32% 91%;
     --border-2: 211 80% 90%;
     --input: 0 0% 100% / 0.7;
-    --ring: 211 89% 22%;
+    --ring: 232 100% 50%;
     --source-bg: 224 100% 92%;
   }
 }
@@ -173,4 +173,198 @@
     display: block !important;
     width: 6px !important;
   }
+}
+
+@layer utilities {
+  .clinical-grid {
+    background-color: #ffffff;
+    background-image:
+      linear-gradient(to right, rgb(226 232 240 / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(226 232 240 / 0.55) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .clinical-grid-mask {
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Compatibility bridge for legacy feature-level Tailwind arbitrary colors. */
+[class*="text-[#063669]"],
+[class*="text-[#002d62]"],
+[class*="text-[#00236F]"],
+[class*="text-[#001549]"],
+[class*="text-[#0f3d6b]"] {
+  color: #0022ff !important;
+}
+
+[class*="bg-[#063669]"],
+[class*="bg-[#002d62]"],
+[class*="bg-[#00236F]"],
+[class*="bg-[#001549]"],
+[class*="bg-[#0f3d6b]"] {
+  background-color: #0022ff !important;
+}
+
+[class*="border-[#063669]"],
+[class*="border-[#002d62]"],
+[class*="border-[#00236F]"],
+[class*="border-[#001549]"],
+[class*="border-[#0f3d6b]"] {
+  border-color: #0022ff !important;
+}
+
+/* Restrained corporate geometry across legacy screens. */
+button,
+a[role="button"],
+[role="button"] {
+  border-radius: 0.375rem !important;
+}
+
+div.rounded-xl,
+div.rounded-2xl,
+div.rounded-3xl,
+section.rounded-xl,
+section.rounded-2xl,
+section.rounded-3xl,
+article.rounded-xl,
+article.rounded-2xl,
+article.rounded-3xl,
+div[class*="rounded-["],
+section[class*="rounded-["],
+article[class*="rounded-["],
+[role="dialog"] {
+  border-radius: 0.375rem !important;
+}
+
+button:active,
+a[role="button"]:active,
+[role="button"]:active {
+  transform: none !important;
+}
+
+@keyframes crm-popup-enter {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+    transform: translateY(14px) scale(0.94);
+  }
+  58% { opacity: 1; }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.crm-popup,
+[role="menu"][data-state="open"],
+[role="listbox"][data-state="open"],
+[data-radix-popper-content-wrapper] > * {
+  animation: crm-popup-enter 600ms cubic-bezier(0.19, 1, 0.22, 1) both !important;
+  transform-origin: var(--radix-popover-content-transform-origin, center);
+  will-change: opacity, filter, transform;
+  backface-visibility: hidden;
+}
+
+@keyframes crm-centered-dialog-enter {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+    transform: scale(0.96);
+  }
+  58% { opacity: 1; }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.crm-centered-dialog[data-state="open"] {
+  animation: crm-centered-dialog-enter 600ms cubic-bezier(0.19, 1, 0.22, 1) both !important;
+  will-change: opacity, filter, transform;
+  backface-visibility: hidden;
+}
+
+/* Center dialogs with layout rather than transforms so motion cannot move them. */
+.crm-dialog-viewport {
+  align-items: center;
+  justify-items: center;
+}
+
+.crm-centered-dialog {
+  position: relative !important;
+  inset: auto !important;
+  margin: 0 !important;
+  transform: none;
+}
+
+.crm-centered-dialog.animate-in,
+.crm-centered-dialog.zoom-in-95,
+.fixed.inset-0 .crm-centered-dialog.animate-in {
+  animation: crm-centered-dialog-enter 600ms cubic-bezier(0.19, 1, 0.22, 1) both !important;
+}
+
+.crm-sheet[data-state="open"] {
+  animation: crm-sheet-enter 560ms cubic-bezier(0.19, 1, 0.22, 1) both !important;
+  will-change: opacity, filter;
+}
+
+@keyframes crm-sheet-enter {
+  from { opacity: 0; filter: blur(14px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+/* Existing feature popups already use this utility hook. */
+.animate-in.zoom-in-95:not(.crm-centered-dialog),
+.animate-in[class*="slide-in-"]:not(.crm-centered-dialog),
+.fixed.inset-0 .animate-in:not(.crm-centered-dialog) {
+  animation: crm-popup-enter 600ms cubic-bezier(0.19, 1, 0.22, 1) both !important;
+  transform-origin: center;
+  will-change: opacity, filter, transform;
+  backface-visibility: hidden;
+}
+
+@keyframes crm-popup-exit {
+  from { opacity: 1; filter: blur(0); }
+  to { opacity: 0; filter: blur(5px); }
+}
+
+.animate-out,
+[role="menu"][data-state="closed"],
+[role="listbox"][data-state="closed"] {
+  animation: crm-popup-exit 220ms ease-in both !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-popup,
+  .crm-centered-dialog[data-state="open"],
+  .crm-sheet[data-state="open"],
+  .animate-in.zoom-in-95:not(.crm-centered-dialog),
+  .animate-in[class*="slide-in-"]:not(.crm-centered-dialog),
+  .fixed.inset-0 .animate-in:not(.crm-centered-dialog),
+  [role="menu"][data-state="open"],
+  [role="listbox"][data-state="open"],
+  [data-radix-popper-content-wrapper] > * {
+    animation: none;
+  }
+}
+
+/* One predictable content frame for every authenticated route. */
+.crm-page-frame > * {
+  width: 100%;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
 }

@@ -20,6 +20,11 @@ export const NotificationHandler: React.FC = () => {
     let isMounted = true;
 
     const setupNotifications = async () => {
+      if (authToken === 'demo-session-token') {
+        registeredTokenRef.current = authToken;
+        return;
+      }
+
       if (!isAuthenticated || !authToken) {
         if (registeredTokenRef.current || localStorage.getItem('last_registered_fcm_token')) {
           await deleteCurrentToken();
@@ -96,6 +101,12 @@ export const NotificationHandler: React.FC = () => {
     setupNotifications();
 
     // Safely setup onMessage only if messaging is supported
+    if (authToken === 'demo-session-token') {
+      return () => {
+        isMounted = false;
+      };
+    }
+
     getMessagingInstance().then((messaging) => {
       if (!messaging || !isMounted) return;
 

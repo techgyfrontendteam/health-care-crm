@@ -374,8 +374,9 @@ export const LeadsPage = () => {
     const routeProjectId = location.state?.projectId || searchParams.get("projectId");
     const routeRmId = location.state?.rmId || searchParams.get("rmId");
     const routeEmId = location.state?.emId || searchParams.get("emId");
+    const routeGlobalSearch = location.state?.globalSearch;
 
-    if (routeProjectId || routeRmId || routeEmId) {
+    if (routeProjectId || routeRmId || routeEmId || routeGlobalSearch) {
       const tabKeys = showTabs ? ["0", "1", "all"] : ["all"];
       const updates: Record<string, any> = { page: 1 };
 
@@ -387,6 +388,9 @@ export const LeadsPage = () => {
       }
       if (routeEmId) {
         updates.emIds = [String(routeEmId)];
+      }
+      if (routeGlobalSearch) {
+        updates.search = String(routeGlobalSearch);
       }
 
       tabKeys.forEach((key) => {
@@ -426,11 +430,12 @@ export const LeadsPage = () => {
         changedParams = true;
       }
 
-      if (location.state?.projectId || location.state?.rmId || location.state?.emId) {
+      if (location.state?.projectId || location.state?.rmId || location.state?.emId || location.state?.globalSearch) {
         const nextState = { ...location.state };
         delete nextState.projectId;
         delete nextState.rmId;
         delete nextState.emId;
+        delete nextState.globalSearch;
         navigate(location.pathname, { replace: true, state: nextState });
       } else if (changedParams) {
         setSearchParams(newParams, { replace: true });

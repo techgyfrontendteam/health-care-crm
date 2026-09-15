@@ -21,6 +21,12 @@ import { useLoginMutation, useGetUserRolesMutation, useGetUserByIdMutation } fro
 import { setRoles } from '../store/authSlice';
 import { Eye, EyeOff } from 'lucide-react';
 
+const DEMO_EMAIL = 'demo@techgylink.com';
+const DEMO_PASSWORD = 'Demo@123456';
+const demoLoginEnabled =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+
 const loginSchema = z.object({
   login_id: z.email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
@@ -47,6 +53,27 @@ export const LoginPage = () => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    if (
+      demoLoginEnabled &&
+      values.login_id.toLowerCase() === DEMO_EMAIL &&
+      values.password === DEMO_PASSWORD
+    ) {
+      login('demo-session-token', 'demo-refresh-token', false, {
+        id: 'demo-user',
+        agent_id: 1001,
+        email: DEMO_EMAIL,
+        name: 'Demo Administrator',
+        role_id: 1,
+        project_ids: [],
+        profile_pic_location: null,
+      });
+      dispatch(setRoles([
+        { id: 1, code: 'SADMIN', description: 'Demo administrator' },
+      ]));
+      sessionStorage.setItem('agent_id', '1001');
+      return;
+    }
+
     let response: any;
     try {
       response = await loginApi(values).unwrap();
@@ -128,10 +155,22 @@ export const LoginPage = () => {
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-center">TechGy CRM</CardTitle>
+        <img
+          src="/techgy-link-logo.png"
+          alt="TechGy Link"
+          className="mx-auto mb-4 h-14 w-auto max-w-[240px] object-contain"
+        />
+        <CardTitle className="text-2xl font-bold tracking-tight text-center text-[#111625]">Health Care CRM</CardTitle>
         <CardDescription className="text-center">
           Enter your email and password to login
         </CardDescription>
+        {demoLoginEnabled && (
+          <div className="mt-4 rounded-lg border border-[#e2e8f0] bg-[#f8f9fa] p-3 text-left text-xs leading-5 text-slate-600">
+            <p className="font-semibold text-[#111625]">Demo access</p>
+            <p>Email: {DEMO_EMAIL}</p>
+            <p>Password: {DEMO_PASSWORD}</p>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>

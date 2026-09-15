@@ -11,7 +11,6 @@ export const leadStatusOptions = [
   { value: "booking_done", label: "Booking Done" },
 ];
 
-// Proportional dummy questions based on lead status
 export const dummyQuestionsMap: Record<string, string[]> = {
   new_lead: [
     "Did the agent greet the customer professionally?",
