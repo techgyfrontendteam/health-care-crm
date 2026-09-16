@@ -20,10 +20,13 @@ export const AuthLayout = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-4">
+    <div className="clinical-grid relative min-h-screen flex items-center justify-center bg-white px-4 pb-16">
       <div className="w-full max-w-md">
         <Outlet />
       </div>
+      <footer className="absolute inset-x-0 bottom-0 border-t border-[#e2e8f0] bg-white/90 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm">
+        © {new Date().getFullYear()} TechGy Link. All rights reserved.
+      </footer>
     </div>
   );
 };

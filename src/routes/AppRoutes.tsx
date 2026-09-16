@@ -4,6 +4,7 @@ import { PublicRoutes } from './PublicRoutes';
 import { PrivateRoutes } from './PrivateRoutes';
 import { SetPasswordLayout } from '../layouts/SetPasswordLayout';
 import { ScrollToTop } from '../shared/components/ScrollToTop/ScrollToTop';
+import { MotionOrchestrator } from '../shared/components/motion/MotionOrchestrator';
 
 const SetPasswordPage = React.lazy(() => import('../features/auth/pages/SetPasswordPage').then(m => ({ default: m.SetPasswordPage })));
 
@@ -12,6 +13,7 @@ export const AppRoutes = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <MotionOrchestrator />
       <Suspense fallback={<div className="flex h-screen items-center justify-center text-zinc-500">Loading...</div>}>
         <Routes>
           {PublicRoutes}

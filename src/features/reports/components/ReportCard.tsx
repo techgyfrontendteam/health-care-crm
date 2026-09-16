@@ -31,6 +31,7 @@ const iconMap: Record<number, IconConfig> = {
   100: { src: "", fallback: IndianRupee },
   101: { src: "", fallback: Stethoscope },
   102: { src: "", fallback: Building2 },
+  103: { src: "", fallback: IndianRupee },
 };
 
 export const ReportCard = ({ report }: ReportCardProps) => {
@@ -65,12 +66,12 @@ export const ReportCard = ({ report }: ReportCardProps) => {
           src={iconConfig.src}
           alt={report.title}
           onError={() => setImageError(true)}
-          className="w-[18px] h-[18px] object-contain transition-transform duration-300 group-hover:scale-110"
+          className="w-[22px] h-[22px] object-contain transition-transform duration-300 group-hover:scale-110"
         />
       );
     }
     const FallbackIcon = iconConfig.fallback;
-    return <FallbackIcon className="w-[18px] h-[18px] transition-transform duration-300 group-hover:scale-110" />;
+    return <FallbackIcon className="w-[22px] h-[22px] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.8} />;
   };
 
   return (
@@ -83,9 +84,8 @@ export const ReportCard = ({ report }: ReportCardProps) => {
     >
       {/* Icon Container */}
       <div 
-        className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center 
-          text-zinc-600 dark:text-zinc-400 group-hover:bg-[#0f3d6b]/10 group-hover:text-[#0f3d6b] 
-          dark:group-hover:bg-[#0f3d6b]/20 dark:group-hover:text-blue-400 transition-all duration-300 ease-out"
+        className="w-12 h-12 rounded-md bg-[#0022ff] flex items-center justify-center border border-[#0022ff]
+          text-white group-hover:bg-[#001bd1] group-hover:text-white transition-colors duration-300 ease-out"
       >
         {renderIcon()}
       </div>

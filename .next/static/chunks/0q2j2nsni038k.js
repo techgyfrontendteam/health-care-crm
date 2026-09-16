@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,4174,e=>{"use strict";var i=e.i(43476),s=e.i(51686),o=e.i(62628);e.s(["RmDashboardPage",0,()=>{let{user:e}=(0,s.usePermissions)(),r=e?.id?Number(e.id):void 0;return(0,i.jsx)(o.RelationshipManagersPage,{lockedRmId:r})}])}]);

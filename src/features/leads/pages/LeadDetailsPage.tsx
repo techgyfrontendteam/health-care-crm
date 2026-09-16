@@ -24,7 +24,7 @@ import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiS
 import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
-import { formatDate, getProjectStatusOptions } from "../../../utils";
+import { formatDate, getProjectStatusOptions, cn } from "../../../utils";
 import type { Lead } from "../types";
 
 const formatDateTimeForTataTele = (date: Date) => {
@@ -1147,11 +1147,11 @@ export const LeadDetailsPage = () => {
           {/* ═══════════════════════════════════════════════ */}
           {/* CARD 4: Activity / Calls / Chats / Visits       */}
           {/* ═══════════════════════════════════════════════ */}
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-none overflow-hidden" style={{ borderRadius: 0 }}>
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col">
               {/* Tab triggers */}
               <div className="border-b border-zinc-200 dark:border-zinc-800">
-                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6">
+                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6" style={{ borderRadius: 0 }}>
                   {["activity", "calls", "chats", "visits", "surgeries", "enquiries"].map((tab) => {
                     const label =
                       tab === "visits"
@@ -1159,22 +1159,20 @@ export const LeadDetailsPage = () => {
                         : tab === "surgeries"
                         ? "Surgeries"
                         : tab.charAt(0).toUpperCase() + tab.slice(1);
+                    const isActive = activeTab === tab;
 
                     return (
                       <TabsTrigger
                         key={tab}
                         value={tab}
-                        className="
-                          py-4 text-sm font-medium capitalize rounded-none border-b-2 border-transparent
-                          text-zinc-400
-                          data-[state=active]:text-[#0f3d6b]
-                          data-[state=active]:border-b-[#0f3d6b]
-                          data-[state=active]:font-semibold
-                          data-[state=active]:shadow-none
-                          transition-all
-                          flex items-center justify-center gap-1
-                          cursor-pointer
-                        "
+                        style={{ borderRadius: 0 }}
+                        className={cn(
+                          "py-4 text-sm font-medium capitalize rounded-none border-b-2 transition-all flex items-center justify-center gap-1 cursor-pointer -mb-px",
+                          isActive
+                            ? "text-[#0022ff] border-b-[#0022ff] font-semibold"
+                            : "text-zinc-500 border-transparent hover:text-zinc-800",
+                          "data-[state=active]:text-[#0022ff] data-[state=active]:border-b-[#0022ff] data-[state=active]:font-semibold data-[state=active]:shadow-none"
+                        )}
                       >
                         {label}
                       </TabsTrigger>

@@ -13,9 +13,10 @@ const initialNotifications: Array<{
 
 interface SidebarNotificationsProps {
   isSidebarOpen: boolean;
+  placement?: "sidebar" | "navbar";
 }
 
-export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSidebarOpen }) => {
+export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSidebarOpen, placement = "sidebar" }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
 
@@ -46,24 +47,36 @@ export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSi
   }, []);
 
   return (
-    <div className={cn("flex relative", isSidebarOpen ? "px-1 justify-start" : "justify-center")}>
+    <div className={cn("flex relative", placement === "sidebar" && "w-full", isSidebarOpen ? "justify-start" : "justify-center")}>
 
-      <div className="relative">
+      <div className={cn("relative", placement === "sidebar" && "w-full")}>
         <button
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-          className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors cursor-pointer relative flex items-center justify-center"
+          className={cn(
+            "relative flex items-center text-slate-600 hover:text-[#111625] transition-colors cursor-pointer",
+            placement === "navbar"
+              ? "h-9 w-9 justify-center rounded-full border border-[#e2e8f0] hover:bg-[#f8f9fa] hover:border-slate-300"
+              : cn("h-11 hover:bg-[#f8f9fa]", isSidebarOpen ? "w-full gap-3 px-3 justify-start" : "w-11 justify-center")
+          )}
+          style={placement === "navbar" ? { borderRadius: "9999px" } : undefined}
+          aria-label="Notifications"
         >
           <Bell size={18} />
+          {isSidebarOpen && placement !== "navbar" && <span className="text-sm font-medium">Notifications</span>}
           {notifications.some(n => n.unread) && (
-            <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" style={{ borderRadius: "9999px" }}></span>
           )}
         </button>
         
         {/* Notifications Popover */}
         {isNotificationsOpen && (
           <div className={cn(
-            "fixed bottom-6 bg-white rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 z-[110] overflow-hidden flex flex-col cursor-default animate-in fade-in zoom-in-95 duration-200",
-            isSidebarOpen ? "left-[270px] w-[350px]" : "left-[80px] w-[350px]"
+            "crm-popup bg-white rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 z-[110] overflow-hidden flex flex-col cursor-default",
+            placement === "navbar"
+              ? "absolute right-0 top-12 w-[min(350px,calc(100vw-2rem))]"
+              : isSidebarOpen
+                ? "fixed bottom-6 left-[252px] w-[350px]"
+                : "fixed bottom-6 left-[88px] w-[350px]"
           )} onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
@@ -74,6 +87,13 @@ export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSi
             </div>
             {/* List */}
             <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
+              {notifications.length === 0 && (
+                <div className="px-4 py-10 text-center">
+                  <Bell className="mx-auto mb-3 h-5 w-5 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-600">No notifications yet</p>
+                  <p className="mt-1 text-[11px] text-slate-400">New care activity will appear here.</p>
+                </div>
+              )}
               {notifications.map(n => (
                 <div 
                   key={n.id} 

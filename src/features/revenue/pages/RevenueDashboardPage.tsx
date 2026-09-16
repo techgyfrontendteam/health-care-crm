@@ -7,6 +7,13 @@ import { DoctorRevenueTable } from "../components/DoctorRevenueTable";
 import { RevenueTransactionTable } from "../components/RevenueTransactionTable";
 import { BranchCityDetailsCard } from "../components/BranchCityDetailsCard";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import {
   revenueMetricsData,
   monthlyRevenueTrendsData,
   doctorRevenueData,
@@ -135,20 +142,31 @@ export const RevenueDashboardPage: React.FC = () => {
             </div>
 
             {/* Date Filter */}
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="h-11 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-sm"
-            >
-              <option value="This Month">This Month (Aug 2026)</option>
-              <option value="Last Month">Last Month (Jul 2026)</option>
-              <option value="Q3 2026">Q3 2026</option>
-              <option value="YTD 2026">Year-to-Date 2026</option>
-            </select>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="!w-auto inline-flex items-center justify-start gap-1.5 px-4 !rounded-lg h-11 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-xs hover:border-zinc-300 transition-colors cursor-pointer [&>svg]:opacity-60 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
+                <SelectValue placeholder="This Month (Aug 2026)">
+                  {dateFilter === "This Month"
+                    ? "This Month (Aug 2026)"
+                    : dateFilter === "Last Month"
+                    ? "Last Month (Jul 2026)"
+                    : dateFilter === "Q3 2026"
+                    ? "Q3 2026"
+                    : dateFilter === "YTD 2026"
+                    ? "Year-to-Date 2026"
+                    : dateFilter}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-zinc-900 z-50 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg min-w-[190px]">
+                <SelectItem value="This Month" className="text-xs font-semibold cursor-pointer">This Month (Aug 2026)</SelectItem>
+                <SelectItem value="Last Month" className="text-xs font-semibold cursor-pointer">Last Month (Jul 2026)</SelectItem>
+                <SelectItem value="Q3 2026" className="text-xs font-semibold cursor-pointer">Q3 2026</SelectItem>
+                <SelectItem value="YTD 2026" className="text-xs font-semibold cursor-pointer">Year-to-Date 2026</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Button
               onClick={handleExport}
-              className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-2xl h-11 px-6 font-bold text-sm shadow-sm"
+              className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-lg h-11 px-6 font-bold text-sm shadow-sm"
             >
               <FileSpreadsheet className="h-4 w-4" />
               Export Report

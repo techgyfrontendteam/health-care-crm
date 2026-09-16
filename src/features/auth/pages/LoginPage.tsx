@@ -128,7 +128,12 @@ export const LoginPage = () => {
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-center">TechGy CRM</CardTitle>
+        <img
+          src="/techgy-link-logo.png"
+          alt="TechGy Link"
+          className="mx-auto mb-4 h-14 w-auto max-w-[240px] object-contain"
+        />
+        <CardTitle className="text-center text-2xl font-bold tracking-tight text-[#0f1a34]">Health Care CRM</CardTitle>
         <CardDescription className="text-center">
           Enter your email and password to login
         </CardDescription>

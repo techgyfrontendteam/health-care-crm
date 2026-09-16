@@ -1,0 +1,1997 @@
+(globalThis["TURBOPACK"] || (globalThis["TURBOPACK"] = [])).push([typeof document === "object" ? document.currentScript : undefined,
+"[project]/src/app/api/baseApi.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "baseApi",
+    ()=>baseApi,
+    "baseQueryWithReauth",
+    ()=>baseQueryWithReauth
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$query$2f$rtk$2d$query$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@reduxjs/toolkit/dist/query/rtk-query.modern.mjs [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$store$2f$authSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/auth/store/authSlice.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/shared/utils/localStorage.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$async$2d$mutex$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/async-mutex/index.mjs [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$query$2f$react$2f$rtk$2d$query$2d$react$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/@reduxjs/toolkit/dist/query/react/rtk-query-react.modern.mjs [app-client] (ecmascript) <locals>");
+;
+;
+;
+;
+// Create a new mutex
+const mutex = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$async$2d$mutex$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Mutex"]();
+const DEMO_TOKEN = 'demo-session-token';
+const baseQuery = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$query$2f$rtk$2d$query$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["fetchBaseQuery"])({
+    baseUrl: ("TURBOPACK compile-time value", "https://upload-uncouple-rephrase.ngrok-free.dev") || 'https://y7lidobvl7.execute-api.ap-south-1.amazonaws.com',
+    prepareHeaders: (headers, { getState })=>{
+        const stateToken = getState()?.auth?.token;
+        const localToken = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get('crm_token', null) || localStorage.getItem('token') || localStorage.getItem('crm_token');
+        const token = stateToken || localToken;
+        if (token) {
+            headers.set('authorization', `Bearer ${token}`);
+        }
+        return headers;
+    }
+});
+const baseQueryWithReauth = async (args, api, extraOptions)=>{
+    // Wait until the mutex is available without locking it
+    await mutex.waitForUnlock();
+    let result = await baseQuery(args, api, extraOptions);
+    const url = typeof args === 'string' ? args : args.url;
+    const activeToken = api.getState()?.auth?.token;
+    const isDemoSession = activeToken === DEMO_TOKEN;
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refreshToken') || url.includes('/auth/forgotPassword');
+    // Demo sessions intentionally have no backend-issued JWT. API failures may
+    // render empty/error states, but must never destroy the local demo session.
+    if (result.error && result.error.status === 401 && !isAuthEndpoint && !isDemoSession) {
+        // Checking whether the mutex is locked
+        if (!mutex.isLocked()) {
+            const release = await mutex.acquire();
+            try {
+                const refreshToken = api.getState().auth.refreshToken;
+                if (refreshToken) {
+                    const refreshResult = await baseQuery({
+                        url: '/auth/refreshToken',
+                        method: 'POST',
+                        body: {
+                            token: refreshToken
+                        }
+                    }, api, extraOptions);
+                    if (refreshResult.data) {
+                        const data = refreshResult.data;
+                        // Store the new tokens
+                        api.dispatch((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$store$2f$authSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setCredentials"])({
+                            user: api.getState().auth.user,
+                            token: data.token,
+                            refreshToken: data.refreshToken || refreshToken,
+                            isFirstLogin: api.getState().auth.isFirstLogin
+                        }));
+                        // Retry the initial query
+                        result = await baseQuery(args, api, extraOptions);
+                    } else {
+                        api.dispatch((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$store$2f$authSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["logoutUser"])());
+                        if (window.location.pathname !== '/login') {
+                            window.location.href = '/login';
+                        }
+                    }
+                } else {
+                    api.dispatch((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$store$2f$authSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["logoutUser"])());
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login';
+                    }
+                }
+            } finally{
+                release();
+            }
+        } else {
+            // Wait until the mutex is available without locking it
+            await mutex.waitForUnlock();
+            result = await baseQuery(args, api, extraOptions);
+        }
+    }
+    return result;
+};
+;
+const baseApi = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$query$2f$react$2f$rtk$2d$query$2d$react$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createApi"])({
+    reducerPath: 'baseApi',
+    baseQuery: baseQueryWithReauth,
+    tagTypes: [
+        'Users',
+        'Leads',
+        'Customers',
+        'Master',
+        'FollowUps',
+        'Appointments',
+        'Doctors',
+        'Templates',
+        'Telephony'
+    ],
+    endpoints: ()=>({})
+});
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/auth/store/authSlice.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "default",
+    ()=>__TURBOPACK__default__export__,
+    "logoutUser",
+    ()=>logoutUser,
+    "setCredentials",
+    ()=>setCredentials,
+    "setCurrentRole",
+    ()=>setCurrentRole,
+    "setPasswordSuccess",
+    ()=>setPasswordSuccess,
+    "setRoles",
+    ()=>setRoles,
+    "updateToken",
+    ()=>updateToken,
+    "updateUserProfile",
+    ()=>updateUserProfile
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/@reduxjs/toolkit/dist/redux-toolkit.modern.mjs [app-client] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/shared/utils/localStorage.ts [app-client] (ecmascript)");
+;
+;
+// Keys for localStorage
+const STORAGE_KEYS = {
+    USER: 'crm_user',
+    TOKEN: 'crm_token',
+    REFRESH_TOKEN: 'crm_refresh_token',
+    ROLES: 'crm_roles',
+    CURRENT_ROLE: 'crm_current_role',
+    IS_FIRST_LOGIN: 'crm_is_first_login'
+};
+const initialState = {
+    user: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.USER, null),
+    token: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.TOKEN, null),
+    refreshToken: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.REFRESH_TOKEN, null),
+    roles: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.ROLES, []),
+    currentRole: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.CURRENT_ROLE, null),
+    isAuthenticated: !!__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.TOKEN, null),
+    isFirstLogin: Boolean(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].get(STORAGE_KEYS.IS_FIRST_LOGIN, false))
+};
+const authSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createSlice"])({
+    name: 'auth',
+    initialState,
+    reducers: {
+        setCredentials: (state, action)=>{
+            const { user, token, refreshToken, isFirstLogin } = action.payload;
+            state.user = user;
+            state.token = token;
+            state.refreshToken = refreshToken;
+            state.isAuthenticated = true;
+            state.isFirstLogin = !!isFirstLogin;
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.USER, user);
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.TOKEN, token);
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.IS_FIRST_LOGIN, !!isFirstLogin);
+        },
+        updateUserProfile: (state, action)=>{
+            if (state.user) {
+                state.user = {
+                    ...state.user,
+                    ...action.payload
+                };
+                __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.USER, state.user);
+            }
+        },
+        setRoles: (state, action)=>{
+            state.roles = action.payload;
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.ROLES, action.payload);
+            if (action.payload.length > 0) {
+                const matchingRole = action.payload.find((r)=>r.id === state.user?.role_id);
+                const roleToSet = matchingRole || action.payload[0];
+                state.currentRole = roleToSet;
+                __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.CURRENT_ROLE, roleToSet);
+            }
+        },
+        setCurrentRole: (state, action)=>{
+            state.currentRole = action.payload;
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.CURRENT_ROLE, action.payload);
+        },
+        updateToken: (state, action)=>{
+            state.token = action.payload.token;
+            state.refreshToken = action.payload.refreshToken;
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.TOKEN, action.payload.token);
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.REFRESH_TOKEN, action.payload.refreshToken);
+        },
+        setPasswordSuccess: (state)=>{
+            state.isFirstLogin = false;
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].set(STORAGE_KEYS.IS_FIRST_LOGIN, false);
+        },
+        logoutUser: (state)=>{
+            state.user = null;
+            state.token = null;
+            state.refreshToken = null;
+            state.isAuthenticated = false;
+            state.roles = [];
+            state.currentRole = null;
+            state.isFirstLogin = false;
+            // Clear ALL localStorage and sessionStorage
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$utils$2f$localStorage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["storage"].clear();
+            try {
+                sessionStorage.removeItem('agent_id');
+            } catch (e) {
+                console.error('Error clearing sessionStorage:', e);
+            }
+        }
+    }
+});
+const { setCredentials, updateUserProfile, setRoles, setCurrentRole, updateToken, setPasswordSuccess, logoutUser } = authSlice.actions;
+const __TURBOPACK__default__export__ = authSlice.reducer;
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/master-data/api/manageMasterDataSlice.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "manageMasterDataSlice",
+    ()=>manageMasterDataSlice,
+    "useCreateContentTypeMutation",
+    ()=>useCreateContentTypeMutation,
+    "useCreateLeadFollowUpTypeMutation",
+    ()=>useCreateLeadFollowUpTypeMutation,
+    "useCreateLeadStatusMutation",
+    ()=>useCreateLeadStatusMutation,
+    "useCreateObjectionsMutation",
+    ()=>useCreateObjectionsMutation,
+    "useCreateProjectContentsMutation",
+    ()=>useCreateProjectContentsMutation,
+    "useCreateProjectScoringRulesMutation",
+    ()=>useCreateProjectScoringRulesMutation,
+    "useCreateProjectWiseLeadStatusMutation",
+    ()=>useCreateProjectWiseLeadStatusMutation,
+    "useCreateTemplateMutation",
+    ()=>useCreateTemplateMutation,
+    "useDeleteProjectContentsMutation",
+    ()=>useDeleteProjectContentsMutation,
+    "useDeleteTemplateMutation",
+    ()=>useDeleteTemplateMutation,
+    "useGetProjectBasedScoringRulesQuery",
+    ()=>useGetProjectBasedScoringRulesQuery,
+    "useGetProjectWiseContentsMutation",
+    ()=>useGetProjectWiseContentsMutation,
+    "useGetProjectWiseTemplatesMutation",
+    ()=>useGetProjectWiseTemplatesMutation,
+    "useSendWhatsappMessageMutation",
+    ()=>useSendWhatsappMessageMutation,
+    "useUpdateContentTypeMutation",
+    ()=>useUpdateContentTypeMutation,
+    "useUpdateLeadFollowUpTypeMutation",
+    ()=>useUpdateLeadFollowUpTypeMutation,
+    "useUpdateLeadStatusMutation",
+    ()=>useUpdateLeadStatusMutation,
+    "useUpdateObjectionsMutation",
+    ()=>useUpdateObjectionsMutation,
+    "useUpdateProjectScoringRulesMutation",
+    ()=>useUpdateProjectScoringRulesMutation,
+    "useUpdateTemplateMutation",
+    ()=>useUpdateTemplateMutation
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/api/baseApi.ts [app-client] (ecmascript)");
+;
+const manageMasterDataSlice = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["baseApi"].injectEndpoints({
+    endpoints: (builder)=>({
+            createLeadStatus: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createLeadStatus',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            createProjectWiseLeadStatus: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createProjectWiseLeadStatus',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            updateLeadStatus: builder.mutation({
+                query: (body)=>({
+                        url: '/master/updateLeadStatus',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            createContentType: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createContentType',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            updateContentType: builder.mutation({
+                query: (body)=>({
+                        url: '/master/updateContentType',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            createLeadFollowUpType: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createLeadFollowUpType',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            updateLeadFollowUpType: builder.mutation({
+                query: (body)=>({
+                        url: '/master/updateLeadFollowUpType',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            createObjections: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createObjections',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            updateObjections: builder.mutation({
+                query: (body)=>({
+                        url: '/master/updateObjections',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            getProjectBasedScoringRules: builder.query({
+                query: ()=>({
+                        url: '/master/getProjectBasedscoringRules',
+                        method: 'POST',
+                        body: {}
+                    }),
+                providesTags: [
+                    'Master'
+                ]
+            }),
+            createProjectScoringRules: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createProjectScoringRules',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            updateProjectScoringRules: builder.mutation({
+                query: (body)=>({
+                        url: '/master/updateProjectScoringRules',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            createProjectContents: builder.mutation({
+                query: (body)=>({
+                        url: '/master/createProjectContents',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            deleteProjectContents: builder.mutation({
+                query: (body)=>({
+                        url: '/master/deleteProjectContents',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Master'
+                ]
+            }),
+            getProjectWiseContents: builder.mutation({
+                query: (body)=>({
+                        url: '/master/getProjectWiseContents',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            sendWhatsappMessage: builder.mutation({
+                query: (body)=>({
+                        url: '/master/send_whatsapp_message',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            getProjectWiseTemplates: builder.mutation({
+                query: (body)=>({
+                        url: '/templates/getProjectWiseTemplates',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            createTemplate: builder.mutation({
+                query: (body)=>({
+                        url: '/templates/createTemplate',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Templates'
+                ]
+            }),
+            updateTemplate: builder.mutation({
+                query: (body)=>({
+                        url: '/templates/updateTemplate',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Templates'
+                ]
+            }),
+            deleteTemplate: builder.mutation({
+                query: (body)=>({
+                        url: '/templates/deleteTemplate',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Templates'
+                ]
+            })
+        })
+});
+const { useCreateLeadStatusMutation, useCreateProjectWiseLeadStatusMutation, useUpdateLeadStatusMutation, useCreateContentTypeMutation, useUpdateContentTypeMutation, useCreateLeadFollowUpTypeMutation, useUpdateLeadFollowUpTypeMutation, useCreateObjectionsMutation, useUpdateObjectionsMutation, useGetProjectBasedScoringRulesQuery, useCreateProjectScoringRulesMutation, useUpdateProjectScoringRulesMutation, useCreateProjectContentsMutation, useDeleteProjectContentsMutation, useGetProjectWiseContentsMutation, useSendWhatsappMessageMutation, useGetProjectWiseTemplatesMutation, useCreateTemplateMutation, useUpdateTemplateMutation, useDeleteTemplateMutation } = manageMasterDataSlice;
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/master-data/pages/ProjectScorePage.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "ProjectScorePage",
+    ()=>ProjectScorePage
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$router$2f$dist$2f$development$2f$chunk$2d$LFPYN7LY$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/react-router/dist/development/chunk-LFPYN7LY.mjs [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/arrow-left.js [app-client] (ecmascript) <export default as ArrowLeft>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/plus.js [app-client] (ecmascript) <export default as Plus>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/search.js [app-client] (ecmascript) <export default as Search>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-down.js [app-client] (ecmascript) <export default as ChevronDown>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-client] (ecmascript) <export default as X>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/sonner/dist/index.mjs [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$hooks$2f$useMasterDataLookup$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/shared/hooks/useMasterDataLookup.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/master-data/api/manageMasterDataSlice.ts [app-client] (ecmascript)");
+;
+var _s = __turbopack_context__.k.signature();
+;
+;
+;
+;
+;
+;
+const ProjectScorePage = ()=>{
+    _s();
+    const navigate = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$router$2f$dist$2f$development$2f$chunk$2d$LFPYN7LY$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useNavigate"])();
+    const { masterData } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$hooks$2f$useMasterDataLookup$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMasterDataLookup"])();
+    const { data: apiRulesData } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetProjectBasedScoringRulesQuery"])();
+    const [createProjectScoringRules] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCreateProjectScoringRulesMutation"])();
+    const [updateProjectScoringRules] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUpdateProjectScoringRulesMutation"])();
+    const projects = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[projects]": ()=>{
+            if (!masterData?.projects) return [];
+            return masterData.projects.map({
+                "ProjectScorePage.useMemo[projects]": (p)=>({
+                        id: p.id.toString(),
+                        name: p.description || `Project ${p.id}`
+                    })
+            }["ProjectScorePage.useMemo[projects]"]);
+        }
+    }["ProjectScorePage.useMemo[projects]"], [
+        masterData
+    ]);
+    const projectScores = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[projectScores]": ()=>{
+            const scores = {};
+            // Safely extract the list of rules
+            const rawList = Array.isArray(apiRulesData) ? apiRulesData : apiRulesData && Array.isArray(apiRulesData.data) ? apiRulesData.data : null;
+            if (rawList) {
+                rawList.forEach({
+                    "ProjectScorePage.useMemo[projectScores]": (item)=>{
+                        if (!item) return;
+                        // Case 1: Grouped structure (each item represents a project with a 'rules' array)
+                        if (item.project_id !== undefined && Array.isArray(item.rules)) {
+                            const projectIdStr = item.project_id.toString();
+                            scores[projectIdStr] = item.rules.map({
+                                "ProjectScorePage.useMemo[projectScores]": (r, index)=>({
+                                        id: r.masterProjectScoringRulesId ? r.masterProjectScoringRulesId.toString() : Date.now().toString() + index,
+                                        category: r.rule || "",
+                                        description: r.rule || "",
+                                        marks: typeof r.points === 'number' ? r.points : Number(r.points || 0)
+                                    })
+                            }["ProjectScorePage.useMemo[projectScores]"]);
+                        } else if (item.project_id !== undefined) {
+                            const projectIdStr = item.project_id.toString();
+                            if (!scores[projectIdStr]) {
+                                scores[projectIdStr] = [];
+                            }
+                            const ruleId = item.masterProjectScoringRulesId || item.id;
+                            scores[projectIdStr].push({
+                                id: ruleId ? ruleId.toString() : Date.now().toString() + Math.random().toString(),
+                                category: item.rule || item.desc || "",
+                                description: item.rule || item.desc || "",
+                                marks: typeof item.points === 'number' ? item.points : typeof item.score === 'number' ? item.score : Number(item.points || item.score || 0)
+                            });
+                        }
+                    }
+                }["ProjectScorePage.useMemo[projectScores]"]);
+            }
+            return scores;
+        }
+    }["ProjectScorePage.useMemo[projectScores]"], [
+        apiRulesData
+    ]);
+    // Filter & Selection States
+    const [selectedProjectId, setSelectedProjectIdState] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        "ProjectScorePage.useState": ()=>{
+            return localStorage.getItem("crm_selected_project_id") || "";
+        }
+    }["ProjectScorePage.useState"]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "ProjectScorePage.useEffect": ()=>{
+            if (projects.length > 0) {
+                const isValid = projects.some({
+                    "ProjectScorePage.useEffect.isValid": (p)=>p.id === selectedProjectId
+                }["ProjectScorePage.useEffect.isValid"]);
+                if (!selectedProjectId || !isValid) {
+                    setSelectedProjectId(projects[0].id);
+                }
+            }
+        }
+    }["ProjectScorePage.useEffect"], [
+        projects,
+        selectedProjectId
+    ]);
+    const setSelectedProjectId = (id)=>{
+        setSelectedProjectIdState(id);
+        localStorage.setItem("crm_selected_project_id", id);
+    };
+    const [searchQuery, setSearchQuery] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [isProjectDropdownOpen, setIsProjectDropdownOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    // Modal States
+    const [isModalOpen, setIsModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [modalMode, setModalMode] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("add");
+    const [editingScoreId, setEditingScoreId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [categoryName, setCategoryName] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [shortDescription, setShortDescription] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [scoreMarks, setScoreMarks] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
+    // Find label of active project
+    const selectedProjectLabel = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[selectedProjectLabel]": ()=>{
+            const proj = projects.find({
+                "ProjectScorePage.useMemo[selectedProjectLabel].proj": (p)=>p.id === selectedProjectId
+            }["ProjectScorePage.useMemo[selectedProjectLabel].proj"]);
+            return proj ? proj.name : "Select Project";
+        }
+    }["ProjectScorePage.useMemo[selectedProjectLabel]"], [
+        selectedProjectId,
+        projects
+    ]);
+    // Current project's active criteria list
+    const activeScores = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[activeScores]": ()=>{
+            if (!selectedProjectId) return [];
+            return projectScores[selectedProjectId] || [];
+        }
+    }["ProjectScorePage.useMemo[activeScores]"], [
+        selectedProjectId,
+        projectScores
+    ]);
+    // Calculation of allocated marks
+    const totalAllocatedMarks = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[totalAllocatedMarks]": ()=>{
+            return activeScores.reduce({
+                "ProjectScorePage.useMemo[totalAllocatedMarks]": (sum, item)=>sum + item.marks
+            }["ProjectScorePage.useMemo[totalAllocatedMarks]"], 0);
+        }
+    }["ProjectScorePage.useMemo[totalAllocatedMarks]"], [
+        activeScores
+    ]);
+    const remainingMarks = 100 - totalAllocatedMarks;
+    // Maximum marks available for current modal edit/add operation
+    const maxAvailableMarks = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[maxAvailableMarks]": ()=>{
+            if (modalMode === "add") {
+                return remainingMarks;
+            } else {
+                const currentItem = activeScores.find({
+                    "ProjectScorePage.useMemo[maxAvailableMarks].currentItem": (s)=>s.id === editingScoreId
+                }["ProjectScorePage.useMemo[maxAvailableMarks].currentItem"]);
+                const otherTotal = totalAllocatedMarks - (currentItem ? currentItem.marks : 0);
+                return 100 - otherTotal;
+            }
+        }
+    }["ProjectScorePage.useMemo[maxAvailableMarks]"], [
+        modalMode,
+        activeScores,
+        editingScoreId,
+        remainingMarks,
+        totalAllocatedMarks
+    ]);
+    // Dynamically calculated remaining marks as the user types
+    const dynamicAvailableMarks = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[dynamicAvailableMarks]": ()=>{
+            return maxAvailableMarks - (Number(scoreMarks) || 0);
+        }
+    }["ProjectScorePage.useMemo[dynamicAvailableMarks]"], [
+        maxAvailableMarks,
+        scoreMarks
+    ]);
+    // Open Modal for adding a score rule
+    const openAddModal = ()=>{
+        if (!selectedProjectId) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("Please select a project first.");
+            return;
+        }
+        if (remainingMarks <= 0) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("No marks remaining. Edit or delete an existing rule first.");
+            return;
+        }
+        setModalMode("add");
+        setCategoryName("");
+        setShortDescription("");
+        setScoreMarks(Math.min(remainingMarks, 10)); // Default to remaining marks or 10
+        setIsModalOpen(true);
+    };
+    // Open Modal for editing an existing score rule
+    const openEditModal = (score)=>{
+        setModalMode("edit");
+        setEditingScoreId(score.id);
+        setCategoryName(score.category);
+        setShortDescription(score.description);
+        setScoreMarks(score.marks);
+        setIsModalOpen(true);
+    };
+    // Handle Add/Edit Form Submit
+    const handleModalSubmit = async (e)=>{
+        e.preventDefault();
+        if (!categoryName.trim()) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("Please enter a category name.");
+            return;
+        }
+        if (!shortDescription.trim()) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("Please enter a short description.");
+            return;
+        }
+        if (scoreMarks <= 0) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("Marks must be greater than 0.");
+            return;
+        }
+        if (scoreMarks > maxAvailableMarks) {
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error(`Cannot allocate more than ${maxAvailableMarks} marks for this category.`);
+            return;
+        }
+        try {
+            const combinedDesc = `${categoryName.trim()}||${shortDescription.trim()}`;
+            if (modalMode === "add") {
+                await createProjectScoringRules({
+                    project_id: Number(selectedProjectId),
+                    desc: combinedDesc,
+                    score: Number(scoreMarks),
+                    user_id: null
+                }).unwrap();
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].success("Rule created successfully.");
+            } else {
+                await updateProjectScoringRules({
+                    id: Number(editingScoreId),
+                    project_id: Number(selectedProjectId),
+                    desc: combinedDesc,
+                    score: Number(scoreMarks),
+                    user_id: null
+                }).unwrap();
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].success("Rule updated successfully.");
+            }
+            setIsModalOpen(false);
+        } catch (err) {
+            console.error("Modal Submit Error:", err);
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sonner$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].error("Failed to save changes. Please try again.");
+        }
+    };
+    // Computed filtered list
+    const filteredScores = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ProjectScorePage.useMemo[filteredScores]": ()=>{
+            return activeScores.filter({
+                "ProjectScorePage.useMemo[filteredScores]": (s)=>s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase())
+            }["ProjectScorePage.useMemo[filteredScores]"]);
+        }
+    }["ProjectScorePage.useMemo[filteredScores]"], [
+        activeScores,
+        searchQuery
+    ]);
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-6 animate-in fade-in duration-300 relative",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "flex items-center justify-between",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: ()=>navigate("/master-data"),
+                        className: "flex items-center gap-[8px] font-['Plus_Jakarta_Sans'] font-bold text-[24px] leading-[28px] tracking-[-0.5px] text-[#001549] dark:text-blue-400 hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-0 h-[44px]",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__["ArrowLeft"], {
+                                className: "w-6 h-6 text-[#001549] dark:text-blue-400"
+                            }, void 0, false, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 237,
+                                columnNumber: 11
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            "Project Score"
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 233,
+                        columnNumber: 9
+                    }, ("TURBOPACK compile-time value", void 0)),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: openAddModal,
+                        disabled: !selectedProjectId || remainingMarks <= 0,
+                        className: "bg-[#002d62] hover:bg-[#063669] text-white px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__["Plus"], {
+                                className: "w-4 h-4"
+                            }, void 0, false, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 246,
+                                columnNumber: 11
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            "Add New Score"
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 241,
+                        columnNumber: 9
+                    }, ("TURBOPACK compile-time value", void 0))
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                lineNumber: 232,
+                columnNumber: 7
+            }, ("TURBOPACK compile-time value", void 0)),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/80 rounded-3xl p-6 xl:p-8 shadow-sm space-y-6",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center relative z-20",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-[10px] tracking-wider font-extrabold text-slate-400 dark:text-zinc-550 uppercase mr-3",
+                                        children: "PROJECT"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 257,
+                                        columnNumber: 13
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "relative",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>setIsProjectDropdownOpen(!isProjectDropdownOpen),
+                                                className: "flex items-center gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-3.5 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[150px] min-h-[40px] justify-between",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        children: selectedProjectLabel
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 265,
+                                                        columnNumber: 17
+                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                                        className: "w-3.5 h-3.5 text-[#002d62] dark:text-blue-450 ml-1.5 shrink-0"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 266,
+                                                        columnNumber: 17
+                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                lineNumber: 261,
+                                                columnNumber: 15
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            isProjectDropdownOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "absolute left-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl shadow-lg py-2 z-30",
+                                                children: projects.map((p)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        onClick: ()=>{
+                                                            setSelectedProjectId(p.id);
+                                                            setIsProjectDropdownOpen(false);
+                                                        },
+                                                        className: "w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: `w-1.5 h-1.5 rounded-full shrink-0 ${selectedProjectId === p.id ? "bg-blue-600" : "bg-slate-350"}`
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                lineNumber: 280,
+                                                                columnNumber: 23
+                                                            }, ("TURBOPACK compile-time value", void 0)),
+                                                            p.name
+                                                        ]
+                                                    }, p.id, true, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 272,
+                                                        columnNumber: 21
+                                                    }, ("TURBOPACK compile-time value", void 0)))
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                lineNumber: 270,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 260,
+                                        columnNumber: 13
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 256,
+                                columnNumber: 11
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "relative w-full sm:w-[401px]",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"], {
+                                        className: "absolute left-[16px] top-1/2 -translate-y-1/2 w-4 h-4 text-[#434653]"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 295,
+                                        columnNumber: 13
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                        type: "text",
+                                        placeholder: "Search Scores...",
+                                        value: searchQuery,
+                                        onChange: (e)=>setSearchQuery(e.target.value),
+                                        disabled: !selectedProjectId,
+                                        className: "w-full h-[48px] pl-[40px] pr-4 rounded-full border-none bg-[#F2F4F6] dark:bg-zinc-800 text-[14px] font-normal text-[#434653] dark:text-zinc-200 placeholder-[#434653] focus:outline-none focus:ring-1 focus:ring-[#002d62] disabled:opacity-60"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 296,
+                                        columnNumber: 13
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 294,
+                                columnNumber: 11
+                            }, ("TURBOPACK compile-time value", void 0))
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 254,
+                        columnNumber: 9
+                    }, ("TURBOPACK compile-time value", void 0)),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "border-b border-slate-100 dark:border-zinc-800/80"
+                    }, void 0, false, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 307,
+                        columnNumber: 9
+                    }, ("TURBOPACK compile-time value", void 0)),
+                    !selectedProjectId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "bg-slate-50/50 dark:bg-zinc-950/20 border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-2",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                            className: "text-sm font-extrabold text-slate-400 dark:text-zinc-500",
+                            children: "Please select a project to view and configure its scoring criteria."
+                        }, void 0, false, {
+                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                            lineNumber: 312,
+                            columnNumber: 13
+                        }, ("TURBOPACK compile-time value", void 0))
+                    }, void 0, false, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 311,
+                        columnNumber: 11
+                    }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "space-y-6 animate-in fade-in duration-200",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "space-y-3",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex items-end justify-between",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-[10px] tracking-wider font-extrabold text-slate-400 dark:text-zinc-550 uppercase block",
+                                                        children: "ALLOCATION STATUS"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 322,
+                                                        columnNumber: 19
+                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "mt-1 flex items-baseline gap-1",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "text-2xl font-black text-slate-850 dark:text-zinc-100",
+                                                                children: totalAllocatedMarks
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                lineNumber: 326,
+                                                                columnNumber: 21
+                                                            }, ("TURBOPACK compile-time value", void 0)),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "text-sm font-bold text-slate-450 dark:text-zinc-550",
+                                                                children: "/ 100 Marks Allocated"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                lineNumber: 329,
+                                                                columnNumber: 21
+                                                            }, ("TURBOPACK compile-time value", void 0))
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 325,
+                                                        columnNumber: 19
+                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                lineNumber: 321,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-xs font-extrabold text-slate-500 dark:text-zinc-450 mb-1",
+                                                children: [
+                                                    "(",
+                                                    remainingMarks,
+                                                    " Marks Remaining)"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                lineNumber: 335,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 320,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "w-full h-4 bg-slate-100 dark:bg-zinc-800/80 rounded-full overflow-hidden",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            style: {
+                                                width: `${Math.min(totalAllocatedMarks, 100)}%`
+                                            },
+                                            className: "h-full bg-[#002d62] dark:bg-blue-500 rounded-full transition-all duration-500"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 342,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 341,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 319,
+                                columnNumber: 13
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "border-b border-slate-100 dark:border-zinc-800/80 pt-2"
+                            }, void 0, false, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 349,
+                                columnNumber: 13
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "space-y-4",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                        className: "text-sm font-extrabold text-slate-800 dark:text-zinc-200",
+                                        children: "Active Scoring Criteria"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 353,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    filteredScores.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "bg-slate-50/50 dark:bg-zinc-950/20 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-6 text-center text-xs font-bold text-slate-400",
+                                        children: "No criteria match your search."
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 358,
+                                        columnNumber: 17
+                                    }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "grid grid-cols-1 md:grid-cols-2 gap-6",
+                                        children: filteredScores.map((score)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow min-h-[160px] relative",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center justify-between",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                                                        className: "font-extrabold text-sm text-slate-850 dark:text-zinc-150",
+                                                                        children: score.category
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                        lineNumber: 370,
+                                                                        columnNumber: 27
+                                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-450 text-[10px] font-black px-2.5 py-1 rounded-[6px] uppercase shrink-0",
+                                                                        children: [
+                                                                            score.marks,
+                                                                            " Marks"
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                        lineNumber: 373,
+                                                                        columnNumber: 27
+                                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                lineNumber: 369,
+                                                                columnNumber: 25
+                                                            }, ("TURBOPACK compile-time value", void 0)),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "text-xs text-slate-450 dark:text-zinc-550 leading-relaxed mt-3 max-w-[90%]",
+                                                                children: score.description
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                                lineNumber: 378,
+                                                                columnNumber: 25
+                                                            }, ("TURBOPACK compile-time value", void 0))
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 368,
+                                                        columnNumber: 23
+                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "mt-4 pt-4 border-t border-slate-50 dark:border-zinc-850/50",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: ()=>openEditModal(score),
+                                                            className: "text-xs font-extrabold text-[#002d62] dark:text-blue-450 hover:underline cursor-pointer transition-colors",
+                                                            children: "Edit Score"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                            lineNumber: 384,
+                                                            columnNumber: 25
+                                                        }, ("TURBOPACK compile-time value", void 0))
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                        lineNumber: 383,
+                                                        columnNumber: 23
+                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                ]
+                                            }, score.id, true, {
+                                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                lineNumber: 364,
+                                                columnNumber: 21
+                                            }, ("TURBOPACK compile-time value", void 0)))
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 362,
+                                        columnNumber: 17
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                lineNumber: 352,
+                                columnNumber: 13
+                            }, ("TURBOPACK compile-time value", void 0))
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                        lineNumber: 317,
+                        columnNumber: 11
+                    }, ("TURBOPACK compile-time value", void 0))
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                lineNumber: 252,
+                columnNumber: 7
+            }, ("TURBOPACK compile-time value", void 0)),
+            isModalOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "bg-white dark:bg-zinc-900 rounded-[24px] border border-slate-100 dark:border-zinc-800/80 w-full max-w-md p-6 shadow-2xl relative space-y-6 mx-4 animate-in zoom-in-95 duration-200",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "flex items-center justify-between border-b border-slate-50 dark:border-zinc-850 pb-4",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                    className: "text-base font-extrabold text-[#002d62] dark:text-blue-450",
+                                    children: modalMode === "add" ? "Create Score" : "Edit Score"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 406,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0)),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    onClick: ()=>setIsModalOpen(false),
+                                    className: "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-350 cursor-pointer",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                        className: "w-5 h-5"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                        lineNumber: 413,
+                                        columnNumber: 17
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                }, void 0, false, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 409,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0))
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                            lineNumber: 405,
+                            columnNumber: 13
+                        }, ("TURBOPACK compile-time value", void 0)),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
+                            onSubmit: handleModalSubmit,
+                            className: "space-y-5",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                            className: "text-[10px] font-bold text-slate-400 dark:text-zinc-550 tracking-wider uppercase",
+                                            children: "CATEGORY NAME"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 420,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                            type: "text",
+                                            placeholder: "e.g. Lead Source",
+                                            value: categoryName,
+                                            onChange: (e)=>setCategoryName(e.target.value),
+                                            className: "w-full px-4 py-3 rounded-xl border-none bg-[#f4f7f9] dark:bg-zinc-800 text-xs font-semibold text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#002d62]"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 423,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 419,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0)),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                            className: "text-[10px] font-bold text-slate-400 dark:text-zinc-550 tracking-wider uppercase",
+                                            children: "SHORT DESCRIPTION"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 433,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
+                                            placeholder: "Enter short description",
+                                            value: shortDescription,
+                                            onChange: (e)=>setShortDescription(e.target.value),
+                                            rows: 3,
+                                            className: "w-full px-4 py-3 rounded-xl border-none bg-[#f4f7f9] dark:bg-zinc-800 text-xs font-semibold text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#002d62] resize-none"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 436,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 432,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0)),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                            className: "text-[10px] font-bold text-slate-400 dark:text-zinc-550 tracking-wider uppercase",
+                                            children: "MARKS"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 446,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex items-center gap-4",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                    type: "number",
+                                                    min: 1,
+                                                    max: maxAvailableMarks,
+                                                    value: scoreMarks || "",
+                                                    onKeyDown: (e)=>{
+                                                        if ([
+                                                            "-",
+                                                            "+",
+                                                            "e",
+                                                            "E"
+                                                        ].includes(e.key)) {
+                                                            e.preventDefault();
+                                                        }
+                                                    },
+                                                    onPaste: (e)=>{
+                                                        const pasteData = e.clipboardData.getData("text");
+                                                        if (pasteData.includes("-") || pasteData.includes("e") || pasteData.includes("E")) {
+                                                            e.preventDefault();
+                                                        }
+                                                    },
+                                                    onChange: (e)=>{
+                                                        const num = Number(e.target.value);
+                                                        if (num < 0) {
+                                                            setScoreMarks(0);
+                                                        } else {
+                                                            setScoreMarks(num);
+                                                        }
+                                                    },
+                                                    className: "w-24 px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-xs font-semibold text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#002d62] text-center"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                    lineNumber: 450,
+                                                    columnNumber: 19
+                                                }, ("TURBOPACK compile-time value", void 0)),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                    className: "text-xs font-bold text-slate-500 dark:text-zinc-450",
+                                                    children: [
+                                                        "Marks available:",
+                                                        " ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: `font-black ${dynamicAvailableMarks < 0 ? "text-red-600 dark:text-red-400" : "text-[#002d62] dark:text-blue-450"}`,
+                                                            children: dynamicAvailableMarks
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                            lineNumber: 478,
+                                                            columnNumber: 21
+                                                        }, ("TURBOPACK compile-time value", void 0))
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                                    lineNumber: 476,
+                                                    columnNumber: 19
+                                                }, ("TURBOPACK compile-time value", void 0))
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 449,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 445,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0)),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex items-center justify-end gap-3 pt-4 border-t border-slate-50 dark:border-zinc-850",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            type: "button",
+                                            onClick: ()=>setIsModalOpen(false),
+                                            className: "px-5 py-2.5 text-xs font-extrabold text-slate-550 dark:text-zinc-450 hover:text-slate-750 cursor-pointer",
+                                            children: "Cancel"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 493,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            type: "submit",
+                                            className: "bg-[#002d62] hover:bg-[#063669] text-white px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer",
+                                            children: modalMode === "add" ? "Create Rule" : "Save Changes"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                            lineNumber: 500,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                                    lineNumber: 492,
+                                    columnNumber: 15
+                                }, ("TURBOPACK compile-time value", void 0))
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                            lineNumber: 418,
+                            columnNumber: 13
+                        }, ("TURBOPACK compile-time value", void 0))
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                    lineNumber: 403,
+                    columnNumber: 11
+                }, ("TURBOPACK compile-time value", void 0))
+            }, void 0, false, {
+                fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+                lineNumber: 402,
+                columnNumber: 9
+            }, ("TURBOPACK compile-time value", void 0))
+        ]
+    }, void 0, true, {
+        fileName: "[project]/src/features/master-data/pages/ProjectScorePage.tsx",
+        lineNumber: 230,
+        columnNumber: 5
+    }, ("TURBOPACK compile-time value", void 0));
+};
+_s(ProjectScorePage, "xvSsNql8suPCTQmTPbZkOoLhjkM=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$router$2f$dist$2f$development$2f$chunk$2d$LFPYN7LY$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useNavigate"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$shared$2f$hooks$2f$useMasterDataLookup$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMasterDataLookup"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetProjectBasedScoringRulesQuery"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCreateProjectScoringRulesMutation"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2d$data$2f$api$2f$manageMasterDataSlice$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUpdateProjectScoringRulesMutation"]
+    ];
+});
+_c = ProjectScorePage;
+var _c;
+__turbopack_context__.k.register(_c, "ProjectScorePage");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/master/api/masterApi.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "masterApi",
+    ()=>masterApi,
+    "useGetAllMasterDataQuery",
+    ()=>useGetAllMasterDataQuery
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/api/baseApi.ts [app-client] (ecmascript)");
+;
+const masterApi = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["baseApi"].injectEndpoints({
+    endpoints: (builder)=>({
+            getAllMasterData: builder.query({
+                query: ()=>({
+                        url: '/master/getAllMasterData',
+                        method: 'POST'
+                    }),
+                transformResponse: (response)=>({
+                        ...response,
+                        projects: response?.projects?.filter((project)=>project.code !== 'PLTGRN') ?? []
+                    }),
+                providesTags: [
+                    'Master'
+                ]
+            })
+        })
+});
+const { useGetAllMasterDataQuery } = masterApi;
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/users/api/usersApi.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "useCreateUserMutation",
+    ()=>useCreateUserMutation,
+    "useDeleteUserMutation",
+    ()=>useDeleteUserMutation,
+    "useGetAllUsersByRoleIdQuery",
+    ()=>useGetAllUsersByRoleIdQuery,
+    "useGetAllUsersQuery",
+    ()=>useGetAllUsersQuery,
+    "useGetEmDashboardDateWiseDataQuery",
+    ()=>useGetEmDashboardDateWiseDataQuery,
+    "useGetEmDashboardTodaysDataQuery",
+    ()=>useGetEmDashboardTodaysDataQuery,
+    "useGetEscalatedLeadsQuery",
+    ()=>useGetEscalatedLeadsQuery,
+    "useGetReporteesQuery",
+    ()=>useGetReporteesQuery,
+    "useGetRmDashboardDateWiseDataQuery",
+    ()=>useGetRmDashboardDateWiseDataQuery,
+    "useGetStaleLeadsQuery",
+    ()=>useGetStaleLeadsQuery,
+    "useGetUsersQuery",
+    ()=>useGetUsersQuery,
+    "useUpdateUserMutation",
+    ()=>useUpdateUserMutation,
+    "usersApi",
+    ()=>usersApi
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/api/baseApi.ts [app-client] (ecmascript)");
+;
+const usersApi = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$api$2f$baseApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["baseApi"].injectEndpoints({
+    endpoints: (builder)=>({
+            getAllUsersByRoleId: builder.query({
+                query: (body)=>({
+                        url: '/users/getAllUsersByRoleId',
+                        method: 'POST',
+                        body
+                    }),
+                providesTags: [
+                    'Users'
+                ]
+            }),
+            getUsers: builder.query({
+                query: (params)=>({
+                        url: '/users/getUsers',
+                        method: 'GET',
+                        params
+                    }),
+                providesTags: [
+                    'Users'
+                ]
+            }),
+            createUser: builder.mutation({
+                query: (body)=>({
+                        url: '/users/createUser',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Users'
+                ]
+            }),
+            updateUser: builder.mutation({
+                query: (body)=>({
+                        url: '/users/updateUser',
+                        method: 'POST',
+                        body
+                    }),
+                invalidatesTags: [
+                    'Users'
+                ]
+            }),
+            deleteUser: builder.mutation({
+                query: (id)=>({
+                        url: '/users/deleteUser',
+                        method: 'POST',
+                        body: {
+                            id
+                        }
+                    }),
+                invalidatesTags: [
+                    'Users'
+                ]
+            }),
+            getReportees: builder.query({
+                query: (body)=>({
+                        url: '/users/getReportees',
+                        method: 'POST',
+                        body
+                    }),
+                providesTags: [
+                    'Users'
+                ]
+            }),
+            getAllUsers: builder.query({
+                query: (body)=>({
+                        url: '/users/getAllUsers',
+                        method: 'POST',
+                        body
+                    }),
+                providesTags: [
+                    'Users'
+                ]
+            }),
+            getEmDashboardDateWiseData: builder.query({
+                query: (body)=>({
+                        url: '/dashBoard/getEmDashboardDateWiseData',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            getEmDashboardTodaysData: builder.query({
+                query: (body)=>({
+                        url: '/dashBoard/getEmDashboardtodaysData',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            getRmDashboardDateWiseData: builder.query({
+                query: (body)=>({
+                        url: '/dashBoard/getRmDashboardDateWiseData',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            getStaleLeads: builder.query({
+                query: (body)=>({
+                        url: '/leads/getStaleLeads',
+                        method: 'POST',
+                        body
+                    })
+            }),
+            getEscalatedLeads: builder.query({
+                query: (body)=>({
+                        url: '/leads/getEscallatedLeads',
+                        method: 'POST',
+                        body
+                    })
+            })
+        })
+});
+const { useGetUsersQuery, useGetAllUsersByRoleIdQuery, useCreateUserMutation, useUpdateUserMutation, useDeleteUserMutation, useGetReporteesQuery, useGetAllUsersQuery, useGetEmDashboardDateWiseDataQuery, useGetEmDashboardTodaysDataQuery, useGetRmDashboardDateWiseDataQuery, useGetStaleLeadsQuery, useGetEscalatedLeadsQuery } = usersApi;
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/features/users/data/demoUsers.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "demoSalesExecutives",
+    ()=>demoSalesExecutives,
+    "demoSalesHeads",
+    ()=>demoSalesHeads
+]);
+const demoSalesHeads = [
+    {
+        id: 301,
+        login_id: "rahul.mehta",
+        first_name: "Rahul",
+        last_name: "Mehta",
+        phone_number: "+91 90001 10001",
+        email: "rahul.mehta@techgylink.com",
+        role_id: 3,
+        role_code: "RELMNG",
+        role_description: "Sales Head",
+        is_active: 1,
+        created_on: "2026-01-12T09:00:00.000Z",
+        updated_on: null,
+        reportee_count: 3,
+        project_name: "Nizampet"
+    },
+    {
+        id: 302,
+        login_id: "priya.sharma",
+        first_name: "Priya",
+        last_name: "Sharma",
+        phone_number: "+91 90001 10002",
+        email: "priya.sharma@techgylink.com",
+        role_id: 3,
+        role_code: "RELMNG",
+        role_description: "Sales Head",
+        is_active: 1,
+        created_on: "2026-02-08T09:00:00.000Z",
+        updated_on: null,
+        reportee_count: 3,
+        project_name: "Kondapur"
+    },
+    {
+        id: 303,
+        login_id: "karan.verma",
+        first_name: "Karan",
+        last_name: "Verma",
+        phone_number: "+91 90001 10003",
+        email: "karan.verma@techgylink.com",
+        role_id: 3,
+        role_code: "RELMNG",
+        role_description: "Sales Head",
+        is_active: 1,
+        created_on: "2026-03-18T09:00:00.000Z",
+        updated_on: null,
+        reportee_count: 2,
+        project_name: "KPHB"
+    }
+];
+const demoSalesExecutives = [
+    {
+        id: 401,
+        login_id: "nisha.kapoor",
+        first_name: "Nisha",
+        last_name: "Kapoor",
+        phone_number: "+91 90002 20001",
+        email: "nisha.kapoor@techgylink.com",
+        role_id: 4,
+        role_code: "EXPMNG",
+        role_description: "Sales Executive",
+        is_active: 1,
+        created_on: "2026-02-02T09:00:00.000Z",
+        updated_on: null,
+        reporting_manager_id: 301,
+        assigned_visits_count: 18,
+        project_name: "Nizampet"
+    },
+    {
+        id: 402,
+        login_id: "arjun.nair",
+        first_name: "Arjun",
+        last_name: "Nair",
+        phone_number: "+91 90002 20002",
+        email: "arjun.nair@techgylink.com",
+        role_id: 4,
+        role_code: "EXPMNG",
+        role_description: "Sales Executive",
+        is_active: 1,
+        created_on: "2026-02-14T09:00:00.000Z",
+        updated_on: null,
+        reporting_manager_id: 302,
+        assigned_visits_count: 14,
+        project_name: "Kondapur"
+    },
+    {
+        id: 403,
+        login_id: "sneha.rao",
+        first_name: "Sneha",
+        last_name: "Rao",
+        phone_number: "+91 90002 20003",
+        email: "sneha.rao@techgylink.com",
+        role_id: 4,
+        role_code: "EXPMNG",
+        role_description: "Sales Executive",
+        is_active: 1,
+        created_on: "2026-03-01T09:00:00.000Z",
+        updated_on: null,
+        reporting_manager_id: 303,
+        assigned_visits_count: 12,
+        project_name: "KPHB"
+    },
+    {
+        id: 404,
+        login_id: "asha.patel",
+        first_name: "Asha",
+        last_name: "Patel",
+        phone_number: "+91 90002 20004",
+        email: "asha.patel@techgylink.com",
+        role_id: 4,
+        role_code: "EXPMNG",
+        role_description: "Sales Executive",
+        is_active: 1,
+        created_on: "2026-03-22T09:00:00.000Z",
+        updated_on: null,
+        reporting_manager_id: 301,
+        assigned_visits_count: 10,
+        project_name: "Nizampet"
+    }
+];
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/shared/hooks/useMasterDataLookup.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "useMasterDataLookup",
+    ()=>useMasterDataLookup
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2f$api$2f$masterApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/master/api/masterApi.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$api$2f$usersApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/users/api/usersApi.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$utils$2f$projectLeadStatus$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/utils/projectLeadStatus.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$data$2f$demoUsers$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/users/data/demoUsers.ts [app-client] (ecmascript)");
+var _s = __turbopack_context__.k.signature();
+;
+;
+;
+;
+;
+const useMasterDataLookup = ()=>{
+    _s();
+    const { data: masterData } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2f$api$2f$masterApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllMasterDataQuery"])();
+    const { data: liveRms = [] } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$api$2f$usersApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllUsersByRoleIdQuery"])({
+        role_id: 3,
+        offset: 0
+    });
+    const { data: liveEms = [] } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$api$2f$usersApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllUsersByRoleIdQuery"])({
+        role_id: 4,
+        offset: 0
+    });
+    const rms = liveRms.length > 0 ? liveRms : __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$data$2f$demoUsers$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["demoSalesHeads"];
+    const ems = liveEms.length > 0 ? liveEms : __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$data$2f$demoUsers$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["demoSalesExecutives"];
+    const demoProjects = {
+        1: 'Nizampet',
+        2: 'Kondapur',
+        3: 'KPHB',
+        4: 'Nizampet',
+        5: 'KPHB'
+    };
+    const demoSources = {
+        1: 'Website',
+        2: 'Doctor Referral',
+        3: 'Walk-in',
+        4: 'Google Ads',
+        5: 'WhatsApp',
+        6: 'Social Media'
+    };
+    const demoStatuses = {
+        1: 'New enquiry',
+        2: 'Consultation requested',
+        3: 'Callback required',
+        4: 'Appointment scheduled',
+        5: 'Follow-up due',
+        6: 'OPD booked',
+        7: 'Treatment discussed'
+    };
+    const demoSpecialisations = {
+        1: 'Cardiology',
+        2: 'Orthopedics',
+        3: 'Neurology',
+        4: 'Oncology',
+        5: 'Pediatrics'
+    };
+    const projectLeadStatuses = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useMemo({
+        "useMasterDataLookup.useMemo[projectLeadStatuses]": ()=>{
+            const rawData = masterData?.project_lead_status || masterData?.project_lead_statuses || masterData?.project_lead_statusifications || masterData?.project_statusifications || [];
+            const converted = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$utils$2f$projectLeadStatus$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["convertProjectLeadStatusToObject"])(rawData, masterData?.lead_statuses || []);
+            return converted;
+        }
+    }["useMasterDataLookup.useMemo[projectLeadStatuses]"], [
+        masterData
+    ]);
+    const getStatusLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getStatusLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.lead_statuses.find({
+                "useMasterDataLookup.useCallback[getStatusLabel]": (s)=>s.id === id
+            }["useMasterDataLookup.useCallback[getStatusLabel]"])?.description || demoStatuses[id] || `ID: ${id}`;
+        }
+    }["useMasterDataLookup.useCallback[getStatusLabel]"], [
+        masterData
+    ]);
+    const getProjectLeadStatusLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getProjectLeadStatusLabel]": (projectLeadStatusId)=>{
+            if (!projectLeadStatusId) return '--';
+            for (const project of projectLeadStatuses){
+                if (Array.isArray(project.status)) {
+                    const match = project.status.find({
+                        "useMasterDataLookup.useCallback[getProjectLeadStatusLabel].match": (s)=>Number(s.id) === Number(projectLeadStatusId)
+                    }["useMasterDataLookup.useCallback[getProjectLeadStatusLabel].match"]);
+                    if (match) return match.description;
+                }
+            }
+            return '--';
+        }
+    }["useMasterDataLookup.useCallback[getProjectLeadStatusLabel]"], [
+        projectLeadStatuses
+    ]);
+    const getCustomerStatusLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getCustomerStatusLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.customer_statuses.find({
+                "useMasterDataLookup.useCallback[getCustomerStatusLabel]": (s)=>s.id === id
+            }["useMasterDataLookup.useCallback[getCustomerStatusLabel]"])?.description || `ID: ${id}`;
+        }
+    }["useMasterDataLookup.useCallback[getCustomerStatusLabel]"], [
+        masterData
+    ]);
+    const getProjectLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getProjectLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.projects.find({
+                "useMasterDataLookup.useCallback[getProjectLabel]": (p)=>p.id === id
+            }["useMasterDataLookup.useCallback[getProjectLabel]"])?.description || demoProjects[id] || `N/A`;
+        }
+    }["useMasterDataLookup.useCallback[getProjectLabel]"], [
+        masterData
+    ]);
+    const getSourceLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getSourceLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.sources.find({
+                "useMasterDataLookup.useCallback[getSourceLabel]": (s)=>s.id === id
+            }["useMasterDataLookup.useCallback[getSourceLabel]"])?.description || demoSources[id] || `ID: ${id}`;
+        }
+    }["useMasterDataLookup.useCallback[getSourceLabel]"], [
+        masterData
+    ]);
+    const getRmLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getRmLabel]": (id)=>{
+            if (!id) return '--';
+            const rm = rms.find({
+                "useMasterDataLookup.useCallback[getRmLabel].rm": (r)=>r.id === id
+            }["useMasterDataLookup.useCallback[getRmLabel].rm"]);
+            return rm ? `${rm.first_name} ${rm.last_name}` : '--';
+        }
+    }["useMasterDataLookup.useCallback[getRmLabel]"], [
+        rms
+    ]);
+    const getEmLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getEmLabel]": (id)=>{
+            if (!id) return '--';
+            const em = ems.find({
+                "useMasterDataLookup.useCallback[getEmLabel].em": (e)=>e.id === id
+            }["useMasterDataLookup.useCallback[getEmLabel].em"]);
+            return em ? `${em.first_name} ${em.last_name}` : '--';
+        }
+    }["useMasterDataLookup.useCallback[getEmLabel]"], [
+        ems
+    ]);
+    const getBranchLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getBranchLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.branches?.find({
+                "useMasterDataLookup.useCallback[getBranchLabel]": (b)=>b.id === id
+            }["useMasterDataLookup.useCallback[getBranchLabel]"])?.description || demoProjects[id] || `ID: ${id}`;
+        }
+    }["useMasterDataLookup.useCallback[getBranchLabel]"], [
+        masterData
+    ]);
+    const getSpecialisationLabel = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useCallback({
+        "useMasterDataLookup.useCallback[getSpecialisationLabel]": (id)=>{
+            if (!id) return '--';
+            return masterData?.specialisations?.find({
+                "useMasterDataLookup.useCallback[getSpecialisationLabel]": (s)=>s.id === id
+            }["useMasterDataLookup.useCallback[getSpecialisationLabel]"])?.description || demoSpecialisations[id] || `ID: ${id}`;
+        }
+    }["useMasterDataLookup.useCallback[getSpecialisationLabel]"], [
+        masterData
+    ]);
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useMemo({
+        "useMasterDataLookup.useMemo": ()=>({
+                getStatusLabel,
+                getProjectLeadStatusLabel,
+                getCustomerStatusLabel,
+                getProjectLabel,
+                getSourceLabel,
+                getBranchLabel,
+                getSpecialisationLabel,
+                getRmLabel,
+                getEmLabel,
+                rms,
+                ems,
+                masterData,
+                projectLeadStatuses,
+                isLoading: !masterData && (rms.length === 0 || ems.length === 0)
+            })
+    }["useMasterDataLookup.useMemo"], [
+        getStatusLabel,
+        getProjectLeadStatusLabel,
+        getCustomerStatusLabel,
+        getProjectLabel,
+        getSourceLabel,
+        getBranchLabel,
+        getSpecialisationLabel,
+        getRmLabel,
+        getEmLabel,
+        masterData,
+        projectLeadStatuses,
+        rms.length,
+        ems.length
+    ]);
+};
+_s(useMasterDataLookup, "q9QcMsfQBlXOKEipNMu91V5VZEM=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$master$2f$api$2f$masterApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllMasterDataQuery"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$api$2f$usersApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllUsersByRoleIdQuery"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$users$2f$api$2f$usersApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetAllUsersByRoleIdQuery"]
+    ];
+});
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/shared/utils/localStorage.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/**
+ * A type-safe wrapper for localStorage with JSON parsing/stringifying
+ */ __turbopack_context__.s([
+    "storage",
+    ()=>storage
+]);
+const storage = {
+    /**
+   * Get an item from localStorage
+   */ get: (key, defaultValue)=>{
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (error) {
+            console.error(`Error reading localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+    /**
+   * Set an item in localStorage
+   */ set: (key, value)=>{
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Error writing localStorage key "${key}":`, error);
+        }
+    },
+    /**
+   * Remove an item from localStorage
+   */ remove: (key)=>{
+        try {
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.error(`Error removing localStorage key "${key}":`, error);
+        }
+    },
+    /**
+   * Clear all items from localStorage
+   */ clear: ()=>{
+        try {
+            localStorage.clear();
+        } catch (error) {
+            console.error('Error clearing localStorage:', error);
+        }
+    }
+};
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/src/utils/projectLeadStatus.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "convertProjectLeadStatusToObject",
+    ()=>convertProjectLeadStatusToObject
+]);
+const convertProjectLeadStatusToObject = (projectLeadStatuses, leadStatuses)=>{
+    return (projectLeadStatuses || []).map((project)=>({
+            project_id: project.project_id,
+            status: Array.isArray(project.status) ? project.status.slice(1) // remove header row ["id", "lead_status_id"]
+            .map(([id, lead_status_id])=>{
+                const parsedId = Number(id);
+                const parsedLeadStatusId = Number(lead_status_id);
+                const leadStatus = (leadStatuses || []).find((item)=>Number(item.id) === parsedLeadStatusId);
+                return {
+                    id: parsedId,
+                    lead_status_id: parsedLeadStatusId,
+                    description: leadStatus?.description || ""
+                };
+            }) : []
+        }));
+};
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+]);
+
+//# sourceMappingURL=src_0_4wnip._.js.map

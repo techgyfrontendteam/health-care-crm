@@ -1122,19 +1122,19 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
         {/* Team Calls Summary */}
         <div className="bg-[#002d62] dark:bg-zinc-950 border border-[#002d62] dark:border-zinc-800 rounded-2xl p-4.5 shadow-sm text-white flex flex-col justify-between min-h-[170px] hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-blue-200 dark:text-zinc-400">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-white dark:text-white">
               Team Calls Summary
             </h2>
-            <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-blue-100">
+            <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white">
               All Channels
             </span>
           </div>
 
           <div className="my-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-black tracking-tight">
+            <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
               {rmData.teamCallsSummary.connectedCalls}
             </span>
-            <span className="text-[10px] font-bold text-blue-200 dark:text-zinc-400 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-white/90 dark:text-white/90 uppercase tracking-widest">
               TOTAL CALLS
             </span>
           </div>
@@ -1142,13 +1142,13 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
           {/* Sub-cards */}
           <div className="grid grid-cols-2 gap-2 mt-1">
             <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-xl p-2.5 border border-white/5 dark:border-zinc-800 text-left">
-              <span className="block text-[9px] text-blue-200 dark:text-zinc-400 uppercase font-bold tracking-wider">Connected</span>
-              <span className="text-lg font-black mt-0.5 block">
+              <span className="block text-[9px] text-white/90 dark:text-white/90 uppercase font-bold tracking-wider">Connected</span>
+              <span className="text-lg font-black mt-0.5 block text-white">
                 {rmData.teamCallsSummary.connectedCalls - rmData.teamCallsSummary.missedCalls}
               </span>
             </div>
             <div className="bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md rounded-xl p-2.5 border border-white/5 dark:border-zinc-800 text-left">
-              <span className="block text-[9px] text-blue-200 dark:text-zinc-400 uppercase font-bold tracking-wider">Missed</span>
+              <span className="block text-[9px] text-white/90 dark:text-white/90 uppercase font-bold tracking-wider">Missed</span>
               <span className="text-lg font-black mt-0.5 block text-rose-300 dark:text-rose-400">{rmData.teamCallsSummary.missedCalls}</span>
             </div>
           </div>
