@@ -13,7 +13,7 @@ import {
   CommandInput,
   CommandItem,
 } from '../../../components/ui/command';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 
 interface BulkActionsBarProps {
   selectedCount: number;

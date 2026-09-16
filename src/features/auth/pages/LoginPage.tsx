@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../../app/store';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -23,9 +23,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 const DEMO_EMAIL = 'demo@techgylink.com';
 const DEMO_PASSWORD = 'Demo@123456';
-const demoLoginEnabled =
-  process.env.NODE_ENV !== 'production' ||
-  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+const demoLoginEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 
 const loginSchema = z.object({
   login_id: z.email({ message: 'Please enter a valid email address.' }),

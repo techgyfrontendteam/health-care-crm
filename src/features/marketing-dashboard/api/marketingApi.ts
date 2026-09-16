@@ -1,8 +1,15 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type { MarketingDashboardData, MarketingDataRequest } from "../types";
 
 export const marketingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    addCampaignMetadata: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({
+        url: "/marketing/addMetadata",
+        method: "POST",
+        body,
+      }),
+    }),
     getMarketingData: builder.query<MarketingDashboardData, MarketingDataRequest>({
       queryFn: async (arg, queryApi, extraOptions, baseQuery) => {
         try {
@@ -146,4 +153,4 @@ export const marketingApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetMarketingDataQuery } = marketingApi;
+export const { useAddCampaignMetadataMutation, useGetMarketingDataQuery } = marketingApi;

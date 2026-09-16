@@ -1,4 +1,4 @@
-import { baseApi } from '../../../app/api/baseApi';
+import { baseApi } from '@/shared/api/baseApi';
 import type {
   CreateUserRequest,
   CreateUserResponse,
@@ -25,6 +25,7 @@ export const usersApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      transformResponse: normalizeUsersResponse,
       providesTags: ['Users'],
     }),
     getUsers: builder.query<GetUsersResponse, GetUsersRequest>({
@@ -65,6 +66,7 @@ export const usersApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      transformResponse: normalizeUsersResponse,
       providesTags: ['Users'],
     }),
     getAllUsers: builder.query<User[], { offset: number }>({
@@ -73,6 +75,7 @@ export const usersApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      transformResponse: normalizeUsersResponse,
       providesTags: ['Users'],
     }),
     getEmDashboardDateWiseData: builder.query<GetEmDashboardDateWiseDataResponse, GetEmDashboardDateWiseDataRequest>({
@@ -112,6 +115,25 @@ export const usersApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+function normalizeUsersResponse(response: unknown): User[] {
+  if (Array.isArray(response)) return response as User[];
+  if (!response || typeof response !== 'object') return [];
+
+  const envelope = response as {
+    data?: User[] | { users?: User[] };
+    users?: User[];
+    result?: User[];
+  };
+
+  if (Array.isArray(envelope.users)) return envelope.users;
+  if (Array.isArray(envelope.data)) return envelope.data;
+  if (envelope.data && !Array.isArray(envelope.data) && Array.isArray(envelope.data.users)) {
+    return envelope.data.users;
+  }
+  if (Array.isArray(envelope.result)) return envelope.result;
+  return [];
+}
 
 export const {
   useGetUsersQuery,

@@ -3,7 +3,7 @@ import type { Lead } from '../types';
 import { Button } from '../../../components/ui/button';
 import { ChevronLeft, UserPlus, Trash2, AlertCircle } from 'lucide-react';
 import { useMasterDataLookup } from '../../../shared/hooks/useMasterDataLookup';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { JunkReasonDialog } from '../components/JunkReasonDialog';
 
 interface LeadJunkReviewPageProps {

@@ -4,7 +4,7 @@ import { FullScreenLoader } from "./FullScreenLoader/FullScreenLoader";
 
 export const GlobalApiLoader = () => {
   const isPending = useAppSelector((state: RootState) => {
-    // baseApi is the reducerPath defined in src/app/api/baseApi.ts
+    // baseApi is the reducerPath defined in src/shared/api/baseApi.ts
     const queries = state.baseApi.queries;
     const mutations = state.baseApi.mutations;
 

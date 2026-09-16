@@ -22,7 +22,7 @@ import { useUploadFileMutation, useDownloadUrlMutation } from "../../../shared/a
 import { uploadLargeFileToS3Only } from "../../../shared/utils/multipartUpload";
 import { useGetLeadByIdQuery } from "../api/leadsApi";
 import { useGetAllUsersQuery } from "../../users/api/usersApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../utils";
 import { ChatMessageMedia } from "../components/ChatMessageMedia";

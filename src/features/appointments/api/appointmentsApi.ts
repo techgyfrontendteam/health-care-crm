@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type {
   CreateAppointmentRequest,
   GetAppointmentsByLeadUuidRequest,
@@ -24,6 +24,10 @@ export const appointmentsApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Appointments"],
     }),
+    getAllAppointments: builder.query<unknown, Record<string, unknown> | void>({
+      query: (body = {}) => ({ url: "/appointments/getAllAppointments", method: "POST", body }),
+      providesTags: ["Appointments"],
+    }),
     updateAppointment: builder.mutation<{ message: string; data?: any }, UpdateAppointmentRequest>({
       query: (body) => ({
         url: "/appointments/updateAppointment",
@@ -38,6 +42,7 @@ export const appointmentsApi = baseApi.injectEndpoints({
 export const {
   useCreateAppointmentMutation,
   useGetAppointmentsByLeadUuidQuery,
+  useGetAllAppointmentsQuery,
   useLazyGetAppointmentsByLeadUuidQuery,
   useUpdateAppointmentMutation,
 } = appointmentsApi;

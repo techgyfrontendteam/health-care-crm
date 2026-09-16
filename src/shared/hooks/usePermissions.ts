@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../app/store';
-import { ROLE_PERMISSIONS, type Permission } from '../config/permissions';
+import type { RootState } from '@/app/store';
+import { ROLE_PERMISSIONS, type Permission } from '@/config/permissions';
 
 export const usePermissions = () => {
   const { currentRole, user } = useSelector((state: RootState) => state.auth);

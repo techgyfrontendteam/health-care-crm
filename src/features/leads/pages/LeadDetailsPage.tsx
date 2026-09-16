@@ -59,7 +59,7 @@ import { LeadChatsTab } from "../components/tabs/LeadChatsTab";
 import { LeadEnquiriesTab } from "../components/tabs/LeadEnquiriesTab";
 import { LeadFollowUpsTab } from "../components/tabs/LeadFollowUpsTab";
 import { PointsToTalkDialog } from "../components/PointsToTalkDialog";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import type { Lead } from "../types";
 
 /* ── Reusable label style (Figma: Inter 600 11px uppercase #64748B) ── */

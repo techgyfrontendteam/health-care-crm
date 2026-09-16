@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type {
   DailySalesReportCardDataRequest,
   DailySalesReportCardDataResponse,
@@ -153,7 +153,7 @@ export const reportsApi = baseApi.injectEndpoints({
           cleanedBody.campaign_id = body.campaign_id;
         }
         return {
-          url: "/marketing/getcampaignsFunnelData",
+          url: "/marketing/getCampaignsFunnelData",
           method: "POST",
           body: cleanedBody,
         };
@@ -167,7 +167,7 @@ export const reportsApi = baseApi.injectEndpoints({
           cleanedBody.campaign_id = body.campaign_id;
         }
         return {
-          url: "/reports/downloadCampaignPerformanceData",
+          url: "/marketing/downloadProjectWiseCampaignReportData",
           method: "POST",
           body: cleanedBody,
         };
@@ -194,4 +194,3 @@ export const {
   useGetCampaignsFunnelDataQuery,
   useDownloadCampaignPerformanceDataMutation,
 } = reportsApi;
-

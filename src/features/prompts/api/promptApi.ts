@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 
 export interface GetProjectStatusChecklistRequest {
   project_lead_status_id: number;

@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type {
   GetProjectAnalysisDateWiseDataRequest,
   GetProjectAnalysisDateWiseDataResponse,

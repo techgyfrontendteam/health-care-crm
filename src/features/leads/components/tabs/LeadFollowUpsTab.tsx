@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useCreateFollowUpMutation, useUpdateFollowUpMutation } from '../../../follow-ups/api/followUpsApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
-import { usePermissions } from '../../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { PERMISSIONS } from '../../../../config/permissions';
 import { toast } from 'sonner';
 import { Button } from '../../../../components/ui/button';
@@ -762,4 +762,3 @@ export const LeadFollowUpsTab = ({
     </div>
   );
 };
-

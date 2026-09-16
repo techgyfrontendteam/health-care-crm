@@ -15,7 +15,7 @@ import {
 import { ScheduleSurgeryDialog } from '../ScheduleSurgeryDialog';
 import { useGetSurgeriesByLeadUuidQuery } from '../../api/leadsApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
-import { usePermissions } from '../../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { useGetAllMasterDataQuery } from '@/features/master/api/masterApi';
 import { useGetAllDoctorsQuery } from '@/features/doctors/api/doctorsApiSlice';
 import type { SurgeryDetail } from '../../types';

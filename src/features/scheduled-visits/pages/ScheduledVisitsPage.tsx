@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { useGetVisitsByUserIdQuery } from "../../leads/api/leadsApi";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import {
@@ -21,9 +21,8 @@ import {
   useGetAllUsersByRoleIdQuery,
   useGetReporteesQuery,
 } from "../../users/api/usersApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { cn } from "../../../utils";
-import { demoSalesExecutives, demoSalesHeads } from "../../users/data/demoUsers";
 
 // Date formatting helpers
 const formatApiDate = (d: Date | null | undefined) => {
@@ -172,23 +171,6 @@ const getStatusBadgeStyle = (codeOrDesc: string) => {
 
 const BRANCH_CITIES = ["All", "Nizampet", "Kondapur", "KPHB"];
 
-const buildDemoAppointments = () => {
-  const at = (dayOffset: number, hour: number, minute = 0) => {
-    const date = new Date();
-    date.setDate(date.getDate() + dayOffset);
-    date.setHours(hour, minute, 0, 0);
-    return date.toISOString();
-  };
-
-  return [
-    { id: "demo-apt-1", lead_id: 2005, lead_uuid: "demo-lead-2005", c_first_name: "Kavya", c_last_name: "Iyer", phone_number: "+91 94444 55667", visit_date_time: at(0, 10, 30), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Ananya Rao", hospital_branch: "Nizampet", em_name: "Nisha Kapoor", visit_remarks: "Cardiology consultation and ECG review" },
-    { id: "demo-apt-2", lead_id: 2006, lead_uuid: "demo-lead-2006", c_first_name: "Aditya", c_last_name: "Menon", phone_number: "+91 90123 45678", visit_date_time: at(0, 12, 15), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Manish Mehta", hospital_branch: "Kondapur", em_name: "Arjun Nair", visit_remarks: "Gastroenterology consultation" },
-    { id: "demo-apt-3", lead_id: 2007, lead_uuid: "demo-lead-2007", c_first_name: "Meera", c_last_name: "Kapoor", phone_number: "+91 98760 12345", visit_date_time: at(1, 9, 45), visit_status_description: "Appointment Rescheduled", status_code: "RESCHD", doctor_name: "Dr. Priya Nair", hospital_branch: "KPHB", em_name: "Sneha Rao", visit_remarks: "Pediatric vaccination consultation" },
-    { id: "demo-apt-4", lead_id: 2008, lead_uuid: "demo-lead-2008", c_first_name: "Vikram", c_last_name: "Shah", phone_number: "+91 98220 33445", visit_date_time: at(2, 15, 0), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Kavita Deshmukh", hospital_branch: "Nizampet", em_name: "Asha Patel", visit_remarks: "Dermatology procedure assessment" },
-    { id: "demo-apt-5", lead_id: 2002, lead_uuid: "demo-lead-2002", c_first_name: "Diya", c_last_name: "Reddy", phone_number: "+91 91234 56789", visit_date_time: at(-1, 16, 20), visit_status_description: "OPD Completed", status_code: "OPDCMP", doctor_name: "Dr. Vikram Singh", hospital_branch: "Kondapur", em_name: "Arjun Nair", visit_remarks: "Orthopedic consultation completed" },
-  ];
-};
-
 export const ScheduledVisitsPage = () => {
   const { emId: paramEmId } = useParams();
   const navigate = useNavigate();
@@ -212,11 +194,9 @@ export const ScheduledVisitsPage = () => {
     { reporting_manager_id: Number(user?.id) || 0, offset: 0 },
     { skip: !isRM || !user?.id },
   );
-  const rms = liveRms.length > 0 ? liveRms : demoSalesHeads;
-  const allEms = liveAllEms.length > 0 ? liveAllEms : demoSalesExecutives;
-  const reportees = liveReportees.length > 0
-    ? liveReportees
-    : demoSalesExecutives.filter((executive) => executive.reporting_manager_id === Number(user?.id));
+  const rms = liveRms;
+  const allEms = liveAllEms;
+  const reportees = liveReportees;
 
   // Available EM / Sales Executive options
   const emOptions = useMemo(() => {
@@ -460,7 +440,7 @@ export const ScheduledVisitsPage = () => {
     else if (Array.isArray((visitsData as any)?.visits)) liveVisits = (visitsData as any).visits;
     else if (Array.isArray((visitsData as any)?.appointments)) liveVisits = (visitsData as any).appointments;
     else if (Array.isArray((visitsData as any)?.data)) liveVisits = (visitsData as any).data;
-    return liveVisits.length > 0 ? liveVisits : buildDemoAppointments();
+    return liveVisits;
   }, [visitsData]);
 
   // Local Search & Branch Filtering

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import {
   useGetAllUsersByRoleIdQuery,
   useGetEmDashboardDateWiseDataQuery,
@@ -41,7 +41,6 @@ import {
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
 import { cn } from "../../../utils";
-import { demoSalesExecutives } from "../../users/data/demoUsers";
 
 const formatSelectedSpan = (start: Date | null, end: Date | null) => {
   if (!start) return "All Time";
@@ -251,10 +250,8 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
   );
 
   // The effective EM list depends on whether we're locked to an RM
-  const allEmUsers = liveAllEmUsers.length > 0 ? liveAllEmUsers : demoSalesExecutives;
-  const rmReportees = liveRmReportees.length > 0
-    ? liveRmReportees
-    : demoSalesExecutives.filter((executive) => executive.reporting_manager_id === lockedRmId);
+  const allEmUsers = liveAllEmUsers;
+  const rmReportees = liveRmReportees;
   const emUsers = lockedRmId ? rmReportees : allEmUsers;
   const isEmUsersLoading = lockedRmId ? isRmReporteesLoading : isAllEmLoading;
 

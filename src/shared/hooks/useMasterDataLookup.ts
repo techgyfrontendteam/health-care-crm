@@ -2,18 +2,13 @@ import React from 'react';
 import { useGetAllMasterDataQuery } from '../../features/master/api/masterApi';
 import { useGetAllUsersByRoleIdQuery } from '../../features/users/api/usersApi';
 import { convertProjectLeadStatusToObject } from '../../utils/projectLeadStatus';
-import { demoSalesExecutives, demoSalesHeads } from '../../features/users/data/demoUsers';
 
 export const useMasterDataLookup = () => {
   const { data: masterData } = useGetAllMasterDataQuery();
   const { data: liveRms = [] } = useGetAllUsersByRoleIdQuery({ role_id: 3, offset: 0 });
   const { data: liveEms = [] } = useGetAllUsersByRoleIdQuery({ role_id: 4, offset: 0 });
-  const rms = liveRms.length > 0 ? liveRms : demoSalesHeads;
-  const ems = liveEms.length > 0 ? liveEms : demoSalesExecutives;
-  const demoProjects: Record<number, string> = { 1: 'Nizampet', 2: 'Kondapur', 3: 'KPHB', 4: 'Nizampet', 5: 'KPHB' };
-  const demoSources: Record<number, string> = { 1: 'Website', 2: 'Doctor Referral', 3: 'Walk-in', 4: 'Google Ads', 5: 'WhatsApp', 6: 'Social Media' };
-  const demoStatuses: Record<number, string> = { 1: 'New enquiry', 2: 'Consultation requested', 3: 'Callback required', 4: 'Appointment scheduled', 5: 'Follow-up due', 6: 'OPD booked', 7: 'Treatment discussed' };
-  const demoSpecialisations: Record<number, string> = { 1: 'Cardiology', 2: 'Orthopedics', 3: 'Neurology', 4: 'Oncology', 5: 'Pediatrics' };
+  const rms = liveRms;
+  const ems = liveEms;
 
   const projectLeadStatuses = React.useMemo(() => {
     const rawData =
@@ -28,7 +23,7 @@ export const useMasterDataLookup = () => {
 
   const getStatusLabel = React.useCallback((id: number | null | undefined) => {
     if (!id) return '--';
-    return masterData?.lead_statuses.find(s => s.id === id)?.description || demoStatuses[id] || `ID: ${id}`;
+    return masterData?.lead_statuses.find(s => s.id === id)?.description || `ID: ${id}`;
   }, [masterData]);
 
   const getProjectLeadStatusLabel = React.useCallback((projectLeadStatusId: number | null | undefined) => {
@@ -49,12 +44,12 @@ export const useMasterDataLookup = () => {
 
   const getProjectLabel = React.useCallback((id: number | null | undefined) => {
     if (!id) return '--';
-    return masterData?.projects.find(p => p.id === id)?.description || demoProjects[id] || `N/A`;
+    return masterData?.projects.find(p => p.id === id)?.description || `ID: ${id}`;
   }, [masterData]);
 
   const getSourceLabel = React.useCallback((id: number | null | undefined) => {
     if (!id) return '--';
-    return masterData?.sources.find(s => s.id === id)?.description || demoSources[id] || `ID: ${id}`;
+    return masterData?.sources.find(s => s.id === id)?.description || `ID: ${id}`;
   }, [masterData]);
 
   const getRmLabel = React.useCallback((id: number | null | undefined) => {
@@ -71,12 +66,12 @@ export const useMasterDataLookup = () => {
 
   const getBranchLabel = React.useCallback((id: number | null | undefined) => {
     if (!id) return '--';
-    return masterData?.branches?.find(b => b.id === id)?.description || demoProjects[id] || `ID: ${id}`;
+    return masterData?.branches?.find(b => b.id === id)?.description || `ID: ${id}`;
   }, [masterData]);
 
   const getSpecialisationLabel = React.useCallback((id: number | null | undefined) => {
     if (!id) return '--';
-    return masterData?.specialisations?.find(s => s.id === id)?.description || demoSpecialisations[id] || `ID: ${id}`;
+    return masterData?.specialisations?.find(s => s.id === id)?.description || `ID: ${id}`;
   }, [masterData]);
 
   return React.useMemo(() => ({

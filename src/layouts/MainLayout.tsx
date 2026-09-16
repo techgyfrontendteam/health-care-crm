@@ -6,7 +6,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "@/app/providers/AuthProvider";
 import {
   LogOut,
   LayoutDashboard,
@@ -31,7 +31,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { SidebarNotifications } from "./components/SidebarNotifications";
-import { usePermissions } from "../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { Button } from "../components/ui/button";
 import { cn } from "../utils";
 import { GlobalApiLoader } from "../shared/components/GlobalApiLoader";

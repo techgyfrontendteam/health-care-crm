@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { ExperienceManagersPage } from './ExperienceManagersPage';
 
 export const EmDashboardPage: React.FC = () => {

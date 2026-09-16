@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../app/store';
-import { setCredentials, logoutUser, setPasswordSuccess } from '../features/auth/store/authSlice';
+import type { RootState } from '@/app/store';
+import { setCredentials, logoutUser, setPasswordSuccess } from '@/features/auth/store/authSlice';
 
 interface AuthContextType {
   isAuthenticated: boolean;

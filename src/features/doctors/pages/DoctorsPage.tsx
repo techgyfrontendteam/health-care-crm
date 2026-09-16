@@ -19,7 +19,6 @@ import {
 import { toast } from "sonner";
 import { useGetAllDoctorsQuery, useGetDoctorStatsQuery } from "../api/doctorsApiSlice";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
-import { mockDoctors } from "../data/doctorsData";
 
 export const DoctorsPage = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -133,19 +132,7 @@ export const DoctorsPage = () => {
       }));
       setDoctors(mappedDocs);
     } else {
-      const query = debouncedSearch.trim().toLowerCase();
-      const selectedBranch = masterData?.branches?.find((item) => item.id === selectedBranchId)?.description.toLowerCase();
-      const selectedSpec = masterData?.specialisations?.find((item) => item.id === selectedSpecId)?.description.toLowerCase();
-      const selectedService = masterData?.services?.find((item) => item.id === selectedServiceId)?.description.toUpperCase();
-
-      setDoctors(mockDoctors.filter((doctor) => {
-        const matchesSearch = !query || [doctor.name, doctor.specialization, doctor.hospital_branch, doctor.phone_number]
-          .some((value) => String(value || "").toLowerCase().includes(query));
-        const matchesBranch = !selectedBranch || doctor.hospital_branch?.toLowerCase().includes(selectedBranch);
-        const matchesSpec = !selectedSpec || doctor.specialization.toLowerCase().includes(selectedSpec);
-        const matchesService = !selectedService || doctor.department === "Both" || selectedService.includes(doctor.department);
-        return matchesSearch && matchesBranch && matchesSpec && matchesService;
-      }));
+      setDoctors([]);
     }
   }, [allDoctorsResp, masterData, debouncedSearch, selectedBranchId, selectedSpecId, selectedServiceId]);
 

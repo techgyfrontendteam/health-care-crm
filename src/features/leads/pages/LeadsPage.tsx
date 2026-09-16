@@ -36,7 +36,7 @@ import {
   useGetAllUsersByRoleIdQuery,
   useGetReporteesQuery,
 } from "../../users/api/usersApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { PERMISSIONS } from "../../../config/permissions";
 import { useDebounce } from "../../../shared/hooks/useDebounce";
 import { MultiSelect } from "../../../components/ui/multi-select";
@@ -59,7 +59,6 @@ import { JunkLeadsPage } from './JunkLeadsPage';
 import { LeadJunkReviewPage } from './LeadJunkReviewPage';
 import { ReassignRMModal } from '../components/ReassignRMModal';
 import type { JunkLead } from '../data/junkLeadsData';
-import { demoLeads } from '../data/demoLeads';
 
 export const LeadsPage = () => {
   const dispatch = useAppDispatch();
@@ -447,14 +446,6 @@ export const LeadsPage = () => {
 
   const leads = React.useMemo(() => {
     let list = isAdmin ? adminLeads : (isRM ? rmLeads : emLeads);
-
-    if (list.length === 0) {
-      list = demoLeads.filter((lead) => {
-        if (isAdmin && activeTab === 0) return lead.assigned_to_rm === null;
-        if (isAdmin && activeTab === 1) return lead.assigned_to_rm !== null;
-        return lead.assigned_to_rm !== null;
-      });
-    }
 
     // Fallback frontend search filtering if backend misses it
     if (debouncedSearch) {
@@ -865,11 +856,6 @@ export const LeadsPage = () => {
   }, [leads, sortField, sortOrder]);
 
   const activeLeadsData = isAdmin ? rawAdminLeads : (isRM ? rawRmLeads : rawEmLeads);
-  const isShowingDemoLeads = React.useMemo(() => {
-    const rawList = Array.isArray(activeLeadsData) ? activeLeadsData : (activeLeadsData?.data || []);
-    return rawList.length === 0;
-  }, [activeLeadsData]);
-
   const totalLeads = React.useMemo(() => {
     const rawList = Array.isArray(activeLeadsData) ? activeLeadsData : (activeLeadsData?.data || []);
 
@@ -1104,7 +1090,7 @@ export const LeadsPage = () => {
 
             <LeadTable
               data={sortedLeads}
-              isLoading={!isShowingDemoLeads && (isLoading || isFetching)}
+              isLoading={isLoading || isFetching}
               page={page}
               limit={limit}
               total={totalLeads}

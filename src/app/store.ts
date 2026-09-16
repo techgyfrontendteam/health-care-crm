@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import type { AnyAction, Reducer } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
-import { baseApi } from './api/baseApi';
+import { baseApi } from '@/shared/api/baseApi';
 import authReducer from '../features/auth/store/authSlice';
 import leadsReducer from '../features/leads/store/leadsSlice';
 

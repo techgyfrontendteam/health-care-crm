@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type {
   CreateDoctorRequest,
   GetAllDoctorsRequest,
@@ -24,6 +24,14 @@ export const doctorsApiSlice = baseApi.injectEndpoints({
       }),
       providesTags: ['Doctors'],
     }),
+    getDoctorById: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: '/doctors/getDoctorById', method: 'POST', body }),
+      providesTags: ['Doctors'],
+    }),
+    updateDoctor: builder.mutation<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: '/doctors/updateDoctor', method: 'POST', body }),
+      invalidatesTags: ['Doctors'],
+    }),
     getDoctorStats: builder.query<GetDoctorStatsResponse, GetDoctorStatsRequest>({
       query: (body) => ({
         url: '/doctors/getDoctorStats',
@@ -38,5 +46,7 @@ export const doctorsApiSlice = baseApi.injectEndpoints({
 export const {
   useCreateDoctorMutation,
   useGetAllDoctorsQuery,
+  useGetDoctorByIdQuery,
+  useUpdateDoctorMutation,
   useGetDoctorStatsQuery,
 } = doctorsApiSlice;

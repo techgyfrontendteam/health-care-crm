@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type {
   Lead,
   CreateLeadRequest,
@@ -38,6 +38,34 @@ export const leadsApi = baseApi.injectEndpoints({
         body,
       }),
       providesTags: (result, error, arg) => [{ type: "Leads", id: arg.uuid }],
+    }),
+    getLeadObjectionDetailsAndChecklist: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getLeadObjectionDetailsAndChecklist", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getLeadDetailsByLeadUuid: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getLeadDetailsByLeadUuid", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    updateLeadObjections: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/updatedLeadObjections", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    getLeadDetailsByPhoneNumber: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getLeadDetailsByPhoneNumber", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getEmLeadsByRmId: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getEmLeadsByRmId", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getLeadStatsByUserId: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getLeadStatsByUserId", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getLeadsAndObjectionsByCustomerId: builder.query<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/getLeadDetailsbycustomer_id", method: "POST", body }),
+      providesTags: ["Leads"],
     }),
     getLeadsByCustomerUuid: builder.query<
       GetLeadsResponse,
@@ -189,6 +217,40 @@ export const leadsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Leads"],
     }),
+    sendWhatsappMessageNotification: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/sendWhatsappMessageNotification", method: "POST", body }),
+    }),
+    sendCallSummaryCompleteNotification: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/sendCallSummeryCompleteNotification", method: "POST", body }),
+    }),
+    createLeadNextBestActions: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/createLeadNextBestActions", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    createLeadConsolidatedCallSummary: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/createLeadConsolidatedCallSummary", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    createLeadProjectScore: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/project-scores/create", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    updateLeadProjectScore: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/project-scores/update", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    deleteLeadProjectScoreById: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/project-scores/delete-by-id", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    deleteLeadProjectScoresByLead: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/project-scores/delete-by-lead", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
+    getLeadProjectScoresByLead: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leads/project-scores/get-by-lead", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
     getVisitsByUserId: builder.query<
       any[],
       {
@@ -263,11 +325,21 @@ export const leadsApi = baseApi.injectEndpoints({
       ],
     }),
   }),
+  // Turbopack can re-evaluate this module during Fast Refresh. Replacing the
+  // identical definitions prevents duplicate endpoint warnings in dev.
+  overrideExisting: process.env.NODE_ENV === "development",
 });
 
 export const {
   useGetLeadsQuery,
   useGetLeadByIdQuery,
+  useGetLeadObjectionDetailsAndChecklistQuery,
+  useGetLeadDetailsByLeadUuidQuery,
+  useUpdateLeadObjectionsMutation,
+  useGetLeadDetailsByPhoneNumberQuery,
+  useGetEmLeadsByRmIdQuery,
+  useGetLeadStatsByUserIdQuery,
+  useGetLeadsAndObjectionsByCustomerIdQuery,
   useCreateLeadMutation,
   useUpdateLeadMutation,
   useBulkAssignLeadsToRmMutation,
@@ -278,6 +350,15 @@ export const {
   useGetLeadsByRmIdQuery,
   useGetLeadsByEmIdQuery,
   useAddLeadActivityMutation,
+  useSendWhatsappMessageNotificationMutation,
+  useSendCallSummaryCompleteNotificationMutation,
+  useCreateLeadNextBestActionsMutation,
+  useCreateLeadConsolidatedCallSummaryMutation,
+  useCreateLeadProjectScoreMutation,
+  useUpdateLeadProjectScoreMutation,
+  useDeleteLeadProjectScoreByIdMutation,
+  useDeleteLeadProjectScoresByLeadMutation,
+  useGetLeadProjectScoresByLeadQuery,
   useGetVisitsByUserIdQuery,
   useBulkImportLeadsMutation,
   useLazyGetLeadByIdQuery,

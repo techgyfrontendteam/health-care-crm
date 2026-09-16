@@ -19,8 +19,8 @@ import { useGetWarRoomDataQuery } from "../api/warRoomApi";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useGetAllProjectEmAndRmDataQuery } from "../../leads/api/leadsApi";
 import { ReportProgressBar } from "../../reports/components/ReportProgressBar";
-import { usePermissions } from "../../../hooks/usePermissions";
-import { useAuth } from "../../../context/AuthContext";
+import { usePermissions } from "@/shared/hooks/usePermissions";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { toast } from "sonner";
 
 // Date utility functions

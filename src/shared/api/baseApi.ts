@@ -1,17 +1,14 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import { logoutUser, setCredentials } from '../../features/auth/store/authSlice';
-import { storage } from '../../shared/utils/localStorage';
+import { logoutUser, setCredentials } from '@/features/auth/store/authSlice';
+import { storage } from '@/shared/utils/localStorage';
 import { Mutex } from 'async-mutex';
 
 // Create a new mutex
 const mutex = new Mutex();
-const DEMO_TOKEN = 'demo-session-token';
 
 const baseQuery = fetchBaseQuery({
-  // baseUrl: 'http://localhost:3000',
   baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://y7lidobvl7.execute-api.ap-south-1.amazonaws.com',
-  // baseUrl: 'https://nonslippery-monumentally-lane.ngrok-free.dev',
   prepareHeaders: (headers, { getState }) => {
     const stateToken = (getState() as any)?.auth?.token;
     const localToken = storage.get('crm_token', null) || localStorage.getItem('token') || localStorage.getItem('crm_token');
@@ -36,16 +33,12 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
   let result = await baseQuery(args, api, extraOptions);
 
   const url = typeof args === 'string' ? args : args.url;
-  const activeToken = (api.getState() as any)?.auth?.token;
-  const isDemoSession = activeToken === DEMO_TOKEN;
   const isAuthEndpoint =
     url.includes('/auth/login') ||
     url.includes('/auth/refreshToken') ||
     url.includes('/auth/forgotPassword');
 
-  // Demo sessions intentionally have no backend-issued JWT. API failures may
-  // render empty/error states, but must never destroy the local demo session.
-  if (result.error && result.error.status === 401 && !isAuthEndpoint && !isDemoSession) {
+  if (result.error && result.error.status === 401 && !isAuthEndpoint) {
     // Checking whether the mutex is locked
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
@@ -103,6 +96,6 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 export const baseApi = createApi({
   reducerPath: 'baseApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps', 'Appointments', 'Doctors'],
+  tagTypes: ['Users', 'Leads', 'Customers', 'Master', 'FollowUps', 'Appointments', 'Doctors', 'Templates', 'Telephony'],
   endpoints: () => ({}),
 });

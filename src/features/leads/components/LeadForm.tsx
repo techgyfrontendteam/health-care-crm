@@ -31,7 +31,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '../../../components/ui/
 import { Loader2, User, ClipboardList, Check, ChevronsUpDown, Stethoscope } from 'lucide-react';
 import { DatePicker, TimePicker } from '../../../shared/components/DateTimePicker';
 import { useGetAllUsersQuery, useGetAllUsersByRoleIdQuery, useGetReporteesQuery } from '../../users/api/usersApi';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { useGetAllMasterDataQuery } from '../../master/api/masterApi';
 import { cn } from '../../../utils';
 import type { CreateLeadRequest } from '../types';

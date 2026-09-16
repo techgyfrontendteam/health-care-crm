@@ -37,7 +37,7 @@ import {
 import type { Lead, ProjectEmAndRmData, ProjectRmData } from '../types';
 import { type ColumnDef } from '../../../shared/components/DataTable/DataTable';
 import { useMasterDataLookup } from '../../../shared/hooks/useMasterDataLookup';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { PERMISSIONS } from '../../../config/permissions';
 import { useGetAllProjectEmAndRmDataQuery, useLazyGetLeadByIdQuery } from '../api/leadsApi';
 import { cn, getProjectStatusOptions } from '../../../utils';

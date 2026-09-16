@@ -1,17 +1,25 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 
 export const callsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getMyTelephonyProfile: builder.query<any, void>({
+      query: () => ({ url: "/tataTele/getMyTelephonyProfile", method: "POST", body: {} }),
+      providesTags: ["Telephony"],
+    }),
+    getAllTelephonyAgents: builder.query<any, Record<string, unknown> | void>({
+      query: (body = {}) => ({ url: "/tataTele/getAllAgents", method: "POST", body }),
+      providesTags: ["Telephony"],
+    }),
     initiateClickToCall: builder.mutation<any, { customer_uuid: string; lead_uuid?: string; agent_id: number }>({
       query: (payload) => ({
-        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/click-to-call",
+        url: "/tataTele/click-to-call",
         method: "POST",
         body: payload,
       }),
     }),
     getCallRecords: builder.mutation<any, { from_date: string; to_date: string; limit?: number; offset?: number }>({
       query: (payload) => ({
-        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/call-records",
+        url: "/tataTele/call-records",
         method: "POST",
         body: {
           limit: 20,
@@ -22,13 +30,13 @@ export const callsApi = baseApi.injectEndpoints({
     }),
     getTelephonyProviders: builder.mutation<any, void>({
       query: () => ({
-        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/getTelephonyProviders",
+        url: "/tataTele/getTelephonyProviders",
         method: "POST",
       }),
     }),
     getExtensionTypes: builder.mutation<any, void>({
       query: () => ({
-        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/getExtensionTypes",
+        url: "/tataTele/getExtensionTypes",
         method: "POST",
       }),
     }),
@@ -42,7 +50,7 @@ export const callsApi = baseApi.injectEndpoints({
       is_active?: number;
     }>({
       query: (payload) => ({
-        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/upsertTelephonyAgent",
+        url: "/tataTele/upsertTelephonyAgent",
         method: "POST",
         body: {
           is_active: 1,
@@ -50,6 +58,15 @@ export const callsApi = baseApi.injectEndpoints({
           ...payload,
         },
       }),
+      invalidatesTags: ["Telephony"],
+    }),
+    createInboundQueue: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: "/tataTele/inbound-queue", method: "POST", body }),
+      invalidatesTags: ["Telephony"],
+    }),
+    getInboundQueues: builder.query<any, Record<string, unknown> | void>({
+      query: (body = {}) => ({ url: "/tataTele/getInboundQueues", method: "POST", body }),
+      providesTags: ["Telephony"],
     }),
     createCall: builder.mutation<any, {
       lead_uuid: string;
@@ -73,17 +90,44 @@ export const callsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Leads"],
     }),
+    getCallDetailsByCallId: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leadCalls/getCallDetailsByCallId", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getCallHistoryByPhoneNumber: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leadCalls/getCallHistoryByPhoneNumber", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getCallHistoryByUserId: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leadCalls/getCallHistoryByUserId", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    getCallsByLeadUuid: builder.query<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leadCalls/getCallsByLeadUuid", method: "POST", body }),
+      providesTags: ["Leads"],
+    }),
+    updateCall: builder.mutation<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: "/leadCalls/updateCall", method: "POST", body }),
+      invalidatesTags: ["Leads"],
+    }),
   }),
   overrideExisting: false,
 });
 
 export const { 
+  useGetMyTelephonyProfileQuery,
+  useGetAllTelephonyAgentsQuery,
   useInitiateClickToCallMutation, 
   useGetCallRecordsMutation,
   useGetTelephonyProvidersMutation,
   useGetExtensionTypesMutation,
   useUpsertTelephonyAgentMutation,
+  useCreateInboundQueueMutation,
+  useGetInboundQueuesQuery,
   useCreateCallMutation,
+  useGetCallDetailsByCallIdQuery,
+  useGetCallHistoryByPhoneNumberQuery,
+  useGetCallHistoryByUserIdQuery,
+  useGetCallsByLeadUuidQuery,
+  useUpdateCallMutation,
 } = callsApi;
-
-

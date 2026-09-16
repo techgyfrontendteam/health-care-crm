@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 
 export interface AnalyzeCallRequest {
   call_id?: string | number;

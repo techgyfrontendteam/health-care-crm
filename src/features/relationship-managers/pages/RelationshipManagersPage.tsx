@@ -20,7 +20,7 @@ import { ReportFilterDialog } from "../../reports/components/ReportFilterDialog"
 import type { FilterTab } from "../../reports/components/ReportFilterDialog";
 import { LeadQualityDistribution } from "../../project-analytics/components/LeadQualityDistribution";
 import { ReportProgressBar } from "../../reports/components/ReportProgressBar";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { Dialog, DialogContent, DialogTitle } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -32,8 +32,6 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { cn } from "../../../utils";
 import { getRMDashboardData } from "../data/rmDashboardData";
-import { demoSalesExecutives, demoSalesHeads } from "../../users/data/demoUsers";
-import { demoLeads } from "../../leads/data/demoLeads";
 
 const formatSelectedSpan = (start: Date | null, end: Date | null) => {
   if (!start) return "All Time";
@@ -98,7 +96,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
     role_id: 3,
     offset: 0,
   });
-  const rmUsers = liveRmUsers.length > 0 ? liveRmUsers : demoSalesHeads;
+  const rmUsers = liveRmUsers;
 
 
   const getProgressBarColor = (label: string) => {
@@ -186,7 +184,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
     role_id: 4,
     offset: 0,
   });
-  const emUsers = liveEmUsers.length > 0 ? liveEmUsers : demoSalesExecutives;
+  const emUsers = liveEmUsers;
 
   const emIds = useMemo(() => {
     return emUsers.map((u: any) => u.id);
@@ -422,17 +420,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
   // Detailed Active Escalations list data
   const escalationsList = useMemo(() => {
     if (!escalatedResponse || !Array.isArray(escalatedResponse.data)) {
-      return demoLeads.slice(4, 7).map((lead, index) => ({
-        id: `#${lead.lead_id}`,
-        uuid: lead.uuid,
-        customerName: `${lead.first_name} ${lead.last_name}`,
-        phone: lead.phone_number,
-        email: lead.email_address || "—",
-        project: lead.hospital_branch || "—",
-        status: lead.status.toUpperCase(),
-        reason: ["Callback SLA breached", "Patient requested urgent assistance", "Documents awaiting review"][index],
-        em: demoSalesExecutives[index]?.first_name + " " + demoSalesExecutives[index]?.last_name,
-      }));
+      return [];
     }
 
     return escalatedResponse.data.map((item) => {
@@ -462,17 +450,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
   // Detailed Stale Queue list data
   const staleList = useMemo(() => {
     if (!staleResponse || !Array.isArray(staleResponse.data)) {
-      return demoLeads.slice(5, 8).map((lead, index) => ({
-        id: `#${lead.lead_id}`,
-        uuid: lead.uuid,
-        customerName: `${lead.first_name} ${lead.last_name}`,
-        phone: lead.phone_number,
-        email: lead.email_address || "—",
-        project: lead.hospital_branch || "—",
-        status: lead.status.toUpperCase(),
-        idle: ["Idle for 2 days", "Idle for 3 days", "Idle for 5 days"][index],
-        em: demoSalesExecutives[index]?.first_name + " " + demoSalesExecutives[index]?.last_name,
-      }));
+      return [];
     }
 
     return staleResponse.data.map((item) => {

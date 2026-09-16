@@ -1,4 +1,4 @@
-import { baseApi } from "../../../app/api/baseApi";
+import { baseApi } from "@/shared/api/baseApi";
 import type { GetWarRoomDataRequest, GetWarRoomDataResponse } from "../types";
 
 export const warRoomApi = baseApi.injectEndpoints({

@@ -16,10 +16,9 @@ import {
   useUpdateUserMutation,
   useDeleteUserMutation
 } from '../api/usersApi';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { toast } from 'sonner';
 import type { User } from '../types';
-import { demoSalesExecutives, demoSalesHeads } from '../data/demoUsers';
 
 interface UsersFeaturePageProps {
   roleId: number;
@@ -68,9 +67,7 @@ export const UsersFeaturePage = ({
   }, { skip: !isRM || !isEMScreen });
 
   const liveServerUsers = isRM && isEMScreen ? reportees : allUsers;
-  const serverUsers = liveServerUsers.length > 0
-    ? liveServerUsers
-    : (roleId === 3 ? demoSalesHeads : demoSalesExecutives);
+  const serverUsers = liveServerUsers;
   const isLoading = isRM && isEMScreen ? isReporteesLoading : isAllLoading;
   const isFetching = isRM && isEMScreen ? isReporteesFetching : isAllFetching;
 
@@ -167,7 +164,7 @@ export const UsersFeaturePage = ({
 
       <UserTable
         data={sortedAndFilteredData}
-        isLoading={liveServerUsers.length > 0 && (isLoading || isFetching)}
+        isLoading={isLoading || isFetching}
         page={page}
         limit={limit}
         total={totalItems}

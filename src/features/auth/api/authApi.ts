@@ -1,4 +1,4 @@
-import { baseApi } from '../../../app/api/baseApi';
+import { baseApi } from '@/shared/api/baseApi';
 import type { LoginRequest, LoginResponse, UpdatePasswordRequest, UpdatePasswordResponse, Role, GetUserRolesRequest, GetUserByIdRequest, GetUserByIdResponse } from '../types/index';
 
 export const authApi = baseApi.injectEndpoints({
@@ -24,6 +24,21 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    logout: builder.mutation<unknown, Record<string, unknown> | void>({
+      query: (body = {}) => ({ url: '/auth/logout', method: 'POST', body }),
+    }),
+    resetPassword: builder.mutation<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: '/auth/resetPassword', method: 'POST', body }),
+    }),
+    sendVerificationEmail: builder.mutation<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: '/auth/sendVerificationEmail', method: 'POST', body }),
+    }),
+    testNotification: builder.mutation<unknown, Record<string, unknown> | void>({
+      query: (body = {}) => ({ url: '/auth/testNotification', method: 'POST', body }),
+    }),
+    triggerPasswordUpdate: builder.mutation<unknown, Record<string, unknown>>({
+      query: (body) => ({ url: '/auth/triggerPasswordUpdate', method: 'POST', body }),
+    }),
     getUserRoles: builder.mutation<Role[], GetUserRolesRequest>({
       query: (body) => ({
         url: '/users/getUserRoles',
@@ -41,4 +56,15 @@ export const authApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useForgotPasswordMutation, useUpdatePasswordMutation, useGetUserRolesMutation, useGetUserByIdMutation } = authApi;
+export const {
+  useLoginMutation,
+  useForgotPasswordMutation,
+  useUpdatePasswordMutation,
+  useLogoutMutation,
+  useResetPasswordMutation,
+  useSendVerificationEmailMutation,
+  useTestNotificationMutation,
+  useTriggerPasswordUpdateMutation,
+  useGetUserRolesMutation,
+  useGetUserByIdMutation,
+} = authApi;

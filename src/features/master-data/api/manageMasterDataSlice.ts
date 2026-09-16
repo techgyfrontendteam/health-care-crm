@@ -1,4 +1,4 @@
-import { baseApi } from '../../../app/api/baseApi';
+import { baseApi } from '@/shared/api/baseApi';
 
 import type {
   CreateLeadStatusRequest,
@@ -153,6 +153,18 @@ export const manageMasterDataSlice = baseApi.injectEndpoints({
         body,
       }),
     }),
+    createTemplate: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: '/templates/createTemplate', method: 'POST', body }),
+      invalidatesTags: ['Templates'],
+    }),
+    updateTemplate: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: '/templates/updateTemplate', method: 'POST', body }),
+      invalidatesTags: ['Templates'],
+    }),
+    deleteTemplate: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: '/templates/deleteTemplate', method: 'POST', body }),
+      invalidatesTags: ['Templates'],
+    }),
   }),
 });
 
@@ -174,4 +186,7 @@ export const {
   useGetProjectWiseContentsMutation,
   useSendWhatsappMessageMutation,
   useGetProjectWiseTemplatesMutation,
+  useCreateTemplateMutation,
+  useUpdateTemplateMutation,
+  useDeleteTemplateMutation,
 } = manageMasterDataSlice;

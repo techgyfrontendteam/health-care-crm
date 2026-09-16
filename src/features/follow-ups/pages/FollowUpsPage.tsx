@@ -13,11 +13,10 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "../../../utils";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { useGetLeadsQuery } from "../../leads/api/leadsApi";
-import { initialFollowUps } from "../data/followUpsData";
 import type { FollowUp } from "../data/followUpsData";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 import {
   useGetAllFollowupsByUserIdQuery,
@@ -175,7 +174,7 @@ export const FollowUpsPage: React.FC = () => {
   const [createFollowUpApi, { isLoading: isCreating }] = useCreateFollowUpMutation();
 
   // State
-  const [followUps, setFollowUps] = useState<FollowUp[]>(initialFollowUps);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
 
   // Tab State: "Scheduled" or "Completed" or "Missed"
   const [activeTab, setActiveTab] = useState<"Scheduled" | "Completed" | "Missed">(
@@ -474,15 +473,10 @@ export const FollowUpsPage: React.FC = () => {
     });
   }, [rawFollowupsList, getRmLabel, getEmLabel, queryUserIds, lookupMasterData]);
 
-  // Combine Mock Data & API Data
+  // Render backend data only.
   const mergedFollowUps = useMemo<FollowUp[]>(() => {
-    if (apiFollowUps.length > 0) return apiFollowUps;
-    return initialFollowUps.filter((item) => {
-      if (activeTab === "Scheduled") return item.status === "Pending";
-      if (activeTab === "Completed") return item.status === "Completed";
-      return item.status === "Overdue";
-    });
-  }, [activeTab, apiFollowUps]);
+    return apiFollowUps;
+  }, [apiFollowUps]);
 
   // Filter Data based on Search Query
   const filteredFollowUps = useMemo(() => {

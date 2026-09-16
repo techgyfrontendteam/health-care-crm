@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useGetLeadsQuery } from "../api/leadsApi";
 import { useGetAllUsersQuery } from "../../users/api/usersApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { Loader2, User } from "lucide-react";
 import { useMemo } from "react";
 

@@ -16,7 +16,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
 import { useGetMarketingDataQuery } from "../api/marketingApi";
-import { usePermissions } from "../../../hooks/usePermissions";
+import { usePermissions } from "@/shared/hooks/usePermissions";
 import { ReportFilterDialog } from "../../reports/components/ReportFilterDialog";
 import type { FilterTab } from "../../reports/components/ReportFilterDialog";
 import { 

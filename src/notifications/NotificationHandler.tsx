@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { requestForToken, deleteCurrentToken, getMessagingInstance } from './firebase';
 import { onMessage } from 'firebase/messaging';
 import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../app/store';
 import { useRegisterDeviceMutation, useDeviceHeartbeatMutation } from './notificationsSlice';

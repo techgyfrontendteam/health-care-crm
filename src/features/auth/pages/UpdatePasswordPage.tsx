@@ -15,7 +15,7 @@ import {
 import { useUpdatePasswordMutation } from '../api/authApi';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 // ✅ Schema
 const schema = z

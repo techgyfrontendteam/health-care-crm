@@ -1,6 +1,6 @@
 import React from 'react';
 import { DataTable } from '../../../shared/components/DataTable/DataTable';
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { useMasterDataLookup } from '../../../shared/hooks/useMasterDataLookup';
 import { Pencil, Users, Phone, LayoutList } from 'lucide-react';
 import { Button } from '../../../components/ui/button';

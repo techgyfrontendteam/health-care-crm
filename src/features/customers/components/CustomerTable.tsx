@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
 } from '../../../components/ui/dropdown-menu';
 
-import { usePermissions } from '../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { PERMISSIONS } from '../../../config/permissions';
 
 interface CustomerTableProps {

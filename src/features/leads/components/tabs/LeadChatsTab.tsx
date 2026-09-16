@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../../components/ui/button';
 import { formatDate } from '../../../../utils';
 import type { LeadChat } from '../../types';
-import { usePermissions } from '../../../../hooks/usePermissions';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { useGetAllUsersQuery } from '../../../users/api/usersApi';
 import { S3_BASE_URL } from '../../../../config/constants';
 import { ChatMessageMedia } from '../ChatMessageMedia';

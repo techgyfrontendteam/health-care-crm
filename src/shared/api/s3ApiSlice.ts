@@ -1,4 +1,4 @@
-import { baseApi } from '../../app/api/baseApi';
+import { baseApi } from '@/shared/api/baseApi';
 
 export interface UploadFileResponse {
   message: string;
@@ -9,6 +9,18 @@ export interface UploadFileResponse {
 export interface DownloadUrlRequest {
   key: string;
   bucketName?: string;
+}
+
+export interface GenerateUrlRequest {
+  filename: string;
+  contentType: string;
+  bucketName?: string;
+}
+
+export interface GenerateUrlResponse {
+  presignedUrl?: string;
+  uploadUrl?: string;
+  key: string;
 }
 
 export interface DownloadUrlResponse {
@@ -68,6 +80,13 @@ export const s3ApiSlice = baseApi.injectEndpoints({
         body,
       }),
     }),
+    generateUploadUrl: builder.mutation<GenerateUrlResponse, GenerateUrlRequest>({
+      query: (body) => ({
+        url: '/s3/generateUrl',
+        method: 'POST',
+        body,
+      }),
+    }),
     downloadUrl: builder.mutation<DownloadUrlResponse, DownloadUrlRequest>({
       query: (body) => ({
         url: '/s3/downloadUrl',
@@ -101,6 +120,7 @@ export const s3ApiSlice = baseApi.injectEndpoints({
 
 export const { 
   useUploadFileMutation, 
+  useGenerateUploadUrlMutation,
   useDownloadUrlMutation,
   useStartMultipartUploadMutation,
   useGetMultipartUrlsMutation,
