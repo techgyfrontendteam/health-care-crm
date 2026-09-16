@@ -25,6 +25,7 @@ import { AppDrawer } from "../../../shared/components/AppDrawer/AppDrawer";
 import { LeadForm } from "../components/LeadForm";
 import { toast } from "sonner";
 import { formatDate, getProjectStatusOptions } from "../../../utils";
+import type { Lead } from "../types";
 
 const formatDateTimeForTataTele = (date: Date) => {
   const year = date.getFullYear();
@@ -258,7 +259,7 @@ export const LeadDetailsPage = () => {
   const [createCall] = useCreateCallMutation();
   const [uploadFile] = useUploadFileMutation();
   const [analyzeCall] = useAnalyzeCallMutation();
-  const callRecordsPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const callRecordsPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [localNote, setLocalNote] = useState<string | null>(null);
 
   useEffect(() => {

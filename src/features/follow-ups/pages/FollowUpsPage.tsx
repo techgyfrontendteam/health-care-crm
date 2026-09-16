@@ -465,7 +465,7 @@ export const FollowUpsPage: React.FC = () => {
     });
 
     // Sort descending by rawDate
-    return mapped.sort((a, b) => {
+    return mapped.sort((a: any, b: any) => {
       const dateA = new Date(a.rawDate || 0).getTime();
       const dateB = new Date(b.rawDate || 0).getTime();
       return dateB - dateA;
@@ -479,7 +479,7 @@ export const FollowUpsPage: React.FC = () => {
 
   // Filter Data based on Search Query
   const filteredFollowUps = useMemo(() => {
-    return mergedFollowUps.filter((item) => {
+    return mergedFollowUps.filter((item: any) => {
       // Search Query (Lead Name, Lead ID, RM)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -906,7 +906,7 @@ export const FollowUpsPage: React.FC = () => {
             <span>No {activeTab.toLowerCase()} follow-ups found for your selection.</span>
           </div>
         ) : (
-          filteredFollowUps.map((item) => (
+          filteredFollowUps.map((item: any) => (
             <div
               key={item.id}
               className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-4 py-2.5 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5"

@@ -93,6 +93,8 @@ export interface Lead {
   branch_id?: number;
   branch?: string;
   branch_name?: string;
+  location_id?: number;
+  location?: string;
   followup_date?: string;
   next_followup_date?: string;
   appointment_date?: string;
@@ -153,7 +155,7 @@ export interface CreateLeadRequest {
   lead_status_id?: number;
   lead_priority_id: number;
   source_id: number;
-  project_id: number;
+  project_id?: number | null;
   first_name: string;
   last_name: string;
   phone_number: string;

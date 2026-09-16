@@ -196,7 +196,7 @@ export const leadsApi = baseApi.injectEndpoints({
         offset: number;
         start_date: string;
         end_date: string;
-        appointments_status_id: number;
+        appointments_status_id?: number | string;
       }
     >({
       query: (params) => ({

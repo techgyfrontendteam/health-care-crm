@@ -461,7 +461,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
 
 
   const handleDownload = (call: LeadCall) => {
-    window.open(getSummaryDocUrl(call), "_blank");
+    window.open(getSummaryPdfUrl(call), "_blank");
   };
 
   return (

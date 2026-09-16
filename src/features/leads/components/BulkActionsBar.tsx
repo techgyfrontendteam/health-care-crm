@@ -15,6 +15,7 @@ import {
 } from '../../../components/ui/command';
 import { Separator } from '../../../components/ui/separator';
 import { cn } from '../../../utils';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -53,6 +54,9 @@ export const BulkActionsBar = ({
 }: BulkActionsBarProps) => {
   const [rmOpen, setRmOpen] = React.useState(false);
   const [emOpen, setEmOpen] = React.useState(false);
+  const { currentRole } = usePermissions();
+  const roleCode = currentRole?.code || '';
+  const assignLabel = (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? 'Assign Sales Executive' : 'Assign RM';
 
   if (selectedCount === 0) return null;
 
@@ -83,8 +87,7 @@ export const BulkActionsBar = ({
                   className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2"
                 >
                   <UserCircle2 className="h-4 w-4" />
-                                    {(() => { const { currentRole } = usePermissions(); const roleCode = currentRole?.code || ''; const label = (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? 'Assign Sales Executive' : 'Assign RM'; return label; })()}
-
+                  {assignLabel}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="center" side="top" sideOffset={16}>
