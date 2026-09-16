@@ -129,6 +129,26 @@
 }
 
 @layer base {
+  /* One title color across every page, card, table section, and dialog. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #0f1a3a !important;
+  }
+
+  /* Titles on dark dashboard focus cards retain accessible contrast. */
+  .dashboard-focus-card h1,
+  .dashboard-focus-card h2,
+  .dashboard-focus-card h3,
+  .dashboard-focus-card h4,
+  .dashboard-focus-card h5,
+  .dashboard-focus-card h6 {
+    color: #ffffff !important;
+  }
+
   * {
     @apply border-border;
   }
@@ -176,6 +196,24 @@
 }
 
 @layer utilities {
+  .crm-soft-surface {
+    box-shadow:
+      0 1px 2px rgb(15 26 58 / 0.025),
+      0 10px 30px rgb(15 26 58 / 0.045);
+  }
+
+  .crm-soft-surface-quiet {
+    box-shadow:
+      0 1px 2px rgb(15 26 58 / 0.02),
+      0 6px 18px rgb(15 26 58 / 0.035);
+  }
+
+  .crm-soft-focus {
+    box-shadow:
+      0 2px 6px rgb(15 26 52 / 0.08),
+      0 14px 32px rgb(15 26 52 / 0.12);
+  }
+
   .clinical-grid {
     background-color: #ffffff;
     background-image:
@@ -250,6 +288,20 @@ button:active,
 a[role="button"]:active,
 [role="button"]:active {
   transform: none !important;
+}
+
+/* Keep hover feedback clean: color and border changes only, without lift/glow shadows. */
+[class*="hover:shadow"]:hover,
+[class*="hover:drop-shadow"]:hover,
+.group:hover [class*="group-hover:shadow"],
+.group:hover [class*="group-hover:drop-shadow"] {
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-drop-shadow: drop-shadow(0 0 #0000) !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+  filter: var(--tw-blur, ) var(--tw-brightness, ) var(--tw-contrast, )
+    var(--tw-grayscale, ) var(--tw-hue-rotate, ) var(--tw-invert, )
+    var(--tw-saturate, ) var(--tw-sepia, ) var(--tw-drop-shadow, ) !important;
 }
 
 @keyframes crm-popup-enter {
@@ -367,4 +419,11 @@ a[role="button"]:active,
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding: 0 !important;
+}
+
+/* Search fields use the CRM's restrained corporate radius instead of pills. */
+input[type="search"],
+input[placeholder*="search" i],
+input[aria-label*="search" i] {
+  border-radius: 6px !important;
 }

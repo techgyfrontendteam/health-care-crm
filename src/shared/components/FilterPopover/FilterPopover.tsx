@@ -15,11 +15,11 @@ export const FilterPopover = ({ children, onReset, activeFilterCount = 0, align 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2 relative">
-          <SlidersHorizontal className="h-4 w-4" />
+        <Button variant="outline" className="gap-2.5 px-3.5 py-2 h-9 relative">
+          <SlidersHorizontal className="h-4 w-4 shrink-0" />
           Filter
           {activeFilterCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
+            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
               {activeFilterCount}
             </span>
           )}
@@ -31,9 +31,9 @@ export const FilterPopover = ({ children, onReset, activeFilterCount = 0, align 
           {onReset && activeFilterCount > 0 && (
             <button
               onClick={onReset}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5 shrink-0" />
               Reset
             </button>
           )}

@@ -172,7 +172,7 @@ export const RevenueMetricCards: React.FC<RevenueMetricCardsProps> = ({ metrics 
       </div>
 
       {/* 6. Yearly Revenue */}
-      <div className="bg-gradient-to-br from-[#063669] to-[#0b4b8c] p-4 rounded-2xl text-white shadow-sm hover:shadow-md transition-all group flex flex-col justify-between">
+      <div className="dashboard-focus-card group flex flex-col justify-between rounded-md border border-[#0F1A34] bg-[#0F1A34] p-4 text-white shadow-sm transition-all hover:shadow-md">
         <div>
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold text-blue-200 uppercase tracking-wider">

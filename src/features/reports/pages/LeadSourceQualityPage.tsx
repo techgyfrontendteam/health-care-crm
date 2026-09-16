@@ -341,10 +341,10 @@ export const LeadSourceQualityPage = () => {
               setTempProjectId(appliedFilters.projectId);
               setIsProjectModalOpen(true);
             }}
-            className="flex items-center gap-2 border border-zinc-250 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-4 py-2.5 rounded-full text-sm font-semibold text-slate-700 dark:text-zinc-300 transition-colors duration-200 shadow-sm"
+            className="flex items-center gap-2.5 border border-zinc-250 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-4 py-2 rounded-full text-sm font-semibold text-slate-700 dark:text-zinc-300 transition-colors duration-200 shadow-sm cursor-pointer"
           >
-            {selectedProjectLabel}
-            <ChevronDown className="w-4 h-4 text-slate-500" />
+            <span>{selectedProjectLabel}</span>
+            <ChevronDown className="w-4 h-4 text-slate-500 ml-1.5 shrink-0" />
           </button>
         </div>
       </div>

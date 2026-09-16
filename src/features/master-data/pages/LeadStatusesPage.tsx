@@ -300,10 +300,10 @@ export const LeadStatusesPage: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                className="flex items-center justify-between bg-[#F2F4F6] dark:bg-zinc-850 hover:bg-slate-200/40 border border-slate-200/20 px-[24px] rounded-[8px] w-[287px] h-[48px] font-['Inter'] font-semibold text-[16px] leading-[24px] text-[#063669] dark:text-blue-400 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center justify-between gap-2.5 bg-[#F2F4F6] dark:bg-zinc-850 hover:bg-slate-200/40 border border-slate-200/20 px-4 py-2.5 rounded-xl w-[287px] h-[48px] font-['Inter'] font-semibold text-[15px] leading-[24px] text-[#063669] dark:text-blue-400 transition-colors shadow-sm cursor-pointer"
               >
                 <span>{selectedProjectLabel}</span>
-                <ChevronDown className="w-5 h-5 text-[#063669] dark:text-blue-400" />
+                <ChevronDown className="w-5 h-5 text-[#063669] dark:text-blue-400 shrink-0 ml-1.5" />
               </button>
 
               {isProjectDropdownOpen && (
@@ -313,7 +313,7 @@ export const LeadStatusesPage: React.FC = () => {
                       setSelectedProjectId("");
                       setIsProjectDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer"
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedProjectId === "" ? "bg-blue-600" : "bg-slate-300"
@@ -328,7 +328,7 @@ export const LeadStatusesPage: React.FC = () => {
                         setSelectedProjectId(p.id);
                         setIsProjectDropdownOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer"
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedProjectId === p.id ? "bg-blue-600" : "bg-slate-350"

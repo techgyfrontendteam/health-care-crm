@@ -3,6 +3,7 @@ export type DoctorStatus = "Available" | "In Consultation" | "On Leave" | "Emerg
 
 export interface Doctor {
   id: number;
+  uuid?: string;
   name: string;
   first_name?: string;
   last_name?: string;
@@ -17,6 +18,9 @@ export interface Doctor {
   email: string;
   phone_number: string;
   image_url: string;
+  rating?: number;
+  patients_count?: number;
+  availability_status?: DoctorStatus;
   consultation_fee: number;
   working_hours?: string;
   available_start_time?: string;

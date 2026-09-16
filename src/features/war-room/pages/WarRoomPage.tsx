@@ -567,26 +567,26 @@ export const WarRoomPage: React.FC = () => {
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setIsRmDropdownOpen(!isRmDropdownOpen)}
-                className="flex items-center gap-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[155px] justify-between"
+                className="flex items-center gap-2.5 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[155px] min-h-[42px] justify-between"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <span className="truncate max-w-[120px]">
                     {selectedRmName === "All Sales Heads" ? "Select Sales Head" : selectedRmName}
                   </span>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-1.5 shrink-0" />
               </button>
 
               {isRmDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-100 rounded-2xl shadow-xl py-3 z-40 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="px-3 pb-2.5 border-b border-slate-100 flex items-center gap-2">
+                  <div className="px-3 pb-2.5 border-b border-slate-100 flex items-center gap-2.5">
                     <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <input
                       type="text"
                       placeholder="Search Sales Head..."
                       value={rmSearchQuery}
                       onChange={(e) => setRmSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-xs font-semibold text-slate-700 outline-none placeholder:text-slate-455"
+                      className="w-full bg-transparent text-xs font-semibold text-slate-700 outline-none placeholder:text-slate-400"
                     />
                   </div>
 
@@ -596,7 +596,7 @@ export const WarRoomPage: React.FC = () => {
                         setSelectedRmName("All Sales Heads");
                         setIsRmDropdownOpen(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-bold hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-bold hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
                     >
                       <span>All Sales Heads</span>
                       {selectedRmName === "All Sales Heads" && (
@@ -615,7 +615,7 @@ export const WarRoomPage: React.FC = () => {
 
                   <div className="max-h-56 overflow-y-auto px-2 space-y-0.5 scrollbar-thin">
                     {filteredRms.length === 0 ? (
-                      <div className="px-3 py-2.5 text-xs text-slate-400 font-medium">
+                      <div className="px-3.5 py-2.5 text-xs text-slate-400 font-medium">
                         No managers found
                       </div>
                     ) : (
@@ -629,7 +629,7 @@ export const WarRoomPage: React.FC = () => {
                               setIsRmDropdownOpen(false);
                               setRmSearchQuery("");
                             }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs hover:bg-slate-50 transition-colors cursor-pointer"
+                            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-2.5">
                               <div
@@ -662,15 +662,15 @@ export const WarRoomPage: React.FC = () => {
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-              className="flex items-center gap-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[155px] justify-between"
+              className="flex items-center gap-2.5 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[155px] min-h-[42px] justify-between"
             >
-              <div className="flex items-center gap-2">
-                <ListFilter className="w-3.5 h-3.5 text-slate-400" />
+              <div className="flex items-center gap-2.5">
+                <ListFilter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="truncate max-w-[120px]">
                   {selectedProject?.description || "Select Project"}
                 </span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-1.5 shrink-0" />
             </button>
 
             {isProjectDropdownOpen && (
@@ -691,7 +691,7 @@ export const WarRoomPage: React.FC = () => {
                           setSelectedRmName("All Sales Heads"); // Reset RM selection when project changes
                           setIsProjectDropdownOpen(false);
                         }}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         <span className="text-slate-700 truncate max-w-[140px]">
                           {proj.description}
@@ -717,7 +717,7 @@ export const WarRoomPage: React.FC = () => {
               setQuickSelect(appliedQuickSelect);
               setIsDateModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[140px] min-h-[42px]"
+            className="flex items-center gap-2.5 bg-[#f8fafc] hover:bg-[#f1f5f9] border border-slate-200/50 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[140px] min-h-[42px]"
           >
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span>{appliedQuickSelect ? appliedQuickSelect : formatShortDateSpan(startDate, endDate)}</span>

@@ -10,6 +10,7 @@ import {
   Loader2,
   Lock,
   Pencil,
+  ChevronDown,
 } from 'lucide-react';
 import { useCreateFollowUpMutation, useUpdateFollowUpMutation } from '../../../follow-ups/api/followUpsApi';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
@@ -681,6 +682,24 @@ export const LeadFollowUpsTab = ({
                       </>
                     )}
                   </select>
+                  <div className="relative">
+                    <select 
+                      value={purpose}
+                      onChange={(e) => setPurpose(e.target.value)}
+                      className="w-full h-11 pl-3.5 pr-9 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer appearance-none"
+                    >
+                      {lookupMasterData?.lead_followup_types?.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.description}</option>
+                      )) || (
+                        <>
+                          <option value="1">Site Visit Pitch</option>
+                          <option value="2">General Discussion</option>
+                          <option value="3">Document Collection</option>
+                        </>
+                      )}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  </div>
                 </div>
 
                 {/* Assigned Sales Executive */}

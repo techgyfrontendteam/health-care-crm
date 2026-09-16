@@ -23,6 +23,7 @@ import {
 } from "../../users/api/usersApi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { cn } from "../../../utils";
+import { demoSalesExecutives, demoSalesHeads } from "../../users/data/demoUsers";
 
 // Date formatting helpers
 const formatApiDate = (d: Date | null | undefined) => {
@@ -169,7 +170,24 @@ const getStatusBadgeStyle = (codeOrDesc: string) => {
   };
 };
 
-const BRANCH_CITIES = ["All", "Hyderabad", "Bengaluru", "Mumbai", "Delhi", "Chennai", "Pune"];
+const BRANCH_CITIES = ["All", "Nizampet", "Kondapur", "KPHB"];
+
+const buildDemoAppointments = () => {
+  const at = (dayOffset: number, hour: number, minute = 0) => {
+    const date = new Date();
+    date.setDate(date.getDate() + dayOffset);
+    date.setHours(hour, minute, 0, 0);
+    return date.toISOString();
+  };
+
+  return [
+    { id: "demo-apt-1", lead_id: 2005, lead_uuid: "demo-lead-2005", c_first_name: "Kavya", c_last_name: "Iyer", phone_number: "+91 94444 55667", visit_date_time: at(0, 10, 30), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Ananya Rao", hospital_branch: "Nizampet", em_name: "Nisha Kapoor", visit_remarks: "Cardiology consultation and ECG review" },
+    { id: "demo-apt-2", lead_id: 2006, lead_uuid: "demo-lead-2006", c_first_name: "Aditya", c_last_name: "Menon", phone_number: "+91 90123 45678", visit_date_time: at(0, 12, 15), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Manish Mehta", hospital_branch: "Kondapur", em_name: "Arjun Nair", visit_remarks: "Gastroenterology consultation" },
+    { id: "demo-apt-3", lead_id: 2007, lead_uuid: "demo-lead-2007", c_first_name: "Meera", c_last_name: "Kapoor", phone_number: "+91 98760 12345", visit_date_time: at(1, 9, 45), visit_status_description: "Appointment Rescheduled", status_code: "RESCHD", doctor_name: "Dr. Priya Nair", hospital_branch: "KPHB", em_name: "Sneha Rao", visit_remarks: "Pediatric vaccination consultation" },
+    { id: "demo-apt-4", lead_id: 2008, lead_uuid: "demo-lead-2008", c_first_name: "Vikram", c_last_name: "Shah", phone_number: "+91 98220 33445", visit_date_time: at(2, 15, 0), visit_status_description: "OPD Booked", status_code: "OPDBKD", doctor_name: "Dr. Kavita Deshmukh", hospital_branch: "Nizampet", em_name: "Asha Patel", visit_remarks: "Dermatology procedure assessment" },
+    { id: "demo-apt-5", lead_id: 2002, lead_uuid: "demo-lead-2002", c_first_name: "Diya", c_last_name: "Reddy", phone_number: "+91 91234 56789", visit_date_time: at(-1, 16, 20), visit_status_description: "OPD Completed", status_code: "OPDCMP", doctor_name: "Dr. Vikram Singh", hospital_branch: "Kondapur", em_name: "Arjun Nair", visit_remarks: "Orthopedic consultation completed" },
+  ];
+};
 
 export const ScheduledVisitsPage = () => {
   const { emId: paramEmId } = useParams();
@@ -182,18 +200,23 @@ export const ScheduledVisitsPage = () => {
 
   // Master Data & Users Queries
   const { data: masterData } = useGetAllMasterDataQuery();
-  const { data: rms = [] } = useGetAllUsersByRoleIdQuery({
+  const { data: liveRms = [] } = useGetAllUsersByRoleIdQuery({
     role_id: 3,
     offset: 0,
   });
-  const { data: allEms = [] } = useGetAllUsersByRoleIdQuery(
+  const { data: liveAllEms = [] } = useGetAllUsersByRoleIdQuery(
     { role_id: 4, offset: 0 },
     { skip: !isAdmin },
   );
-  const { data: reportees = [] } = useGetReporteesQuery(
+  const { data: liveReportees = [] } = useGetReporteesQuery(
     { reporting_manager_id: Number(user?.id) || 0, offset: 0 },
     { skip: !isRM || !user?.id },
   );
+  const rms = liveRms.length > 0 ? liveRms : demoSalesHeads;
+  const allEms = liveAllEms.length > 0 ? liveAllEms : demoSalesExecutives;
+  const reportees = liveReportees.length > 0
+    ? liveReportees
+    : demoSalesExecutives.filter((executive) => executive.reporting_manager_id === Number(user?.id));
 
   // Available EM / Sales Executive options
   const emOptions = useMemo(() => {
@@ -410,7 +433,7 @@ export const ScheduledVisitsPage = () => {
       offset: 0,
       start_date: apiStartDate,
       end_date: apiEndDate,
-      appointments_status_id: selectedStatusId || "",
+      appointments_status_id: selectedStatusId || 0,
     }),
     [queryUserIds, apiStartDate, apiEndDate, selectedStatusId]
   );
@@ -432,12 +455,12 @@ export const ScheduledVisitsPage = () => {
 
   // Extract visits list safely
   const rawVisitsList = useMemo(() => {
-    if (!visitsData) return [];
-    if (Array.isArray(visitsData)) return visitsData;
-    if (Array.isArray((visitsData as any).visits)) return (visitsData as any).visits;
-    if (Array.isArray((visitsData as any).appointments)) return (visitsData as any).appointments;
-    if (Array.isArray((visitsData as any).data)) return (visitsData as any).data;
-    return [];
+    let liveVisits: any[] = [];
+    if (Array.isArray(visitsData)) liveVisits = visitsData;
+    else if (Array.isArray((visitsData as any)?.visits)) liveVisits = (visitsData as any).visits;
+    else if (Array.isArray((visitsData as any)?.appointments)) liveVisits = (visitsData as any).appointments;
+    else if (Array.isArray((visitsData as any)?.data)) liveVisits = (visitsData as any).data;
+    return liveVisits.length > 0 ? liveVisits : buildDemoAppointments();
   }, [visitsData]);
 
   // Local Search & Branch Filtering
@@ -538,7 +561,7 @@ export const ScheduledVisitsPage = () => {
                   <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#063669] dark:bg-blue-950 dark:text-blue-300">
                     {selectedEmIds.length}/{emOptions.length}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0" />
                 </div>
               </button>
 
@@ -547,7 +570,7 @@ export const ScheduledVisitsPage = () => {
                   {/* Select All */}
                   <div
                     onClick={handleToggleSelectAllEms}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#063669] dark:text-blue-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer border-b border-slate-100 dark:border-zinc-800 pb-2 mb-1"
+                    className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold text-[#063669] dark:text-blue-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer border-b border-slate-100 dark:border-zinc-800 pb-2 mb-1"
                   >
                     <div className="flex items-center gap-2.5">
                       <div
@@ -569,7 +592,7 @@ export const ScheduledVisitsPage = () => {
 
                   {/* Options List */}
                   {emOptions.length === 0 ? (
-                    <div className="px-3 py-3 text-center text-xs text-slate-400 font-medium">
+                    <div className="px-3.5 py-3 text-center text-xs text-slate-400 font-medium">
                       No Sales Executives found
                     </div>
                   ) : (
@@ -581,7 +604,7 @@ export const ScheduledVisitsPage = () => {
                         <div
                           key={emId}
                           onClick={() => handleToggleEm(emId)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer select-none"
+                          className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer select-none"
                         >
                           <div
                             className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
@@ -616,7 +639,7 @@ export const ScheduledVisitsPage = () => {
               }}
               className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer min-w-[180px] justify-between shadow-2xs"
             >
-              <div className="flex items-center gap-2 truncate">
+              <div className="flex items-center gap-2.5 truncate">
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${
                     selectedStatusId === 0
@@ -630,7 +653,7 @@ export const ScheduledVisitsPage = () => {
                     : selectedStatusObj?.description || "Select Status"}
                 </span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1.5" />
             </button>
 
             {isStatusDropdownOpen && (
@@ -642,13 +665,13 @@ export const ScheduledVisitsPage = () => {
                     setIsStatusDropdownOpen(false);
                   }}
                   className={cn(
-                    "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors",
+                    "flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors",
                     selectedStatusId === 0
                       ? "bg-blue-50 text-[#063669] font-bold dark:bg-blue-950/60 dark:text-blue-300"
                       : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900"
                   )}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <span className="w-2 h-2 rounded-full bg-slate-400" />
                     <span>All Appointments</span>
                   </div>
@@ -670,13 +693,13 @@ export const ScheduledVisitsPage = () => {
                         setIsStatusDropdownOpen(false);
                       }}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors",
+                        "flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors",
                         isSelected
                           ? "bg-blue-50 text-[#063669] font-bold dark:bg-blue-950/60 dark:text-blue-300"
                           : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900"
                       )}
                     >
-                      <div className="flex items-center gap-2 truncate">
+                      <div className="flex items-center gap-2.5 truncate">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
                         <span className="truncate">{status.description}</span>
                       </div>
@@ -704,11 +727,11 @@ export const ScheduledVisitsPage = () => {
               }}
               className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer min-w-[160px] justify-between shadow-2xs"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <CalendarIcon className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400 shrink-0" />
                 <span>{appliedQuickSelect ? appliedQuickSelect : formatShortDateSpan(startDate, endDate)}</span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
             </button>
 
             {isDateModalOpen && (
@@ -828,7 +851,7 @@ export const ScheduledVisitsPage = () => {
             <select
               value={branchFilter}
               onChange={(e) => setBranchFilter(e.target.value)}
-              className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer shadow-2xs h-[37px]"
+              className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer shadow-2xs pr-8 h-[37px] appearance-auto"
             >
               {BRANCH_CITIES.map((b) => (
                 <option key={b} value={b}>
@@ -836,6 +859,20 @@ export const ScheduledVisitsPage = () => {
                 </option>
               ))}
             </select>
+            <div className="relative">
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 pl-3.5 pr-9 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer shadow-2xs h-[37px] appearance-none"
+              >
+                {BRANCH_CITIES.map((b) => (
+                  <option key={b} value={b}>
+                    {b === "All" ? "All Branches" : b}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            </div>
           </div>
         </div>
 
@@ -862,7 +899,7 @@ export const ScheduledVisitsPage = () => {
       {/* Appointment Cards List                                 */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="space-y-3 pt-1">
-        {isLoading || isFetching ? (
+        {(isLoading || isFetching) && rawVisitsList.length === 0 ? (
           <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center text-xs font-semibold text-slate-500 dark:text-zinc-400 flex flex-col items-center justify-center gap-3">
             <div className="w-7 h-7 border-3 border-[#063669] border-t-transparent rounded-full animate-spin" />
             <span>Loading appointments...</span>

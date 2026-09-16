@@ -28,7 +28,6 @@ import {
   IndianRupee,
   TrendingUp,
   Search,
-  Globe2,
   ShieldCheck,
 } from "lucide-react";
 import { SidebarNotifications } from "./components/SidebarNotifications";
@@ -244,21 +243,21 @@ export const MainLayout = () => {
   const navItemsByRole: Record<string, { label: string; path: string; icon: React.ReactNode }[]> = {
     // Super Admin & Admin — full set, in spec order
     SADMIN: [
-      { label: 'Dashboard', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       // { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
       { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
+      { label: 'Sales Executive', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
     ],
     ADMIN: [
-      { label: 'Dashboard', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Manage Leads', path: '/leads', icon: <NavIcon name="manage" /> },
       { label: 'Doctors', path: '/doctors', icon: <UserStar size={22} /> },
       // { label: 'Revenue Dashboard', path: '/revenue', icon: <IndianRupee size={22} /> },
       { label: 'Sales Dashboard', path: '/sales', icon: <TrendingUp size={22} /> },
+      { label: 'Sales Executive', path: '/relationship-managers', icon: <NavIcon name="relation" /> },
       { label: 'Appointments', path: '/scheduled-visits', icon: <NavIcon name="schedule" /> },
       { label: 'Follow ups', path: '/follow-ups', icon: <NavIcon name="follow-ups" /> },
       { label: 'Reports', path: '/reports', icon: <NavIcon name="reports" /> },
@@ -340,7 +339,7 @@ export const MainLayout = () => {
 
         <div
           className={cn(
-            "flex h-[72px] shrink-0 flex-col justify-center whitespace-nowrap overflow-hidden border-b border-[#e2e8f0] px-6 transition-all duration-300",
+            "px-6 flex flex-col justify-center h-24 whitespace-nowrap overflow-hidden border-b border-[#e2e8f0] transition-all duration-300",
             isSidebarOpen ? "items-start" : "items-center",
           )}
         >
@@ -417,18 +416,13 @@ export const MainLayout = () => {
         <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#e2e8f0] bg-white px-5 lg:px-7">
           <form onSubmit={handleGlobalSearch} className="relative w-full max-w-sm lg:max-w-md">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
-            <Globe2
-              aria-hidden="true"
-              className="pointer-events-none absolute right-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#0022ff]"
-              strokeWidth={1.8}
-            />
             <input
               type="search"
               value={globalSearch}
               onChange={(event) => setGlobalSearch(event.target.value)}
               placeholder="Search leads by name, phone or ID"
               aria-label="Search leads"
-              className="h-11 w-full rounded-md border border-[#e2e8f0] bg-[#f8f9fa] pl-11 pr-11 text-sm text-[#111625] outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0022ff] focus:bg-white focus:ring-2 focus:ring-[#0022ff]/10"
+              className="h-11 w-full rounded-md border border-[#e2e8f0] bg-[#f8f9fa] pl-11 pr-4 text-sm text-[#111625] outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0022ff] focus:bg-white focus:ring-2 focus:ring-[#0022ff]/10"
             />
           </form>
 

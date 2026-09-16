@@ -59,6 +59,7 @@ import { JunkLeadsPage } from './JunkLeadsPage';
 import { LeadJunkReviewPage } from './LeadJunkReviewPage';
 import { ReassignRMModal } from '../components/ReassignRMModal';
 import type { JunkLead } from '../data/junkLeadsData';
+import { demoLeads } from '../data/demoLeads';
 
 export const LeadsPage = () => {
   const dispatch = useAppDispatch();
@@ -145,6 +146,7 @@ export const LeadsPage = () => {
 
   // Junk Leads Flow State
   const [activeView, setActiveView] = useState<string>('leads');
+  const [junkSearch, setJunkSearch] = useState('');
   const [selectedJunkLead, setSelectedJunkLead] = useState<Lead | null>(null);
   const [showReassignModal, setShowReassignModal] = useState(false);
 
@@ -446,6 +448,14 @@ export const LeadsPage = () => {
   const leads = React.useMemo(() => {
     let list = isAdmin ? adminLeads : (isRM ? rmLeads : emLeads);
 
+    if (list.length === 0) {
+      list = demoLeads.filter((lead) => {
+        if (isAdmin && activeTab === 0) return lead.assigned_to_rm === null;
+        if (isAdmin && activeTab === 1) return lead.assigned_to_rm !== null;
+        return lead.assigned_to_rm !== null;
+      });
+    }
+
     // Fallback frontend search filtering if backend misses it
     if (debouncedSearch) {
       const s = debouncedSearch.toLowerCase();
@@ -468,7 +478,7 @@ export const LeadsPage = () => {
       });
     }
     return list;
-  }, [isAdmin, adminLeads, isRM, rmLeads, isEM, emLeads, activeView, masterData, debouncedSearch]);
+  }, [isAdmin, adminLeads, isRM, rmLeads, isEM, emLeads, activeTab, activeView, masterData, debouncedSearch, projectLeadStatuses]);
 
   const isLoading = isAdmin ? isAdminLoading : (isRM ? isRMLoading : isEMLoading);
   const isFetching = isAdmin ? isAdminFetching : (isRM ? isRMFetching : isEMFetching);
@@ -855,6 +865,10 @@ export const LeadsPage = () => {
   }, [leads, sortField, sortOrder]);
 
   const activeLeadsData = isAdmin ? rawAdminLeads : (isRM ? rawRmLeads : rawEmLeads);
+  const isShowingDemoLeads = React.useMemo(() => {
+    const rawList = Array.isArray(activeLeadsData) ? activeLeadsData : (activeLeadsData?.data || []);
+    return rawList.length === 0;
+  }, [activeLeadsData]);
 
   const totalLeads = React.useMemo(() => {
     const rawList = Array.isArray(activeLeadsData) ? activeLeadsData : (activeLeadsData?.data || []);
@@ -912,14 +926,20 @@ export const LeadsPage = () => {
 
       {/* Search + Tabs Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="w-full sm:w-1/2">
-          {activeView === 'leads' && (
+        <div className="w-full sm:max-w-xl">
+          {(activeView === 'leads' || activeView === 'junk') && (
             <SearchInput
-              value={search}
-              onChange={(v) =>
-                dispatch(updateTabFilters({ tabKey, updates: { search: v, page: 1 } }))
-              }
-              placeholder="Search by Lead ID, Name, or Phone Number"
+              value={activeView === 'junk' ? junkSearch : search}
+              onChange={(value) => {
+                if (activeView === 'junk') {
+                  setJunkSearch(value);
+                  return;
+                }
+                dispatch(updateTabFilters({ tabKey, updates: { search: value, page: 1 } }));
+              }}
+              placeholder={activeView === 'junk'
+                ? 'Search junk leads by ID, name, phone, or reason'
+                : 'Search by Lead ID, Name, or Phone Number'}
             />
           )}
         </div>
@@ -1084,7 +1104,7 @@ export const LeadsPage = () => {
 
             <LeadTable
               data={sortedLeads}
-              isLoading={isLoading || isFetching}
+              isLoading={!isShowingDemoLeads && (isLoading || isFetching)}
               page={page}
               limit={limit}
               total={totalLeads}
@@ -1111,6 +1131,7 @@ export const LeadsPage = () => {
         <JunkLeadsPage
           canVerify={canVerifyJunk}
           onVerify={handleVerifyLead}
+          search={junkSearch}
         />
       )}
 

@@ -85,6 +85,7 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
   });
 
   const assigned = managers.find((m) => m.id === lead.assigned_to_rm);
+  const assignedName = (lead as Lead & { rm_name?: string }).rm_name;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -94,6 +95,7 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
             style={{ minWidth: '100px', height: '32px', borderRadius: '12px' }}
             className={cn(
               "flex items-center transition-all px-2 gap-2 w-full max-w-[140px]",
+              "flex items-center transition-all px-3 py-1 gap-2.5 w-full max-w-[140px]",
               "bg-primary text-white font-bold text-[10px] shadow-sm hover:bg-primary/90 justify-center",
               disabled && "opacity-50 cursor-not-allowed"
             )}
@@ -107,6 +109,11 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
                 >
                   {assigned.rm_first_name} {assigned.rm_last_name}
                 </span>
+              </>
+            ) : assignedName && assignedName !== 'Unassigned' ? (
+              <>
+                <InitialsAvatar firstName={assignedName.split(' ')[0]} lastName={assignedName.split(' ')[1]} />
+                <span className="truncate text-xs font-bold text-white" title={assignedName}>{assignedName}</span>
               </>
             ) : (
               <span>Assign Sales Executive</span>
@@ -124,7 +131,7 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
             <CommandEmpty className="py-3 text-xs text-center text-zinc-400">
               {managers.length === 0 ? 'No Sales Executives for this project' : 'No Sales Executive found'}
             </CommandEmpty>
-            <CommandGroup className="max-h-48 overflow-y-auto">
+            <CommandGroup className="max-h-48 overflow-y-auto p-1.5">
               {filtered.map((m) => (
                 <CommandItem
                   key={m.id}
@@ -135,7 +142,7 @@ const RmAssigneeCell = ({ lead, onAssign, projectRmEm, disabled }: {
                     setSearch('');
                   }}
                   className={cn(
-                    "flex items-center gap-2 py-2 cursor-pointer",
+                    "flex items-center gap-2.5 px-3 py-2.5 cursor-pointer rounded-md",
                     lead.assigned_to_rm === m.id && "bg-primary/5"
                   )}
                 >
@@ -194,7 +201,7 @@ const EmAssigneePopoverContent = ({
             ? 'No Sales Executives for this Sales Head'
             : 'No Sales Executive found'}
       </CommandEmpty>
-      <CommandGroup className="max-h-48 overflow-y-auto">
+      <CommandGroup className="max-h-48 overflow-y-auto p-1.5">
         {filteredEms.map((em) => (
           <CommandItem
             key={em.id}
@@ -204,7 +211,7 @@ const EmAssigneePopoverContent = ({
               setOpen(false);
             }}
             className={cn(
-              "flex items-center gap-2 py-2 cursor-pointer",
+              "flex items-center gap-2.5 px-3 py-2.5 cursor-pointer rounded-md",
               lead.assigned_to_em === em.id && "bg-primary/5"
             )}
           >
@@ -241,6 +248,7 @@ const EmAssigneeCell = ({ lead, onAssign, disabled, emLabel, projectRmEm }: {
             style={{ minWidth: '100px', height: '32px', borderRadius: '12px' }}
             className={cn(
               "flex items-center transition-all px-2 gap-2 w-full max-w-[140px]",
+              "flex items-center transition-all px-3 py-1 gap-2.5 w-full max-w-[140px]",
               "bg-primary text-white font-bold text-[10px] shadow-sm hover:bg-primary/90 justify-center",
               isDisabled && "opacity-50 cursor-not-allowed"
             )}
@@ -320,13 +328,14 @@ const StatusCell = ({
           <button
             className={cn(
               "h-8 text-[11px] font-bold uppercase w-36 bg-source-bg text-primary border-2 border-primary/40 rounded-full focus:ring-0 px-4 hover:border-primary transition-colors flex items-center justify-between cursor-pointer",
+              "h-8 text-[11px] font-bold uppercase w-36 bg-source-bg text-primary border-2 border-primary/40 rounded-full focus:ring-0 px-3.5 hover:border-primary transition-colors flex items-center justify-between cursor-pointer gap-2",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
             <span className="truncate mr-1">
-              {currentStatus?.label || "Select Status"}
+              {currentStatus?.label || (lead as Lead & { status?: string }).status || "Select Status"}
             </span>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50 ml-1" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-0" align="start">
@@ -340,7 +349,7 @@ const StatusCell = ({
             <CommandEmpty className="py-3 text-xs text-center text-zinc-400">
               No status found
             </CommandEmpty>
-            <CommandGroup className="max-h-60 overflow-y-auto">
+            <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
               {filteredOptions.map((o) => {
                 const isSelected = isCurrent(o);
                 return (
@@ -352,7 +361,7 @@ const StatusCell = ({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex items-center gap-2 py-2 cursor-pointer text-[10px] uppercase font-bold",
+                      "flex items-center gap-2.5 py-2.5 px-3 cursor-pointer text-[10px] uppercase font-bold rounded-md",
                       isSelected && "bg-primary/5 text-primary"
                     )}
                   >
@@ -573,7 +582,7 @@ export const LeadTable = ({
         width: '150px',
         render: (l: Lead) => (
           <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            {l.branch_id ? getBranchLabel(l.branch_id) : (l.hospital_branch || l.branch || l.branch_name || getProjectLabel(l.project_id) || '--')}
+            {l.hospital_branch || l.branch || l.branch_name || (l.branch_id ? getBranchLabel(l.branch_id) : getProjectLabel(l.project_id)) || '--'}
           </span>
         ),
       },
@@ -688,46 +697,46 @@ export const LeadTable = ({
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 text-xs">
-                <DropdownMenuLabel className="font-normal text-zinc-500 uppercase px-3 py-2">
+              <DropdownMenuContent align="end" className="w-52 text-xs p-1.5">
+                <DropdownMenuLabel className="font-normal text-zinc-500 uppercase px-3 py-2 text-[10px] tracking-wider">
                   Lead Actions
                 </DropdownMenuLabel>
                 <Link
                   to={`/leads/${lead.uuid}`}
                   state={{ lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }}
                 >
-                  <DropdownMenuItem className="cursor-pointer gap-2 py-2">
-                    <Eye className="h-4 w-4 text-zinc-500" />
+                  <DropdownMenuItem className="cursor-pointer gap-2.5 py-2.5 px-3">
+                    <Eye className="h-4 w-4 shrink-0 text-zinc-500" />
                     <span>View Details</span>
                   </DropdownMenuItem>
                 </Link>
 
                 {can(PERMISSIONS.LEAD_EDIT) && (
                   <DropdownMenuItem
-                    className="cursor-pointer gap-2 py-2"
+                    className="cursor-pointer gap-2.5 py-2.5 px-3"
                     onClick={() => onEdit(lead)}
                   >
-                    <Pencil className="h-4 w-4 text-zinc-500" />
+                    <Pencil className="h-4 w-4 shrink-0 text-zinc-500" />
                     <span>Edit Lead</span>
                   </DropdownMenuItem>
                 )}
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer gap-2 py-2"
+                  className="cursor-pointer gap-2.5 py-2.5 px-3"
                   onClick={() => navigate(`/leads/${lead.uuid}?tab=chats&type=CM`, {
                     state: { lead, branch_id: lead.branch_id, branch: lead.branch, branch_name: lead.branch_name, hospital_branch: lead.hospital_branch, specialisation_id: lead.specialisation_id, department: lead.department }
                   })}
                 >
-                  <MessageSquare className="h-4 w-4 text-indigo-500" />
+                  <MessageSquare className="h-4 w-4 shrink-0 text-indigo-500" />
                   <span>Initialize Chat</span>
                 </DropdownMenuItem>
 
                 {can(PERMISSIONS.LEAD_SCHEDULE_VISIT) && onScheduleVisit && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onScheduleVisit(lead)} className="cursor-pointer gap-2 py-2">
-                      <CalendarClock className="h-4 w-4 text-emerald-500" />
+                    <DropdownMenuItem onClick={() => onScheduleVisit(lead)} className="cursor-pointer gap-2.5 py-2.5 px-3">
+                      <CalendarClock className="h-4 w-4 shrink-0 text-emerald-500" />
                       <span>Schedule Visit</span>
                     </DropdownMenuItem>
                   </>
@@ -738,9 +747,9 @@ export const LeadTable = ({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => onDelete(lead.uuid)}
-                      className="cursor-pointer gap-2 py-2 text-red-600 focus:text-red-600"
+                      className="cursor-pointer gap-2.5 py-2.5 px-3 text-red-600 focus:text-red-600"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 shrink-0" />
                       <span>Delete Lead</span>
                     </DropdownMenuItem>
                   </>

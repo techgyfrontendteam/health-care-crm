@@ -382,6 +382,7 @@ export const LeadForm = ({
 
     const payload: CreateLeadRequest = {
       ...values,
+      project_id: Number(values.project_id || (masterData?.projects?.[0]?.id ?? 1)),
       specialisation_id: specialisationId,
       department: departmentName,
       source_id: Number(values.source_id || initialValues?.source_id || 1),
@@ -472,7 +473,7 @@ export const LeadForm = ({
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={isSourceEmployeeOpen}
-                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50"
+                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 gap-2.5"
                                 disabled={isLoading}
                               >
                                 <span className="truncate">
@@ -483,7 +484,7 @@ export const LeadForm = ({
                                     })()
                                     : "Select Employee"}
                                 </span>
-                                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500" />
+                                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500 ml-1" />
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
@@ -502,7 +503,7 @@ export const LeadForm = ({
                                 <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                                   No employees found.
                                 </CommandEmpty>
-                                <CommandGroup className="p-1">
+                                <CommandGroup className="p-1.5">
                                   {allUsers.map((user) => (
                                     <CommandItem
                                       key={user.id}
@@ -511,7 +512,7 @@ export const LeadForm = ({
                                         field.onChange(user.id);
                                         setIsSourceEmployeeOpen(false);
                                       }}
-                                      className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
+                                      className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2.5 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
                                     >
                                       <Check
                                         className={cn(
@@ -874,7 +875,7 @@ export const LeadForm = ({
                             role="combobox"
                             aria-expanded={isRmOpen}
                             className={cn(
-                              "w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 text-left",
+                              "w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 text-left gap-2.5",
                               roleCode === 'RELMNG' && "opacity-70 cursor-not-allowed pointer-events-none bg-zinc-100"
                             )}
                             disabled={isLoading || roleCode === 'RELMNG'}
@@ -887,7 +888,7 @@ export const LeadForm = ({
                                 })()
                                 : "Unassigned"}
                             </span>
-                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500" />
+                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500 ml-1" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -906,14 +907,14 @@ export const LeadForm = ({
                             <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                               No sales heads found.
                             </CommandEmpty>
-                            <CommandGroup className="p-1">
+                            <CommandGroup className="p-1.5">
                               <CommandItem
                                 value="unassigned none"
                                 onSelect={() => {
                                   field.onChange(null);
                                   setIsRmOpen(false);
                                 }}
-                                className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2 text-sm text-zinc-500 italic data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800"
+                                className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2.5 text-sm text-zinc-500 italic data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800"
                               >
                                 <Check
                                   className={cn(
@@ -931,7 +932,7 @@ export const LeadForm = ({
                                     field.onChange(manager.id);
                                     setIsRmOpen(false);
                                   }}
-                                  className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
+                                  className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2.5 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
                                 >
                                   <Check
                                     className={cn(
@@ -967,7 +968,7 @@ export const LeadForm = ({
                             variant="outline"
                             role="combobox"
                             aria-expanded={isEmOpen}
-                            className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 text-left"
+                            className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium text-sm flex items-center justify-between shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 text-left gap-2.5"
                             disabled={isLoading || !selectedRmId || isLoadingReportees}
                           >
                             <span className="truncate">
@@ -978,7 +979,7 @@ export const LeadForm = ({
                                 })()
                                 : "Unassigned"}
                             </span>
-                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500" />
+                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-zinc-500 ml-1" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -997,14 +998,14 @@ export const LeadForm = ({
                             <CommandEmpty className="py-4 text-xs text-zinc-400 text-center">
                               No sales executives found.
                             </CommandEmpty>
-                            <CommandGroup className="p-1">
+                            <CommandGroup className="p-1.5">
                               <CommandItem
                                 value="unassigned none"
                                 onSelect={() => {
                                   field.onChange(null);
                                   setIsEmOpen(false);
                                 }}
-                                className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2 text-sm text-zinc-500 italic data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800"
+                                className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2.5 text-sm text-zinc-500 italic data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800"
                               >
                                 <Check
                                   className={cn(
@@ -1022,7 +1023,7 @@ export const LeadForm = ({
                                     field.onChange(em.id);
                                     setIsEmOpen(false);
                                   }}
-                                  className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
+                                  className="py-2.5 px-3 cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none flex items-center gap-2.5 text-sm text-zinc-800 dark:text-zinc-200 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 data-[selected=true]:text-zinc-950 dark:data-[selected=true]:text-zinc-50"
                                 >
                                   <Check
                                     className={cn(

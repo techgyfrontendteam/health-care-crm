@@ -4,17 +4,12 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import { PhoneCall, Layers, Building, BarChart3, PieChart as PieIcon } from "lucide-react";
+import { Layers, BarChart3 } from "lucide-react";
 
 interface SalesChartsProps {
   dailyTrends: DailySalesTrend[];
@@ -25,18 +20,18 @@ interface SalesChartsProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl text-xs space-y-1">
-        <p className="font-bold text-zinc-900 dark:text-zinc-100">{label}</p>
+      <div className="crm-soft-surface space-y-1 rounded-md border border-[#e2e8f0] bg-white p-3 text-xs">
+        <p className="font-bold text-[#111625]">{label}</p>
         {payload.map((p: any, i: number) => (
           <div key={i} className="flex items-center justify-between gap-4">
-            <span className="flex items-center gap-1.5 text-zinc-500">
+            <span className="flex items-center gap-1.5 text-slate-500">
               <span
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: p.color }}
               />
               {p.name}:
             </span>
-            <span className="font-extrabold text-zinc-900 dark:text-zinc-100">
+            <span className="font-extrabold text-[#111625]">
               {p.value}
             </span>
           </div>
@@ -53,40 +48,40 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
   departmentLeads,
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section aria-label="Sales trend charts" className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       {/* 1. Daily Calls & New Leads Trend Chart */}
-      <div className="lg:col-span-2 bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between">
-        <div className="flex items-center justify-between mb-4">
+      <div className="crm-soft-surface flex min-h-[390px] flex-col justify-between rounded-md border border-[#e2e8f0] bg-white p-5 sm:p-6 xl:col-span-2">
+        <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-[#063669] dark:text-blue-400" />
+            <h3 className="flex items-center gap-2 text-base font-extrabold text-[#111625]">
+              <BarChart3 className="h-5 w-5 text-[#0022ff]" />
               Daily Calls Logged & New Leads Volume
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="mt-0.5 text-xs text-slate-500">
               10-day tracking of phone outreach vs incoming lead acquisition
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs font-bold">
-            <span className="flex items-center gap-1.5 text-blue-600">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Calls Logged
+          <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold sm:justify-end">
+            <span className="flex items-center gap-1.5 text-[#0022ff]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0022ff]" /> Calls Logged
             </span>
-            <span className="flex items-center gap-1.5 text-emerald-600">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> New Leads
+            <span className="flex items-center gap-1.5 text-[#111625]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#111625]" /> New Leads
             </span>
           </div>
         </div>
 
-        <div className="h-[280px] w-full">
+        <div className="h-[280px] w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={dailyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#0022ff" stopOpacity={0.32} />
+                  <stop offset="95%" stopColor="#0022ff" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#111625" stopOpacity={0.24} />
+                  <stop offset="95%" stopColor="#111625" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -94,20 +89,20 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                tick={{ fontSize: 11, fill: "#111625", fontWeight: 600 }}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                tick={{ fontSize: 11, fill: "#111625", fontWeight: 600 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
                 dataKey="calls"
                 name="Calls Logged"
-                stroke="#3b82f6"
-                strokeWidth={3}
+                stroke="#0022ff"
+                strokeWidth={2.25}
                 fillOpacity={1}
                 fill="url(#colorCalls)"
               />
@@ -115,8 +110,8 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
                 type="monotone"
                 dataKey="new_leads"
                 name="New Leads"
-                stroke="#10b981"
-                strokeWidth={3}
+                stroke="#111625"
+                strokeWidth={2.25}
                 fillOpacity={1}
                 fill="url(#colorLeads)"
               />
@@ -126,13 +121,13 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
       </div>
 
       {/* 2. Lead Source Distribution Breakdown */}
-      <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between space-y-4">
+      <div className="crm-soft-surface flex min-h-[390px] flex-col justify-between space-y-5 rounded-md border border-[#e2e8f0] bg-white p-5 sm:p-6">
         <div>
-          <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Layers className="h-5 w-5 text-purple-600" />
+          <h3 className="flex items-center gap-2 text-base font-extrabold text-[#111625]">
+            <Layers className="h-5 w-5 text-[#0022ff]" />
             Lead Source Breakdown
           </h3>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="mt-0.5 text-xs text-slate-500">
             Performance & conversions by lead acquisition channel
           </p>
         </div>
@@ -141,16 +136,16 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
           {leadSources.map((item) => (
             <div key={item.source} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[160px]">
+                <span className="max-w-[160px] truncate text-[#111625]">
                   {item.source}
                 </span>
-                <span className="text-zinc-900 dark:text-zinc-100">
+                <span className="text-[#111625]">
                   {item.count} leads ({item.percentage}%)
                 </span>
               </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
+                  className="h-full rounded-full transition-[width] duration-500"
                   style={{
                     width: `${item.percentage * 2.5}%`,
                     backgroundColor: item.color,
@@ -161,6 +156,6 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };

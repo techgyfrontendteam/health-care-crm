@@ -49,39 +49,40 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between min-h-[40px] h-auto p-2", className)}
+          className={cn("w-full justify-between min-h-[42px] h-auto px-3.5 py-2 gap-2.5", className)}
         >
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap items-center">
             {selected.length > 0 ? (
               selected.map((s) => (
                 <Badge
                   key={s}
                   variant="secondary"
-                  className="mr-1 mb-1"
+                  className="mr-1 mb-1 px-2.5 py-0.5 text-xs inline-flex items-center gap-1.5 font-medium"
                   onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     handleUnselect(s);
                   }}
                 >
-                  {options.find((o) => o.value === s)?.label || s}
-                  <X className="ml-1 h-3 w-3 hover:text-destructive" />
+                  <span>{options.find((o) => o.value === s)?.label || s}</span>
+                  <X className="h-3 w-3 hover:text-destructive cursor-pointer shrink-0" />
                 </Badge>
               ))
             ) : (
               <span className="text-zinc-500 text-sm">{placeholder}</span>
             )}
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2.5 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty>No item found.</CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
+          <CommandGroup className="max-h-64 overflow-auto p-1.5">
             {options.map((option) => (
               <CommandItem
                 key={option.value}
+                className="gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-md"
                 onSelect={() => {
                   onChange(
                     selected.includes(option.value)
@@ -93,11 +94,11 @@ export function MultiSelect({
               >
                 <Check
                   className={cn(
-                    "mr-2 h-4 w-4",
+                    "h-4 w-4 shrink-0",
                     selected.includes(option.value) ? "opacity-100" : "opacity-0"
                   )}
                 />
-                {option.label}
+                <span>{option.label}</span>
               </CommandItem>
             ))}
           </CommandGroup>

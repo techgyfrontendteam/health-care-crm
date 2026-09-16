@@ -19,6 +19,7 @@ import {
 import { usePermissions } from '../../../hooks/usePermissions';
 import { toast } from 'sonner';
 import type { User } from '../types';
+import { demoSalesExecutives, demoSalesHeads } from '../data/demoUsers';
 
 interface UsersFeaturePageProps {
   roleId: number;
@@ -66,7 +67,10 @@ export const UsersFeaturePage = ({
     offset: serverOffset,
   }, { skip: !isRM || !isEMScreen });
 
-  const serverUsers = isRM && isEMScreen ? reportees : allUsers;
+  const liveServerUsers = isRM && isEMScreen ? reportees : allUsers;
+  const serverUsers = liveServerUsers.length > 0
+    ? liveServerUsers
+    : (roleId === 3 ? demoSalesHeads : demoSalesExecutives);
   const isLoading = isRM && isEMScreen ? isReporteesLoading : isAllLoading;
   const isFetching = isRM && isEMScreen ? isReporteesFetching : isAllFetching;
 
@@ -163,7 +167,7 @@ export const UsersFeaturePage = ({
 
       <UserTable
         data={sortedAndFilteredData}
-        isLoading={isLoading || isFetching}
+        isLoading={liveServerUsers.length > 0 && (isLoading || isFetching)}
         page={page}
         limit={limit}
         total={totalItems}

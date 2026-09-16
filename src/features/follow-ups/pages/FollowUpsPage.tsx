@@ -26,6 +26,8 @@ import {
 import { useGetReporteesQuery } from "../../users/api/usersApi";
 import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
 
+type ApiFollowUp = FollowUp & { rawDate?: string };
+
 // Date utility functions
 const getDaysInMonth = (year: number, month: number) => {
   const date = new Date(year, month, 1);
@@ -389,7 +391,7 @@ export const FollowUpsPage: React.FC = () => {
   }, [apiData]);
 
   // Map API response to UI follow-ups format
-  const apiFollowUps = useMemo(() => {
+  const apiFollowUps = useMemo<ApiFollowUp[]>(() => {
     if (!rawFollowupsList || rawFollowupsList.length === 0) return [];
     const mapped = rawFollowupsList.map((item: any, idx: number) => {
       const dateDetails = formatFollowUpDate(item.followup_date_time);
@@ -465,7 +467,7 @@ export const FollowUpsPage: React.FC = () => {
     });
 
     // Sort descending by rawDate
-    return mapped.sort((a, b) => {
+    return mapped.sort((a: ApiFollowUp, b: ApiFollowUp) => {
       const dateA = new Date(a.rawDate || 0).getTime();
       const dateB = new Date(b.rawDate || 0).getTime();
       return dateB - dateA;
@@ -473,9 +475,14 @@ export const FollowUpsPage: React.FC = () => {
   }, [rawFollowupsList, getRmLabel, getEmLabel, queryUserIds, lookupMasterData]);
 
   // Combine Mock Data & API Data
-  const mergedFollowUps = useMemo(() => {
-    return apiFollowUps;
-  }, [apiFollowUps]);
+  const mergedFollowUps = useMemo<FollowUp[]>(() => {
+    if (apiFollowUps.length > 0) return apiFollowUps;
+    return initialFollowUps.filter((item) => {
+      if (activeTab === "Scheduled") return item.status === "Pending";
+      if (activeTab === "Completed") return item.status === "Completed";
+      return item.status === "Overdue";
+    });
+  }, [activeTab, apiFollowUps]);
 
   // Filter Data based on Search Query
   const filteredFollowUps = useMemo(() => {
@@ -703,7 +710,7 @@ export const FollowUpsPage: React.FC = () => {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 bg-[#0022ff] text-white px-5 py-3.5 rounded-full shadow-xl z-50 flex items-center gap-3 animate-in slide-in-from-top duration-300 font-bold text-xs">
+        <div className="fixed top-20 right-6 bg-[#0022ff] text-white px-5 py-3.5 rounded-md shadow-xl z-50 flex items-center gap-3 animate-in slide-in-from-top duration-300 font-bold text-xs">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -721,7 +728,7 @@ export const FollowUpsPage: React.FC = () => {
             setCreateFormDate(todayStr);
             setIsGeneralCreateModalOpen(true);
           }}
-          className="flex items-center gap-2 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="flex items-center gap-2 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-5 py-2.5 rounded-md transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create Follow-Up
@@ -735,7 +742,7 @@ export const FollowUpsPage: React.FC = () => {
           {!isRoleScoped && (
             <>
               <div className="relative" ref={rmDropdownRef}>
-                <span className="text-[9px] font-black text-slate-400 block mb-1 uppercase tracking-wider">
+                <span className="text-[9px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">
                   SALES EXECUTIVE
                 </span>
                 <button
@@ -744,7 +751,7 @@ export const FollowUpsPage: React.FC = () => {
                     setIsRmDropdownOpen(!isRmDropdownOpen);
                     setIsEmDropdownOpen(false);
                   }}
-                  className="flex items-center gap-2.5 bg-[#f8f9fa] hover:bg-[#eef2f6] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[170px] justify-between"
+                  className="flex items-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 transition-colors shadow-sm cursor-pointer min-w-[170px] min-h-[42px] justify-between focus:outline-none focus:border-[#0022ff] focus:ring-2 focus:ring-[#0022ff]/10"
                 >
                   <span className="truncate max-w-[125px]">
                     {selectedRmIds.length === 0
@@ -756,10 +763,10 @@ export const FollowUpsPage: React.FC = () => {
                       : `${selectedRmIds.length} Selected`}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#0022ff]">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-sm bg-blue-50 text-[#0022ff]">
                       {selectedRmIds.length}/{rms.length}
                     </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-1 shrink-0" />
                   </div>
                 </button>
 
@@ -768,7 +775,7 @@ export const FollowUpsPage: React.FC = () => {
                     {/* Select All Option */}
                     <div
                       onClick={handleToggleSelectAllRms}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#0022ff] hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 pb-2.5 mb-1"
+                      className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold text-[#0022ff] hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 pb-2.5 mb-1"
                     >
                       <div className="flex items-center gap-2.5">
                         <div
@@ -790,7 +797,7 @@ export const FollowUpsPage: React.FC = () => {
 
                     {/* RM List Items with Checkboxes */}
                     {rms.length === 0 ? (
-                      <div className="px-3 py-4 text-center text-xs text-slate-400 font-medium">
+                      <div className="px-3.5 py-4 text-center text-xs text-slate-400 font-medium">
                         No Sales Executives found
                       </div>
                     ) : (
@@ -802,7 +809,7 @@ export const FollowUpsPage: React.FC = () => {
                           <div
                             key={rmId}
                             onClick={() => handleToggleRm(rmId)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                            className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer select-none"
                           >
                             <div
                               className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
@@ -864,7 +871,7 @@ export const FollowUpsPage: React.FC = () => {
 
           {/* Date Picker Range */}
           <div className="relative">
-            <span className="text-[9px] font-black text-slate-455 block mb-1 uppercase tracking-wider">
+            <span className="text-[9px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">
               SELECT DATE RANGE
             </span>
             <button
@@ -874,7 +881,7 @@ export const FollowUpsPage: React.FC = () => {
                 setQuickSelect(appliedQuickSelect);
                 setIsDateModalOpen(true);
               }}
-              className="flex items-center gap-3 bg-[#f8f9fa] hover:bg-[#eef2f6] border border-slate-200/50 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-colors cursor-pointer min-w-[140px] min-h-[42px]"
+              className="flex items-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 px-3.5 py-2 rounded-md text-xs font-semibold text-slate-700 shadow-sm transition-colors cursor-pointer min-w-[160px] min-h-[38px] focus:outline-none focus:border-[#0022ff] focus:ring-2 focus:ring-[#0022ff]/10"
             >
               <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
               <span>{appliedQuickSelect ? appliedQuickSelect : formatShortDateSpan(startDate, endDate)}</span>
@@ -882,13 +889,13 @@ export const FollowUpsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Scheduled / Completed / Missed Segmented Pill Tab */}
-        <div className="bg-[#eef2f6] p-1 rounded-full flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
+        {/* Scheduled / Completed / Missed segmented control */}
+        <div className="bg-[#eef2f6] p-1 rounded-md flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
           {(["Scheduled", "Completed", "Missed"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer ${activeTab === tab
+              className={`px-6 py-2 rounded-sm text-xs font-extrabold transition-all cursor-pointer ${activeTab === tab
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-slate-400 hover:text-slate-650"
                 }`}
@@ -907,13 +914,13 @@ export const FollowUpsPage: React.FC = () => {
           placeholder="Search leads....."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-13 pr-6 py-3 w-full rounded-full border border-slate-200/80 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0022ff] placeholder-slate-400 shadow-sm transition-all"
+          className="pl-13 pr-6 py-3 w-full rounded-md border border-slate-200/80 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0022ff] placeholder-slate-400 shadow-sm transition-all"
         />
       </div>
 
       {/* List cards section */}
       <div className="space-y-4 pt-2">
-        {isFollowupsLoading ? (
+        {isFollowupsLoading && apiFollowUps.length > 0 ? (
           <div className="bg-white border border-slate-200/80 rounded-[20px] p-12 text-center text-xs font-semibold text-slate-500 shadow-xs flex flex-col items-center justify-center gap-3">
             <div className="w-7 h-7 border-3 border-[#0022ff] border-t-transparent rounded-full animate-spin" />
             <span>Fetching follow-ups from server...</span>
@@ -927,7 +934,7 @@ export const FollowUpsPage: React.FC = () => {
                 setCreateFormDate(todayStr);
                 setIsGeneralCreateModalOpen(true);
               }}
-              className="flex items-center gap-1.5 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 bg-[#0022ff] hover:bg-[#001bd1] text-white text-xs font-semibold px-4 py-2 rounded-md transition-colors cursor-pointer shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               Create Follow-Up
@@ -1007,7 +1014,7 @@ export const FollowUpsPage: React.FC = () => {
                       navigate(`/leads`);
                     }
                   }}
-                  className="bg-[#0022ff] text-white text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-[#001bd1] transition-colors shadow-md"
+                  className="bg-[#0022ff] text-white text-xs font-semibold px-6 py-2.5 rounded-md hover:bg-[#001bd1] transition-colors shadow-md"
                 >
                   View Lead
                 </button>
@@ -1166,12 +1173,12 @@ export const FollowUpsPage: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600">Select Lead</label>
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <select
                     required
                     value={selectedLeadUuid}
                     onChange={(e) => setSelectedLeadUuid(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] appearance-none"
+                    className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Search and select lead...</option>
                     {leads.map((l: any) => {
@@ -1185,6 +1192,7 @@ export const FollowUpsPage: React.FC = () => {
                       );
                     })}
                   </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                 </div>
               </div>
 
@@ -1192,29 +1200,35 @@ export const FollowUpsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600">Sales Executive</label>
-                  <select
-                    value={createFormRm}
-                    onChange={(e) => setCreateFormRm(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff]"
-                  >
-                    <option value="">Select Sales Executive</option>
-                    {rms.map(r => (
-                      <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createFormRm}
+                      onChange={(e) => setCreateFormRm(e.target.value)}
+                      className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] appearance-none cursor-pointer"
+                    >
+                      <option value="">Select Sales Executive</option>
+                      {rms.map(r => (
+                        <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600">Sales Executive</label>
-                  <select
-                    value={createFormEm}
-                    onChange={(e) => setCreateFormEm(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff]"
-                  >
-                    <option value="">Select Sales Executive</option>
-                    {ems.map(e => (
-                      <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createFormEm}
+                      onChange={(e) => setCreateFormEm(e.target.value)}
+                      className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-slate-200 bg-[#f8f9fa] text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0022ff] appearance-none cursor-pointer"
+                    >
+                      <option value="">Select Sales Executive</option>
+                      {ems.map(e => (
+                        <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </div>
               </div>
 
@@ -1422,13 +1436,13 @@ export const FollowUpsPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsDateModalOpen(false)}
-                  className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-750 text-sm font-bold text-slate-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors"
+                  className="px-6 py-2.5 rounded-md border border-zinc-200 dark:border-zinc-750 text-sm font-bold text-slate-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors"
                 >
                   Dismiss
                 </button>
                 <button
                   onClick={handleApplyDateRange}
-                  className="px-6 py-2.5 bg-[#0022ff] hover:bg-[#001bd1] text-white rounded-full text-sm font-bold shadow-md transition-colors animate-in fade-in duration-200"
+                  className="px-6 py-2.5 bg-[#0022ff] hover:bg-[#001bd1] text-white rounded-md text-sm font-bold shadow-md transition-colors animate-in fade-in duration-200"
                 >
                   Apply Selection
                 </button>

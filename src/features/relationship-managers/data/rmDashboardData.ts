@@ -273,22 +273,37 @@ const allProjectsData: RMDashboardData = {
   ]
 };
 
-export const getRMDashboardData = (projectName: string): RMDashboardData => {
-  const name = projectName.toLowerCase();
-  
-  if (name.includes("natura")) {
-    return farmNaturaData;
-  }
-  if (name.includes("eco")) {
-    return ecoWorldData;
-  }
-  if (name.includes("planet green")) {
-    return planetGreenData;
-  }
-  
-  // Default to aggregated "All" data
-  return allProjectsData;
+const hospitalDashboardData: RMDashboardData = {
+  teamCallsSummary: { connectedCalls: 428, avgDuration: "4m 36s", missedCalls: 21 },
+  teamWideLeadStatus: [
+    { label: "NEW ENQUIRIES", count: 126, percentage: 36 },
+    { label: "CONSULTATIONS SCHEDULED", count: 94, percentage: 27 },
+    { label: "OPD COMPLETED", count: 78, percentage: 22 },
+    { label: "IPD ADMISSIONS", count: 52, percentage: 15 },
+  ],
+  leadQuality: { hot: 38, warm: 34, cold: 18, junk: 10, activeRate: 90 },
+  topPerformers: [
+    { rank: 1, name: "Nisha Kapoor", leads: 148, followUp: 96, visits: 42, conversionRate: 68 },
+    { rank: 2, name: "Arjun Nair", leads: 132, followUp: 93, visits: 37, conversionRate: 61 },
+    { rank: 3, name: "Sneha Rao", leads: 118, followUp: 91, visits: 34, conversionRate: 58 },
+  ],
+  escalated: { count: 7 },
+  stale: { count: 19 },
+  topObjections: [
+    { label: "Treatment cost", percentage: 34 },
+    { label: "Doctor availability", percentage: 26 },
+    { label: "Insurance coverage", percentage: 21 },
+    { label: "Travel distance", percentage: 12 },
+    { label: "Second opinion", percentage: 7 },
+  ],
+  topBookings: [
+    { name: "Nisha Kapoor", role: "SALES EXECUTIVE", bookings: 18 },
+    { name: "Arjun Nair", role: "SALES EXECUTIVE", bookings: 15 },
+    { name: "Sneha Rao", role: "SALES EXECUTIVE", bookings: 13 },
+  ],
 };
+
+export const getRMDashboardData = (_projectName: string): RMDashboardData => hospitalDashboardData;
 
 export interface DirectoryLead {
   id: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserCircle2, User, Trash2, X, Check } from 'lucide-react';
+import { UserCircle2, User, X } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import {
   Popover,
@@ -13,8 +13,7 @@ import {
   CommandInput,
   CommandItem,
 } from '../../../components/ui/command';
-import { Separator } from '../../../components/ui/separator';
-import { cn } from '../../../utils';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -45,14 +44,17 @@ export const BulkActionsBar = ({
   ems,
   onAssignRm,
   onAssignEm,
-  onMarkAsJunk,
+  onMarkAsJunk: _onMarkAsJunk,
   onCancel,
-  isLoading,
+  isLoading: _isLoading,
   showAssignRm = true,
   showAssignEm = false
 }: BulkActionsBarProps) => {
   const [rmOpen, setRmOpen] = React.useState(false);
   const [emOpen, setEmOpen] = React.useState(false);
+  const { currentRole } = usePermissions();
+  const roleCode = currentRole?.code || '';
+  const assignLabel = (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? 'Assign Sales Executive' : 'Assign RM';
 
   if (selectedCount === 0) return null;
 
@@ -80,18 +82,17 @@ export const BulkActionsBar = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2"
+                  className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2.5"
                 >
-                  <UserCircle2 className="h-4 w-4" />
-                                    {(() => { const { currentRole } = usePermissions(); const roleCode = currentRole?.code || ''; const label = (roleCode === 'SADMIN' || roleCode === 'ADMIN') ? 'Assign Sales Executive' : 'Assign RM'; return label; })()}
-
+                  <UserCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{assignLabel}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="center" side="top" sideOffset={16}>
                 <Command>
                   <CommandInput placeholder="Search RM..." className="h-9 text-xs" />
                   <CommandEmpty className="py-3 text-xs text-center text-zinc-400">No RM found</CommandEmpty>
-                  <CommandGroup className="max-h-48 overflow-y-auto">
+                  <CommandGroup className="max-h-48 overflow-y-auto p-1.5">
                     {rms.map((m) => (
                       <CommandItem
                         key={m.id}
@@ -99,7 +100,7 @@ export const BulkActionsBar = ({
                           onAssignRm(m.id);
                           setRmOpen(false);
                         }}
-                        className="flex items-center gap-2 py-2 cursor-pointer"
+                        className="flex items-center gap-2.5 py-2.5 px-3 cursor-pointer rounded-md"
                       >
                         <InitialsAvatar name={`${m.first_name} ${m.last_name}`} />
                         <span className="text-xs font-medium">{m.first_name} {m.last_name}</span>
@@ -118,17 +119,17 @@ export const BulkActionsBar = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2"
+                  className="h-10 rounded-xl px-4 text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all gap-2.5"
                 >
-                  <User className="h-4 w-4" />
-                  Assign EM
+                  <User className="h-4 w-4 shrink-0" />
+                  <span>Assign EM</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="center" side="top" sideOffset={16}>
                 <Command>
                   <CommandInput placeholder="Search EM..." className="h-9 text-xs" />
                   <CommandEmpty className="py-3 text-xs text-center text-zinc-400">No EM found</CommandEmpty>
-                  <CommandGroup className="max-h-48 overflow-y-auto">
+                  <CommandGroup className="max-h-48 overflow-y-auto p-1.5">
                     {ems.map((e) => (
                       <CommandItem
                         key={e.id}
@@ -136,7 +137,7 @@ export const BulkActionsBar = ({
                           onAssignEm(e.id);
                           setEmOpen(false);
                         }}
-                        className="flex items-center gap-2 py-2 cursor-pointer"
+                        className="flex items-center gap-2.5 py-2.5 px-3 cursor-pointer rounded-md"
                       >
                         <InitialsAvatar name={`${e.first_name} ${e.last_name}`} />
                         <span className="text-xs font-medium">{e.first_name} {e.last_name}</span>
@@ -154,17 +155,6 @@ export const BulkActionsBar = ({
 
         {/* Secondary Actions */}
         <div className="flex items-center gap-3">
-          {/* <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMarkAsJunk}
-            disabled={isLoading}
-            className="h-10 rounded-xl px-5 text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            Mark as Junk
-          </Button> */}
-
           <Button
             variant="ghost"
             size="icon"

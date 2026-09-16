@@ -314,10 +314,10 @@ export const ContentPage: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                  className="flex items-center gap-2 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-4 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[150px] justify-between"
+                  className="flex items-center gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-3.5 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[150px] min-h-[40px] justify-between"
                 >
                   <span>{selectedProjectLabel}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#002d62] dark:text-blue-450 transition-transform ${isProjectDropdownOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#002d62] dark:text-blue-450 transition-transform ml-1.5 shrink-0 ${isProjectDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {isProjectDropdownOpen && (
@@ -329,7 +329,7 @@ export const ContentPage: React.FC = () => {
                           setSelectedProjectId(p.id);
                           setIsProjectDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer"
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedProjectId === p.id ? "bg-blue-600" : "bg-slate-350"
@@ -508,14 +508,14 @@ export const ContentPage: React.FC = () => {
                       type="button"
                       onClick={() => !isUploading && setIsContentTypeDropdownOpen(!isContentTypeDropdownOpen)}
                       disabled={isUploading}
-                      className="flex items-center gap-2 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 px-4 py-2.5 rounded-xl text-xs font-bold text-[#002d62] dark:text-zinc-200 transition-colors cursor-pointer min-w-[220px] justify-between disabled:opacity-50"
+                      className="flex items-center gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 px-3.5 py-2.5 rounded-xl text-xs font-bold text-[#002d62] dark:text-zinc-200 transition-colors cursor-pointer min-w-[220px] justify-between disabled:opacity-50"
                     >
                       <span>{selectedContentTypeId ? selectedContentTypeLabel : "Select Content Type"}</span>
-                      <ChevronDown className="w-4 h-4 text-slate-455" />
+                      <ChevronDown className="w-4 h-4 text-slate-500 ml-1.5 shrink-0" />
                     </button>
 
                     {isContentTypeDropdownOpen && (
-                      <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-zinc-900 border border-slate-150 dark:border-zinc-800 rounded-xl shadow-lg py-1.5 z-50 max-h-48 overflow-y-auto">
+                      <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-zinc-900 border border-slate-150 dark:border-zinc-800 rounded-xl shadow-lg p-1.5 z-50 max-h-48 overflow-y-auto">
                         {contentTypes.map((type) => (
                           <button
                             key={type.id}
@@ -524,7 +524,7 @@ export const ContentPage: React.FC = () => {
                               setSelectedContentTypeId(type.id);
                               setIsContentTypeDropdownOpen(false);
                             }}
-                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-750 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-855 transition-colors"
+                            className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                           >
                             {type.description}
                           </button>

@@ -60,6 +60,7 @@ import { LeadEnquiriesTab } from "../components/tabs/LeadEnquiriesTab";
 import { LeadFollowUpsTab } from "../components/tabs/LeadFollowUpsTab";
 import { PointsToTalkDialog } from "../components/PointsToTalkDialog";
 import { usePermissions } from "../../../hooks/usePermissions";
+import type { Lead } from "../types";
 
 /* ── Reusable label style (Figma: Inter 600 11px uppercase #64748B) ── */
 const labelStyle: React.CSSProperties = {
@@ -242,12 +243,15 @@ export const LeadDetailsPage = () => {
   };
 
   const {
-    data: lead,
-    isLoading,
-    isError,
+    data: apiLead,
+    isLoading: isLeadLoading,
+    isError: isLeadError,
     error,
     refetch,
   } = useGetLeadByIdQuery({ uuid: leadId || "" }, { skip: !leadId, refetchOnMountOrArgChange: true });
+  const lead = apiLead || stateLead;
+  const isLoading = isLeadLoading && !stateLead;
+  const isError = isLeadError && !stateLead;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);

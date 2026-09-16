@@ -14,10 +14,12 @@ import {
   Activity,
   CheckCircle2,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useGetAllDoctorsQuery, useGetDoctorStatsQuery } from "../api/doctorsApiSlice";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
+import { mockDoctors } from "../data/doctorsData";
 
 export const DoctorsPage = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -130,8 +132,22 @@ export const DoctorsPage = () => {
         created_at: apiDoc.created_on,
       }));
       setDoctors(mappedDocs);
+    } else {
+      const query = debouncedSearch.trim().toLowerCase();
+      const selectedBranch = masterData?.branches?.find((item) => item.id === selectedBranchId)?.description.toLowerCase();
+      const selectedSpec = masterData?.specialisations?.find((item) => item.id === selectedSpecId)?.description.toLowerCase();
+      const selectedService = masterData?.services?.find((item) => item.id === selectedServiceId)?.description.toUpperCase();
+
+      setDoctors(mockDoctors.filter((doctor) => {
+        const matchesSearch = !query || [doctor.name, doctor.specialization, doctor.hospital_branch, doctor.phone_number]
+          .some((value) => String(value || "").toLowerCase().includes(query));
+        const matchesBranch = !selectedBranch || doctor.hospital_branch?.toLowerCase().includes(selectedBranch);
+        const matchesSpec = !selectedSpec || doctor.specialization.toLowerCase().includes(selectedSpec);
+        const matchesService = !selectedService || doctor.department === "Both" || selectedService.includes(doctor.department);
+        return matchesSearch && matchesBranch && matchesSpec && matchesService;
+      }));
     }
-  }, [allDoctorsResp, masterData]);
+  }, [allDoctorsResp, masterData, debouncedSearch, selectedBranchId, selectedSpecId, selectedServiceId]);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -218,7 +234,7 @@ export const DoctorsPage = () => {
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate">Total Doctors</p>
             <p className="text-lg font-black text-zinc-900 dark:text-zinc-100 leading-tight">
-              {isStatsLoading ? <Loader2 className="h-4 w-4 animate-spin text-zinc-400 inline" /> : totalCount}
+              {isStatsLoading && doctors.length === 0 ? <Loader2 className="h-4 w-4 animate-spin text-zinc-400 inline" /> : totalCount}
             </p>
           </div>
         </div>
@@ -231,7 +247,7 @@ export const DoctorsPage = () => {
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate">OP Doctors</p>
             <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 leading-tight">
-              {isStatsLoading ? <Loader2 className="h-4 w-4 animate-spin text-indigo-400 inline" /> : opdCount}
+              {isStatsLoading && doctors.length === 0 ? <Loader2 className="h-4 w-4 animate-spin text-indigo-400 inline" /> : opdCount}
             </p>
           </div>
         </div>
@@ -244,7 +260,7 @@ export const DoctorsPage = () => {
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate">IP Doctors</p>
             <p className="text-lg font-black text-purple-600 dark:text-purple-400 leading-tight">
-              {isStatsLoading ? <Loader2 className="h-4 w-4 animate-spin text-purple-400 inline" /> : ipdCount}
+              {isStatsLoading && doctors.length === 0 ? <Loader2 className="h-4 w-4 animate-spin text-purple-400 inline" /> : ipdCount}
             </p>
           </div>
         </div>
@@ -257,7 +273,7 @@ export const DoctorsPage = () => {
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate">Active Staff</p>
             <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 leading-tight">
-              {isStatsLoading ? <Loader2 className="h-4 w-4 animate-spin text-emerald-400 inline" /> : availableCount}
+              {isStatsLoading && doctors.length === 0 ? <Loader2 className="h-4 w-4 animate-spin text-emerald-400 inline" /> : availableCount}
             </p>
           </div>
         </div>
@@ -276,56 +292,67 @@ export const DoctorsPage = () => {
           </div>
 
           {/* Dropdown Filters */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-end">
+
             {/* Service Type Select */}
-            <select
-              value={selectedServiceId}
-              onChange={(e) => setSelectedServiceId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
-            >
-              <option value={0}>All Service Types</option>
-              {masterData?.services && masterData.services.length > 0 ? (
-                masterData.services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.description}
-                  </option>
-                ))
-              ) : (
-                <>
-                  <option value={1}>OP Doctors (OPD)</option>
-                  <option value={2}>IP Doctors (IPD)</option>
-                  <option value={6}>Both (IPD &amp; OPD)</option>
-                </>
-              )}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedServiceId}
+                onChange={(e) => setSelectedServiceId(Number(e.target.value))}
+                className="h-8 pl-2.5 pr-7 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[12px] font-medium text-zinc-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669]/40 cursor-pointer appearance-none"
+              >
+                <option value={0}>All Service Types</option>
+                {masterData?.services && masterData.services.length > 0 ? (
+                  masterData.services.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.description}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value={1}>OP Doctors (OPD)</option>
+                    <option value={2}>IP Doctors (IPD)</option>
+                    <option value={6}>Both (IPD &amp; OPD)</option>
+                  </>
+                )}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            </div>
 
             {/* Branch Select */}
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
-            >
-              <option value={0}>All Branches</option>
-              {masterData?.branches?.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.description}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                className="h-8 pl-2.5 pr-7 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[12px] font-medium text-zinc-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669]/40 cursor-pointer appearance-none"
+              >
+                <option value={0}>All Branches</option>
+                {masterData?.branches?.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.description}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            </div>
 
             {/* Department / Specialization Select */}
-            <select
-              value={selectedSpecId}
-              onChange={(e) => setSelectedSpecId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
-            >
-              <option value={0}>All Departments</option>
-              {masterData?.specialisations?.map((spec) => (
-                <option key={spec.id} value={spec.id}>
-                  {spec.description}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedSpecId}
+                onChange={(e) => setSelectedSpecId(Number(e.target.value))}
+                className="h-8 pl-2.5 pr-7 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[12px] font-medium text-zinc-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669]/40 cursor-pointer appearance-none"
+              >
+                <option value={0}>All Departments</option>
+                {masterData?.specialisations?.map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.description}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            </div>
+
           </div>
         </div>
       </div>
@@ -333,7 +360,7 @@ export const DoctorsPage = () => {
       {/* Main 80vh Doctor Table View with Fixed Bottom Pagination */}
       <DoctorTable
         doctors={paginatedDoctors}
-        isLoading={isAllDoctorsLoading || isAllDoctorsFetching}
+        isLoading={doctors.length === 0 && (isAllDoctorsLoading || isAllDoctorsFetching)}
         page={page}
         limit={limit}
         total={totalDoctors}

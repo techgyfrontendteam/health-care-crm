@@ -30,7 +30,7 @@ export const BranchCityDetailsCard: React.FC<BranchCityDetailsCardProps> = ({
     const uniqueCities = Array.from(new Set(allBranches.map((b) => b.city)));
 
     return (
-      <div className="bg-gradient-to-r from-slate-900 via-[#063669] to-blue-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-blue-900/50 relative overflow-hidden transition-all">
+      <div className="dashboard-focus-card relative overflow-hidden rounded-md border border-[#0F1A34] bg-[#0F1A34] p-5 text-white shadow-md transition-all sm:p-6">
         {/* Background decorative element */}
         <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         
@@ -95,7 +95,7 @@ export const BranchCityDetailsCard: React.FC<BranchCityDetailsCardProps> = ({
 
   // If a specific branch is selected
   return (
-    <div className="bg-gradient-to-r from-blue-900 via-[#063669] to-indigo-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-blue-800/60 relative overflow-hidden transition-all">
+    <div className="dashboard-focus-card relative overflow-hidden rounded-md border border-[#0F1A34] bg-[#0F1A34] p-5 text-white shadow-md transition-all sm:p-6">
       {/* Background Glow */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
 

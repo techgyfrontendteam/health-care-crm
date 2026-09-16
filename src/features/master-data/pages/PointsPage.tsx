@@ -385,10 +385,10 @@ export const PointsPage: React.FC = () => {
                     setIsProjectDropdownOpen(!isProjectDropdownOpen);
                     setIsStatusDropdownOpen(false);
                   }}
-                  className="flex items-center gap-2 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-4 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[160px] justify-between"
+                  className="flex items-center gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-3.5 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[160px] min-h-[40px] justify-between"
                 >
                   <span>{selectedProjectLabel}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-450" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-450 ml-1.5 shrink-0" />
                 </button>
 
                 {isProjectDropdownOpen && (
@@ -400,7 +400,7 @@ export const PointsPage: React.FC = () => {
                           setSelectedProjectId(p.id.toString());
                           setIsProjectDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer"
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -427,10 +427,10 @@ export const PointsPage: React.FC = () => {
                     setIsProjectDropdownOpen(false);
                   }}
                   disabled={!selectedProjectId}
-                  className="flex items-center gap-2 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-4 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[160px] justify-between disabled:opacity-50"
+                  className="flex items-center gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 px-3.5 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-450 transition-colors shadow-sm cursor-pointer min-w-[160px] min-h-[40px] justify-between disabled:opacity-50"
                 >
                   <span>{selectedStatusLabel}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-450" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-450 ml-1.5 shrink-0" />
                 </button>
 
                 {isStatusDropdownOpen && (
@@ -442,7 +442,7 @@ export const PointsPage: React.FC = () => {
                           setSelectedStatusId(s.lead_status_id.toString());
                           setIsStatusDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2.5 cursor-pointer"
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${

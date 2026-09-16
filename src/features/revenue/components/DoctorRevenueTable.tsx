@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DoctorRevenueItem } from "../types";
-import { Search, ChevronLeft, ChevronRight, UserStar, ArrowUpDown } from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight, UserStar, ArrowUpDown } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { SearchInput } from "../../../shared/components/FilterBar/FilterBar";
 import { cn } from "../../../utils";
@@ -94,13 +94,26 @@ export const DoctorRevenueTable: React.FC<DoctorRevenueTableProps> = ({ doctors 
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669]"
+            className="h-10 px-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
           >
             <option value="All">All Departments</option>
             <option value="OPD">OPD Only</option>
             <option value="IPD">IPD Only</option>
             <option value="Both">Both OPD & IPD</option>
           </select>
+          <div className="relative">
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="h-10 pl-3.5 pr-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer appearance-none"
+            >
+              <option value="All">All Departments</option>
+              <option value="OPD">OPD Only</option>
+              <option value="IPD">IPD Only</option>
+              <option value="Both">Both OPD &amp; IPD</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+          </div>
         </div>
       </div>
 

@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
 import { cn } from "../../../utils";
+import { demoSalesExecutives } from "../../users/data/demoUsers";
 
 const formatSelectedSpan = (start: Date | null, end: Date | null) => {
   if (!start) return "All Time";
@@ -221,9 +222,9 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
         value: String(p.id),
         label: p.description,
       })) || [
-        { value: "1", label: "Planet Green" },
-        { value: "2", label: "Farm Natura" },
-        { value: "3", label: "Eco World" }
+        { value: "1", label: "Nizampet" },
+        { value: "2", label: "Kondapur" },
+        { value: "3", label: "KPHB" }
       ]
     );
   }, [masterData]);
@@ -234,22 +235,26 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
 
   const activeProjectLabel = useMemo(() => {
     const found = projectOptionsForDialog.find((p) => p.value === activeProjectId);
-    return found ? found.label : "Planet Green";
+    return found ? found.label : "Nizampet";
   }, [activeProjectId, projectOptionsForDialog]);
 
   // Fetch all EMs (role 4) — only used when NOT locked to an RM
-  const { data: allEmUsers = [], isLoading: isAllEmLoading } = useGetAllUsersByRoleIdQuery(
+  const { data: liveAllEmUsers = [], isLoading: isAllEmLoading } = useGetAllUsersByRoleIdQuery(
     { role_id: 4, offset: 0 },
     { skip: !!lockedRmId }
   );
 
   // Fetch EMs under a specific RM (RELMNG login)
-  const { data: rmReportees = [], isLoading: isRmReporteesLoading } = useGetReporteesQuery(
+  const { data: liveRmReportees = [], isLoading: isRmReporteesLoading } = useGetReporteesQuery(
     { reporting_manager_id: lockedRmId as number, offset: 0 },
     { skip: !lockedRmId }
   );
 
   // The effective EM list depends on whether we're locked to an RM
+  const allEmUsers = liveAllEmUsers.length > 0 ? liveAllEmUsers : demoSalesExecutives;
+  const rmReportees = liveRmReportees.length > 0
+    ? liveRmReportees
+    : demoSalesExecutives.filter((executive) => executive.reporting_manager_id === lockedRmId);
   const emUsers = lockedRmId ? rmReportees : allEmUsers;
   const isEmUsersLoading = lockedRmId ? isRmReporteesLoading : isAllEmLoading;
 
@@ -305,12 +310,23 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
     { skip: emIds.length === 0 || !formattedTodayDate || !activeProjectId }
   );
 
-  const isLoading = isEmUsersLoading || (emUsers.length > 0 && ((isDateWiseLoading && !dateWiseResponse) || (isTodaysLoading && !todaysResponse)));
+  const isLoading = emUsers.length === 0 && (isEmUsersLoading || isDateWiseLoading || isTodaysLoading);
   const isFetching = isDateWiseFetching || isTodaysFetching;
   const isError = !!(dateWiseError || todaysError);
 
   // Map API responses to UI data structures
   const emData = useMemo(() => {
+    const hasDateWiseData = !!dateWiseResponse && Object.keys(dateWiseResponse).length > 0;
+    const hasTodayData = !!todaysResponse && Object.keys(todaysResponse).length > 0;
+    if (!hasDateWiseData && !hasTodayData) {
+      return {
+        ...getEMDashboardData(activeProjectLabel),
+        leadQualityDistribution: {
+          ...getEMDashboardData(activeProjectLabel).leadQualityDistribution,
+          junkLeads: 7,
+        },
+      };
+    }
     const rawMissed = dateWiseResponse?.missed_follow_up || dateWiseResponse?.missed_follow_ups;
     const missedFollowUps = {
       overdueCount: rawMissed?.overdue_count ?? rawMissed?.count ?? 0,
@@ -482,7 +498,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
       recentObjections,
       totalBookings,
     };
-  }, [dateWiseResponse, todaysResponse]);
+  }, [activeProjectLabel, dateWiseResponse, todaysResponse]);
 
   const handleEmSelect = (em: { id: number | null; name: string }) => {
     setSelectedEmLabel(em.name);
@@ -557,7 +573,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
               placeholder="Search follow-ups..."
               value={followupsSearchTerm}
               onChange={(e) => setFollowupsSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
+              className="w-full rounded-md border-zinc-200 bg-white py-2 pl-10 pr-4 text-xs font-semibold dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
         </div>
@@ -641,7 +657,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
               placeholder="Search site visits..."
               value={visitsSearchTerm}
               onChange={(e) => setVisitsSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
+              className="w-full rounded-md border-zinc-200 bg-white py-2 pl-10 pr-4 text-xs font-semibold dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
         </div>
@@ -718,7 +734,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
               placeholder="Search objections..."
               value={objectionsSearchTerm}
               onChange={(e) => setObjectionsSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold"
+              className="w-full rounded-md border-zinc-200 bg-white py-2 pl-10 pr-4 text-xs font-semibold dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
         </div>
@@ -785,7 +801,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
     );
   }
 
-  if (isError) {
+  if (isError && emUsers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] w-full space-y-4 text-center">
         <div className="text-red-500 dark:text-red-400 text-lg font-bold">
@@ -845,13 +861,14 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
                 MANAGERS
               </span>
             )}
-            {!lockedEmId && !lockedRmId && <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {!lockedEmId && !lockedRmId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-2 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 dark:border-zinc-800 px-4 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-400 transition-colors shadow-sm cursor-pointer"
+                  className="flex items-center justify-between gap-2.5 bg-[#f0f4f8] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/20 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-extrabold text-[#002d62] dark:text-blue-400 transition-colors shadow-sm cursor-pointer"
                 >
-                  {selectedEmLabel === "All" ? "All Sales Executives" : selectedEmLabel}
-                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-400" />
+                  <span className="truncate">{selectedEmLabel === "All" ? "All Sales Executives" : selectedEmLabel}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#002d62] dark:text-blue-400 shrink-0 ml-1.5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[240px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[16px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-2 space-y-1">
@@ -860,7 +877,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <input
                       placeholder="Search Sales Executive..."
                       value={emSearchQuery}
@@ -870,14 +887,14 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
                           e.stopPropagation();
                         }
                       }}
-                      className="pl-9 pr-3 py-2 w-full bg-[#fcfcfc] dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 rounded-[8px] text-xs font-semibold text-slate-700 dark:text-zinc-300 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#002d62] dark:focus:border-blue-500 transition-all"
+                      className="pl-9.5 pr-3.5 py-2 w-full bg-[#fcfcfc] dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 rounded-[8px] text-xs font-semibold text-slate-700 dark:text-zinc-300 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#002d62] dark:focus:border-blue-500 transition-all"
                     />
                   </div>
                 </div>
 
                 <DropdownMenuItem
                   onClick={() => handleEmSelect({ id: null, name: "All" })}
-                  className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer py-2.5 px-3 rounded-lg"
+                  className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer py-2.5 px-3.5 rounded-lg gap-2.5"
                 >
                   <span>All Sales Executives</span>
                   <div className={cn(
@@ -919,9 +936,9 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
                       <DropdownMenuItem
                         key={user.id}
                         onClick={() => handleEmSelect({ id: user.id, name: uName })}
-                        className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer py-2 px-3 rounded-lg"
+                        className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer py-2.5 px-3.5 rounded-lg gap-2.5"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
                           <div className={cn("w-6 h-6 rounded-full flex items-center justify-center font-bold text-[9px] shrink-0", avatarBg)}>
                             {initials}
                           </div>
@@ -940,7 +957,8 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
                   })}
                 </div>
               </DropdownMenuContent>
-            </DropdownMenu>}
+            </DropdownMenu>
+          )}
           </div>
 
           {/* Right Side: Project & Date Range Filters */}
@@ -1210,7 +1228,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
         </div>
 
         {/* Total Bookings Card */}
-        <div className="bg-[#002d62] dark:bg-zinc-950 border border-[#002d62] dark:border-zinc-900 rounded-[32px] p-6 shadow-md text-white flex flex-col justify-between min-h-[340px]">
+        <div className="dashboard-focus-card flex min-h-[340px] flex-col justify-between rounded-md border border-[#0F1A34] bg-[#0F1A34] p-6 text-white shadow-md">
           <div>
             <h2 className="text-[17px] font-bold text-white tracking-tight text-center">
               Total Bookings

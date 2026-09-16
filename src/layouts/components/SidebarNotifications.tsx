@@ -53,15 +53,20 @@ export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSi
         <button
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
           className={cn(
-            "relative flex h-11 items-center text-slate-600 hover:text-[#111625] hover:bg-[#f8f9fa] transition-colors cursor-pointer",
-            isSidebarOpen ? "w-full gap-3 px-3 justify-start" : "w-11 justify-center"
+            "relative flex items-center text-slate-600 hover:text-[#111625] transition-colors cursor-pointer",
+            placement === "navbar"
+              ? "h-9 w-9 justify-center rounded-full border border-[#e2e8f0] hover:bg-[#f8f9fa] hover:border-slate-300"
+              : cn(
+                  "h-11 hover:bg-[#f8f9fa]",
+                  isSidebarOpen ? "w-full gap-3 px-3 justify-start" : "w-11 justify-center"
+                )
           )}
           aria-label="Notifications"
         >
           <Bell size={18} />
-          {isSidebarOpen && <span className="text-sm font-medium">Notifications</span>}
+          {isSidebarOpen && placement !== "navbar" && <span className="text-sm font-medium">Notifications</span>}
           {notifications.some(n => n.unread) && (
-            <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
           )}
         </button>
         

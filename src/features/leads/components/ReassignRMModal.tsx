@@ -106,12 +106,12 @@ export const ReassignRMModal: React.FC<ReassignRMModalProps> = ({
                     </div>
                   ) : (
                     projectFilteredRms.map((rm) => (
-                      <SelectItem key={rm.id} value={String(rm.id)} className="py-3 font-bold cursor-pointer text-black">
-                        <div className="flex items-center gap-2">
+                      <SelectItem key={rm.id} value={String(rm.id)} className="py-2.5 px-3 font-bold cursor-pointer text-black">
+                        <div className="flex items-center gap-2.5">
                           <div className="h-6 w-6 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-bold shrink-0 text-[10px]">
                             {rm.first_name?.[0]}{rm.last_name?.[0]}
                           </div>
-                          {rm.first_name} {rm.last_name}
+                          <span>{rm.first_name} {rm.last_name}</span>
                         </div>
                       </SelectItem>
                     ))

@@ -35,6 +35,7 @@ export interface EMDashboardData {
     customerName: string;
     lastContacted: string;
     objectionsCount: number;
+    objectionTypes?: string[];
   }>;
   totalBookings: {
     units: number;
@@ -312,16 +313,34 @@ const allProjectsData: EMDashboardData = {
   }
 };
 
-export const getEMDashboardData = (projectName: string): EMDashboardData => {
-  const name = projectName.toLowerCase();
-  if (name.includes("natura")) {
-    return farmNaturaData;
-  }
-  if (name.includes("eco")) {
-    return ecoWorldData;
-  }
-  if (name.includes("planet green")) {
-    return planetGreenData;
-  }
-  return allProjectsData;
+const hospitalEMData: EMDashboardData = {
+  missedFollowUps: { overdueCount: 4, avgDelay: "2.4h" },
+  todayFollowUps: [
+    { initials: "KI", avatarBg: "bg-blue-50 text-blue-600", customerName: "Kavya Iyer", details: "Cardiology • OPD booked", time: "10:30 AM", action: "Appointment reminder" },
+    { initials: "AM", avatarBg: "bg-indigo-50 text-indigo-600", customerName: "Aditya Menon", details: "Gastroenterology • High priority", time: "12:15 PM", action: "Package follow-up" },
+    { initials: "MK", avatarBg: "bg-slate-100 text-slate-700", customerName: "Meera Kapoor", details: "Pediatrics • Records pending", time: "03:00 PM", action: "Document request" },
+  ],
+  leadQualityDistribution: { totalLeads: 86, hotLeads: 31, warmLeads: 34, coldLeads: 14 },
+  leadsByStatus: [
+    { label: "NEW ENQUIRIES", count: 24, colorClass: "bg-blue-900" },
+    { label: "CONTACTED", count: 19, colorClass: "bg-blue-800" },
+    { label: "FOLLOW-UPS", count: 16, colorClass: "bg-blue-700" },
+    { label: "OPD BOOKED", count: 14, colorClass: "bg-blue-600" },
+    { label: "OPD COMPLETED", count: 9, colorClass: "bg-blue-500" },
+    { label: "IPD ADMITTED", count: 4, colorClass: "bg-blue-400" },
+  ],
+  siteVisitOverview: { scheduled: 8, completed: 27 },
+  siteVisitsToday: [
+    { customerName: "Kavya Iyer", time: "10:30 AM", details: "Cardiology • Nizampet" },
+    { customerName: "Aditya Menon", time: "12:15 PM", details: "Gastroenterology • Kondapur" },
+    { customerName: "Vikram Shah", time: "03:00 PM", details: "Dermatology • KPHB" },
+  ],
+  recentObjections: [
+    { customerName: "Rohan Mehta", lastContacted: "Last contacted: 3 hours ago", objectionsCount: 2 },
+    { customerName: "Ishita Nair", lastContacted: "Last contacted: Yesterday", objectionsCount: 1 },
+    { customerName: "Diya Reddy", lastContacted: "Last contacted: 2 days ago", objectionsCount: 2 },
+  ],
+  totalBookings: { units: 18, target: 25 },
 };
+
+export const getEMDashboardData = (_projectName: string): EMDashboardData => hospitalEMData;

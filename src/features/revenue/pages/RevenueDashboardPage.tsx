@@ -120,7 +120,7 @@ export const RevenueDashboardPage: React.FC = () => {
               <select
                 value={selectedBranchId}
                 onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="h-11 px-4 pr-9 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-extrabold text-zinc-800 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-[#063669] shadow-sm hover:border-blue-400 transition-all cursor-pointer appearance-none"
+                className="h-11 px-4 pr-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-extrabold text-zinc-800 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-[#063669] shadow-sm hover:border-blue-400 transition-all cursor-pointer appearance-none"
               >
                 <option value="all">🏢 All Branches (All Cities)</option>
                 {branchesData.map((branch) => (
@@ -129,28 +129,33 @@ export const RevenueDashboardPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
                 <Building2 className="h-4 w-4 text-[#063669] dark:text-blue-400" />
               </div>
             </div>
 
             {/* Date Filter */}
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="h-11 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-sm"
-            >
-              <option value="This Month">This Month (Aug 2026)</option>
-              <option value="Last Month">Last Month (Jul 2026)</option>
-              <option value="Q3 2026">Q3 2026</option>
-              <option value="YTD 2026">Year-to-Date 2026</option>
-            </select>
+            <div className="relative">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="h-11 px-4 pr-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-sm hover:border-blue-400 transition-all cursor-pointer appearance-none"
+              >
+                <option value="This Month">This Month (Aug 2026)</option>
+                <option value="Last Month">Last Month (Jul 2026)</option>
+                <option value="Q3 2026">Q3 2026</option>
+                <option value="YTD 2026">Year-to-Date 2026</option>
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                <Calendar className="h-4 w-4 text-[#063669] dark:text-blue-400" />
+              </div>
+            </div>
 
             <Button
               onClick={handleExport}
-              className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-2xl h-11 px-6 font-bold text-sm shadow-sm"
+              className="gap-2.5 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-2xl h-11 px-5 font-bold text-sm shadow-sm"
             >
-              <FileSpreadsheet className="h-4 w-4" />
+              <FileSpreadsheet className="h-4 w-4 shrink-0" />
               Export Report
             </Button>
           </div>
