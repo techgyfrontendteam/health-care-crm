@@ -485,7 +485,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
   if (view === "leaderboard") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Leaderboard Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -584,7 +584,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
   if (view === "table") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate("/relationship-managers")}
@@ -608,7 +608,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
   if (view === "escalations") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Escalations Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -721,7 +721,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
   if (view === "stale") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Stale Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -858,7 +858,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
   }
 
   return (
-    <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-4 px-3 sm:px-5 md:px-6 py-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
 
       {/* Page Title & Top Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

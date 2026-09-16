@@ -177,6 +177,7 @@ export interface CreateLeadRequest {
   appointment_date?: string;
   appointment_time?: string;
   appointment_note?: string;
+  visit_date_time?: string;
 }
 
 export interface UpdateLeadRequest extends CreateLeadRequest {

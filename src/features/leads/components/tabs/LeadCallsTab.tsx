@@ -28,19 +28,41 @@ import {
   History,
   Check,
   User,
-  MessageCircle
+  MessageCircle,
+  Loader2,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '../../../../utils';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
-import type { LeadCall } from '../../types';
+import { useGetCallRecordsMutation } from '../../api/callsApi';
+import { useAnalyzeCallMutation } from '../../../call-analyzer/api/callAnalyzerApiSlice';
+import type { LeadCall, Lead } from '../../types';
 import type { CallSummaryJSON } from '../../types';
 import { S3_BASE_URL } from "@/config/constants";
- 
+
+const ENGAGEMENT_MESSAGES = [
+  "AI analyzing your call...",
+  "Fetching call recording from telephony provider...",
+  "Processing audio waveform & extracting speech signals...",
+  "Transcribing dialogue & clinical terminology...",
+  "Detecting key clinical symptoms & patient sentiment...",
+  "Structuring follow-up actions and care recommendations...",
+  "Finalizing comprehensive AI clinical summary...",
+];
+
+interface CallProcessingState {
+  status: 'idle' | 'fetching_record' | 'analyzing' | 'not_found' | 'error';
+  errorMessage?: string;
+}
+
 interface LeadCallsTabProps {
   calls?: LeadCall[];
   leadPhoneNumber?: string;
   objections?: number[];
   masterObjections?: any[];
+  lead?: Lead;
+  refetch?: () => void;
 }
 
 const formatDuration = (seconds: number | null) => {
@@ -117,8 +139,10 @@ const getSeverityBadgeClass = (severity?: string) => {
 
 
 
-export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjections }: LeadCallsTabProps) => {  
+export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjections, lead, refetch }: LeadCallsTabProps) => {  
   const { masterData: lookupMasterData, getRmLabel } = useMasterDataLookup();
+  const [getCallRecords] = useGetCallRecordsMutation();
+  const [analyzeCall] = useAnalyzeCallMutation();
   const [expandedCallIds, setExpandedCallIds] = useState<number[]>(() => {
     if (calls && calls.length > 0) return [calls[0].id];
     return [];
@@ -129,8 +153,134 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
   const [activeDownloadId, setActiveDownloadId] = useState<number | null>(null);
   const [callSummaries, setCallSummaries] = useState<Record<number, CallSummaryJSON>>({});
   const [summaryLoading, setSummaryLoading] = useState<Record<number, boolean>>({});
+  const [callProcessing, setCallProcessing] = useState<Record<number, CallProcessingState>>({});
+  const [engagementIndex, setEngagementIndex] = useState(0);
+  const inFlightCallIds = useRef<Set<number>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fetchedCallIds = useRef<Set<number>>(new Set());
+
+  // Rotating engagement message ticker for active analyzing cards
+  useEffect(() => {
+    const hasActiveAnalyzing = Object.values(callProcessing).some(
+      s => s.status === 'fetching_record' || s.status === 'analyzing'
+    );
+    if (!hasActiveAnalyzing) return;
+
+    const interval = setInterval(() => {
+      setEngagementIndex(prev => (prev + 1) % ENGAGEMENT_MESSAGES.length);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [callProcessing]);
+
+  const processUnanalyzedCall = async (call: LeadCall) => {
+    const rawCallId = (call as any).call_id || call.id;
+    if (!rawCallId) return;
+
+    if (inFlightCallIds.current.has(call.id)) return;
+    inFlightCallIds.current.add(call.id);
+
+    setCallProcessing(prev => ({
+      ...prev,
+      [call.id]: { status: 'fetching_record' },
+    }));
+
+    try {
+      // Step 1: Query call-records by call_id
+      const res = await getCallRecords({ call_id: rawCallId }).unwrap();
+
+      const recordsList: any[] = Array.isArray(res?.data?.results)
+        ? res.data.results
+        : Array.isArray(res?.results)
+          ? res.results
+          : Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res)
+              ? res
+              : [];
+
+      const foundRecord = recordsList.find(
+        (r: any) => Boolean(r && (r.recording_url || r.call_id || r.id))
+      );
+
+      const rawUrl = foundRecord?.recording_url || (recordsList.length > 0 ? recordsList[0]?.recording_url : null);
+      const cleanUrl = rawUrl ? String(rawUrl).replace(/["']+/g, "").trim() : "";
+
+      if (!cleanUrl) {
+        setCallProcessing(prev => ({
+          ...prev,
+          [call.id]: {
+            status: 'not_found',
+            errorMessage: 'Call record not found or recording is unavailable in telephony system.',
+          },
+        }));
+        inFlightCallIds.current.delete(call.id);
+        return;
+      }
+
+      // Step 2: Send recording URL to Call Analyzer API
+      setCallProcessing(prev => ({
+        ...prev,
+        [call.id]: { status: 'analyzing' },
+      }));
+
+      const leadName = lead
+        ? `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead"
+        : "Lead";
+      const leadUuid = lead?.uuid || call.lead_uuid;
+      const cleanPhone = (num?: string | null) =>
+        String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
+      const fromNumber = cleanPhone(
+        foundRecord?.agent_number || foundRecord?.from_number || call.from_number || lead?.phone_number || ""
+      );
+      const toNumber = cleanPhone(
+        foundRecord?.client_number || foundRecord?.to_number || call.to_number || ""
+      );
+
+      await analyzeCall({
+        call_id: rawCallId,
+        lead_uuid: leadUuid,
+        lead_name: leadName,
+        from_number: fromNumber,
+        to_number: toNumber,
+        file: cleanUrl,
+      }).unwrap();
+
+      // Step 3: Success -> Clear in-flight and refresh lead details
+      setCallProcessing(prev => ({
+        ...prev,
+        [call.id]: { status: 'idle' },
+      }));
+      inFlightCallIds.current.delete(call.id);
+      if (refetch) {
+        refetch();
+      }
+    } catch (err: any) {
+      console.error(`Error analyzing call recording for call ${call.id}:`, err);
+      setCallProcessing(prev => ({
+        ...prev,
+        [call.id]: {
+          status: 'error',
+          errorMessage: err?.data?.message || err?.message || 'Failed to analyze call recording',
+        },
+      }));
+      inFlightCallIds.current.delete(call.id);
+    }
+  };
+
+  // Auto-scan for non-recording calls and process
+  useEffect(() => {
+    if (!calls || calls.length === 0) return;
+
+    calls.forEach(call => {
+      if (!call.call_s3_data) {
+        const state = callProcessing[call.id];
+        if (!state && !inFlightCallIds.current.has(call.id)) {
+          processUnanalyzedCall(call);
+        }
+      }
+    });
+  }, [calls]);
 
   // Auto-expand first call if none expanded
   useEffect(() => {
@@ -524,33 +674,85 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                     )}
                   >
                     <div className="overflow-hidden rounded-b-[12px]">
-                      <div className="bg-[#F9FAFB] border-t border-[#E5E7EB] p-5 flex items-center gap-6">
-                        <button 
-                          onClick={(e) => togglePlay(e, call)}
-                          className="w-10 h-10 rounded-full bg-[#063669] hover:bg-[#052b54] flex items-center justify-center text-white shadow-sm hover:scale-105 active:scale-95 transition-all shrink-0"
-                        >
-                          {playingCallId === call.id && isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-                        </button>
+                      {(() => {
+                        const procState = callProcessing[call.id];
+                        const isProcessing = procState?.status === 'fetching_record' || procState?.status === 'analyzing';
 
-                        <div className="flex-1 flex items-center gap-3">
-                          <span className="font-semibold text-[13px] text-[#063669] shrink-0">
-                            {currentTimeDisplay}
-                          </span>
-                          <div className="flex-1 h-1.5 bg-[#E5E7EB] rounded-full relative overflow-hidden">
-                            <div 
-                              className="absolute left-0 top-0 bottom-0 bg-[#063669] rounded-full transition-all duration-100 ease-linear"
-                              style={{ width: `${Math.min(progressPercent, 100)}%` }}
-                            ></div>
+                        if (isProcessing) {
+                          return (
+                            <div className="bg-[#F9FAFB] border-t border-[#E5E7EB] p-4 flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-6 h-6 rounded-full bg-[#063669]/10 flex items-center justify-center">
+                                  <Loader2 className="w-3.5 h-3.5 text-[#063669] animate-spin" />
+                                </div>
+                                <span className="font-semibold text-xs text-[#063669]">
+                                  AI analyzing your call...
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 font-medium truncate max-w-[280px]">
+                                {ENGAGEMENT_MESSAGES[engagementIndex]}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        if (!call.call_s3_data) {
+                          return (
+                            <div className="bg-[#F9FAFB] border-t border-[#E5E7EB] p-4 flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                                <span className="text-xs text-slate-500 font-medium">
+                                  {procState?.status === 'not_found'
+                                    ? 'Call record not found'
+                                    : procState?.status === 'error'
+                                    ? 'Call analysis failed'
+                                    : 'Call recording pending analysis'}
+                                </span>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  processUnanalyzedCall(call);
+                                }}
+                                className="text-xs text-[#063669] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>{procState?.status === 'error' ? 'Retry Analysis' : 'Check Recording'}</span>
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="bg-[#F9FAFB] border-t border-[#E5E7EB] p-5 flex items-center gap-6">
+                            <button 
+                              onClick={(e) => togglePlay(e, call)}
+                              className="w-10 h-10 rounded-full bg-[#063669] hover:bg-[#052b54] flex items-center justify-center text-white shadow-sm hover:scale-105 active:scale-95 transition-all shrink-0 cursor-pointer"
+                            >
+                              {playingCallId === call.id && isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                            </button>
+
+                            <div className="flex-1 flex items-center gap-3">
+                              <span className="font-semibold text-[13px] text-[#063669] shrink-0">
+                                {currentTimeDisplay}
+                              </span>
+                              <div className="flex-1 h-1.5 bg-[#E5E7EB] rounded-full relative overflow-hidden">
+                                <div 
+                                  className="absolute left-0 top-0 bottom-0 bg-[#063669] rounded-full transition-all duration-100 ease-linear"
+                                  style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="font-medium text-[13px] text-[#6B7280] shrink-0">
+                                {formatTimeDisplay(call.call_duration_in_seconds || 0)}
+                              </span>
+                            </div>
+
+                            <button className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:text-[#063669] shrink-0">
+                              <Volume2 className="w-[18px] h-[18px]" />
+                            </button>
                           </div>
-                          <span className="font-medium text-[13px] text-[#6B7280] shrink-0">
-                            {formatTimeDisplay(call.call_duration_in_seconds || 0)}
-                          </span>
-                        </div>
-
-                        <button className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:text-[#063669] shrink-0">
-                          <Volume2 className="w-[18px] h-[18px]" />
-                        </button>
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -563,24 +765,129 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                   )}
                 >
                   <div className="overflow-hidden">
-                    {isFetchingSummary ? (
-                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-10 text-center flex flex-col items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-[#063669] border-t-transparent rounded-full animate-spin mb-3" />
-                        <p className="text-xs font-bold text-[#063669]">Loading Call Analysis...</p>
-                        <p className="text-[11px] text-slate-400 mt-1">Retrieving AI summary and insights from recording</p>
-                      </div>
-                    ) : !hasSummary ? (
-                      <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                          <Sparkles className="w-5 h-5 text-slate-400" />
-                        </div>
-                        <h4 className="font-bold text-sm text-[#063669]">AI Analysis Unavailable</h4>
-                        <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                          No AI summary or transcript has been generated for this call recording yet.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-6 pb-2">
+                    {(() => {
+                      const procState = callProcessing[call.id];
+                      const isProcessing = procState?.status === 'fetching_record' || procState?.status === 'analyzing';
+
+                      if (isProcessing) {
+                        return (
+                          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center space-y-4">
+                            <div className="relative">
+                              <div className="w-14 h-14 rounded-2xl bg-[#063669]/10 text-[#063669] flex items-center justify-center shadow-inner">
+                                <Sparkles className="w-7 h-7 animate-pulse text-[#063669]" />
+                              </div>
+                              <div className="absolute -top-1 -right-1">
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#063669]"></span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5 max-w-md">
+                              <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-base text-[#063669]">
+                                AI analyzing your call
+                              </h4>
+                              <div className="h-6 flex items-center justify-center">
+                                <p className="text-xs text-slate-500 font-medium transition-all duration-300 animate-in fade-in">
+                                  {ENGAGEMENT_MESSAGES[engagementIndex]}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-blue-500 via-[#063669] to-blue-400 rounded-full animate-pulse w-full"></div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (procState?.status === 'not_found') {
+                        return (
+                          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                              <AlertCircle className="w-6 h-6 text-slate-400" />
+                            </div>
+                            <h4 className="font-bold text-sm text-[#063669]">Call Record Not Found</h4>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                              {procState.errorMessage || "No telephony recording was found for this call ID in Tata Telephony records."}
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                processUnanalyzedCall(call);
+                              }}
+                              className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#063669] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              <span>Check Again</span>
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      if (procState?.status === 'error') {
+                        return (
+                          <div className="bg-white border border-rose-100 rounded-[16px] p-8 text-center flex flex-col items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-3">
+                              <AlertTriangle className="w-6 h-6 text-rose-500" />
+                            </div>
+                            <h4 className="font-bold text-sm text-rose-900">Call Analysis Failed</h4>
+                            <p className="text-xs text-rose-600 mt-1 max-w-sm">
+                              {procState.errorMessage || 'An error occurred while analyzing the call recording.'}
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                processUnanalyzedCall(call);
+                              }}
+                              className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#063669] hover:bg-[#042548] transition-colors cursor-pointer"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              <span>Retry Analysis</span>
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      if (isFetchingSummary) {
+                        return (
+                          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-10 text-center flex flex-col items-center justify-center">
+                            <div className="w-8 h-8 border-2 border-[#063669] border-t-transparent rounded-full animate-spin mb-3" />
+                            <p className="text-xs font-bold text-[#063669]">Loading Call Analysis...</p>
+                            <p className="text-[11px] text-slate-400 mt-1">Retrieving AI summary and insights from recording</p>
+                          </div>
+                        );
+                      }
+
+                      if (!hasSummary) {
+                        return (
+                          <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                              <Sparkles className="w-5 h-5 text-slate-400" />
+                            </div>
+                            <h4 className="font-bold text-sm text-[#063669]">AI Analysis Unavailable</h4>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                              No AI summary or transcript has been generated for this call recording yet.
+                            </p>
+                            {!call.call_s3_data && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  processUnanalyzedCall(call);
+                                }}
+                                className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#063669] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Analyze Call Recording</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-6 pb-2">
                         {/* SECTION 1: CLINICAL OVERVIEW & SENTIMENT */}
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* Clinical Overview */}
@@ -978,12 +1285,13 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
               </div>
             </div>
-            );
-          }))}
+          </div>
+        );
+      }))}
 
         </div>
       </div>

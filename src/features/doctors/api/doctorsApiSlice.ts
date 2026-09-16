@@ -1,6 +1,7 @@
 import { baseApi } from "../../../app/api/baseApi";
 import type {
   CreateDoctorRequest,
+  UpdateDoctorRequest,
   GetAllDoctorsRequest,
   GetDoctorStatsRequest,
   GetDoctorStatsResponse,
@@ -11,6 +12,14 @@ export const doctorsApiSlice = baseApi.injectEndpoints({
     createDoctor: builder.mutation<{ message: string; data: any }, CreateDoctorRequest>({
       query: (body) => ({
         url: '/doctors/createDoctor',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Doctors'],
+    }),
+    updateDoctor: builder.mutation<{ message: string; data: any }, UpdateDoctorRequest>({
+      query: (body) => ({
+        url: '/doctors/updateDoctor',
         method: 'POST',
         body,
       }),
@@ -37,6 +46,7 @@ export const doctorsApiSlice = baseApi.injectEndpoints({
 
 export const {
   useCreateDoctorMutation,
+  useUpdateDoctorMutation,
   useGetAllDoctorsQuery,
   useGetDoctorStatsQuery,
 } = doctorsApiSlice;

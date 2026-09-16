@@ -55,6 +55,25 @@ export interface CreateDoctorRequest {
   available_end_time: string;
 }
 
+export interface UpdateDoctorRequest {
+  id: number;
+  branch_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  profile_img: string;
+  education: string;
+  specialization_id: number;
+  service_id: number;
+  country_code: string;
+  phone_number: string;
+  consultation_fee: number;
+  experience: number;
+  available_start_time: string;
+  available_end_time: string;
+  is_active: number;
+}
+
 export interface GetAllDoctorsRequest {
   branch_id?: number;
   specialization_id?: number;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { Doctor } from "../types";
-import { Eye, Pencil, Trash2, Stethoscope, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Stethoscope, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import {
   Select,
@@ -89,7 +89,6 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
               <th className="py-3 px-4 whitespace-nowrap bg-[#F8F9FA] dark:bg-zinc-900">Branch</th>
               <th className="py-3 px-4 whitespace-nowrap bg-[#F8F9FA] dark:bg-zinc-900">Fee</th>
               <th className="py-3 px-4 whitespace-nowrap bg-[#F8F9FA] dark:bg-zinc-900">Schedule / Hours</th>
-              <th className="py-3 px-4 whitespace-nowrap bg-[#F8F9FA] dark:bg-zinc-900">Status</th>
               <th className="py-3 px-4 whitespace-nowrap bg-[#F8F9FA] dark:bg-zinc-900 text-right">Actions</th>
             </tr>
           </thead>
@@ -111,13 +110,12 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
                   <td className="py-3 px-4"><div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-20" /></td>
                   <td className="py-3 px-4"><div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-12" /></td>
                   <td className="py-3 px-4"><div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-20" /></td>
-                  <td className="py-3 px-4"><div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-full w-14" /></td>
                   <td className="py-3 px-4 text-right"><div className="h-6 bg-zinc-100 dark:bg-zinc-800 rounded w-16 ml-auto" /></td>
                 </tr>
               ))
             ) : doctors.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-20 text-center text-zinc-400">
+                <td colSpan={7} className="py-20 text-center text-zinc-400">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Stethoscope className="h-10 w-10 text-zinc-300 dark:text-zinc-700" />
                     <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">No doctors found</p>
@@ -183,26 +181,6 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
                     <p className="font-medium text-zinc-700 dark:text-zinc-300 text-xs">
                       {doc.working_hours || "09:00 - 17:00"}
                     </p>
-                  </td>
-
-                  {/* Status */}
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                        doc.is_active === 1
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900"
-                          : "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          doc.is_active === 1 ? "bg-emerald-500" : "bg-zinc-400"
-                        )}
-                      />
-                      {doc.is_active === 1 ? "Active" : "Inactive"}
-                    </span>
                   </td>
 
                   {/* Actions */}

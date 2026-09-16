@@ -33,7 +33,7 @@ import { DatePicker, TimePicker } from '../../../shared/components/DateTimePicke
 import { useGetAllUsersQuery, useGetAllUsersByRoleIdQuery, useGetReporteesQuery } from '../../users/api/usersApi';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useGetAllMasterDataQuery } from '../../master/api/masterApi';
-import { cn } from '../../../utils';
+import { cn, formatToStandardDateTime, parseStandardDateTime } from '../../../utils';
 import type { CreateLeadRequest } from '../types';
 import { useGetAllDoctorsQuery } from '../../doctors/api/doctorsApiSlice';
 import type { ApiDoctor } from '../../doctors/types';
@@ -53,6 +53,7 @@ const formSchema = z.object({
   appointment_date: z.string().optional().or(z.literal('')),
   appointment_time: z.string().optional().or(z.literal('')),
   appointment_note: z.string().optional().or(z.literal('')),
+  visit_date_time: z.string().optional().or(z.literal('')),
   assigned_to_rm: z.number({ error: 'Invalid RM selection' }).nullable().optional(),
   assigned_to_em: z.number({ error: 'Invalid EM selection' }).nullable().optional(),
   occupation: z.string().max(50, 'Occupation cannot exceed 50 characters').optional().or(z.literal('')),
@@ -187,26 +188,12 @@ export const LeadForm = ({
         init.appointment_date;
 
       if (candidateDateTime) {
-        try {
-          const cleanStr = String(candidateDateTime).replace(/Z/g, "").split("+")[0].replace(" ", "T");
-          const d = new Date(cleanStr);
-          if (!isNaN(d.getTime())) {
-            if (!resolvedDate) {
-              const yyyy = d.getFullYear();
-              const mm = String(d.getMonth() + 1).padStart(2, "0");
-              const dd = String(d.getDate()).padStart(2, "0");
-              resolvedDate = `${yyyy}-${mm}-${dd}`;
-            }
-            if (!resolvedTime) {
-              let h = d.getHours();
-              const m = String(d.getMinutes()).padStart(2, "0");
-              const p = h >= 12 ? "PM" : "AM";
-              h = h % 12 || 12;
-              resolvedTime = `${String(h).padStart(2, "0")}:${m} ${p}`;
-            }
-          }
-        } catch {
-          // ignore
+        const { dateStr, time12h } = parseStandardDateTime(candidateDateTime);
+        if (dateStr && !resolvedDate) {
+          resolvedDate = dateStr;
+        }
+        if (time12h && !resolvedTime) {
+          resolvedTime = time12h;
         }
       }
     }
@@ -380,6 +367,8 @@ export const LeadForm = ({
     const specialisationId = matchedSpec ? matchedSpec.id : (selectedSpecId || 1);
     const departmentName = matchedSpec ? matchedSpec.description : (values.department || '');
 
+    const visitDateTime = formatToStandardDateTime(values.appointment_date, values.appointment_time) || undefined;
+
     const payload: CreateLeadRequest = {
       ...values,
       specialisation_id: specialisationId,
@@ -405,6 +394,7 @@ export const LeadForm = ({
       appointment_date: values.appointment_date || '',
       appointment_time: values.appointment_time || '',
       appointment_note: values.appointment_note || '',
+      visit_date_time: visitDateTime,
     };
 
     onSubmit(payload);
@@ -670,7 +660,7 @@ export const LeadForm = ({
               )}
             />
 
-            {selectedLocationId && (
+            {Boolean(selectedLocationId) && (
               <FormField
                 control={form.control}
                 name="branch_id"

@@ -508,9 +508,11 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
     return emData.recentObjections.filter(item =>
       item.customerName.toLowerCase().includes(objectionsSearchTerm.toLowerCase())
     );
-  }, [objectionsSearchTerm, emData]); if (view === "table") {
+  }, [objectionsSearchTerm, emData]);
+
+  if (view === "table") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setView("dashboard")}
@@ -537,7 +539,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
   // ----------------------------------------------------
   if (view === "followups") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Header Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -621,7 +623,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
   // ----------------------------------------------------
   if (view === "visits") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Header Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -698,7 +700,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
   // ----------------------------------------------------
   if (view === "objections") {
     return (
-      <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+      <div className="space-y-4 animate-in fade-in duration-300">
 
         {/* Header Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -802,7 +804,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
   // MAIN DASHBOARD VIEW
   // ----------------------------------------------------
   return (
-    <div className="w-full max-w-[1440px] xl:max-w-[1920px] 2xl:max-w-[2560px] mx-auto space-y-6 xl:space-y-8 2xl:space-y-10 px-4 sm:px-6 md:px-8 py-6 animate-in fade-in duration-300">
+    <div className="space-y-4 animate-in fade-in duration-300">
 
       {/* Top Header Row (Outside the white card) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

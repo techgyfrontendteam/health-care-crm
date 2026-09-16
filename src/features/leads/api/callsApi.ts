@@ -9,15 +9,17 @@ export const callsApi = baseApi.injectEndpoints({
         body: payload,
       }),
     }),
-    getCallRecords: builder.mutation<any, { from_date: string; to_date: string; limit?: number; offset?: number }>({
+    getCallRecords: builder.mutation<any, { call_id?: string | number; from_date?: string; to_date?: string; limit?: number; offset?: number }>({
       query: (payload) => ({
         url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/call-records",
         method: "POST",
-        body: {
-          limit: 20,
-          offset: 0,
-          ...payload,
-        },
+        body: payload.call_id !== undefined && !payload.from_date
+          ? { call_id: payload.call_id }
+          : {
+              limit: 20,
+              offset: 0,
+              ...payload,
+            },
       }),
     }),
     getTelephonyProviders: builder.mutation<any, void>({

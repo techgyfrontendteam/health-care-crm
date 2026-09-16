@@ -26,6 +26,8 @@ import type { ApiDoctor } from "../../doctors/types";
 import { cn } from "../../../utils";
 import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
 
+import { usePermissions } from "../../../hooks/usePermissions";
+import { formatToStandardDateTime, parseStandardDateTime } from "../../../utils";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import {
@@ -241,24 +243,16 @@ export const ScheduleVisitDialog = ({
     if (open) {
       if (appointment) {
         if (appointment.visit_date_time) {
-          try {
-            const validStr = appointment.visit_date_time
-              .replace(/Z/g, "")
-              .split("+")[0]
-              .replace(" ", "T");
-            const d = new Date(validStr);
-            if (!isNaN(d.getTime())) {
-              setDate(d);
-              let h = d.getHours();
-              const m = String(d.getMinutes()).padStart(2, "0");
-              const p = h >= 12 ? "PM" : "AM";
-              h = h % 12 || 12;
-              setHour(String(h).padStart(2, "0"));
-              setMinute(m);
-              setPeriod(p);
+          const { dateObj, time12h } = parseStandardDateTime(appointment.visit_date_time);
+          if (dateObj) {
+            setDate(dateObj);
+            if (time12h) {
+              const parts = time12h.split(" ");
+              const timeParts = parts[0]?.split(":") || [];
+              setHour(timeParts[0] || "");
+              setMinute(timeParts[1] || "");
+              setPeriod((parts[1] as "AM" | "PM") || "AM");
             }
-          } catch {
-            // fallback
           }
         }
 
@@ -327,7 +321,7 @@ export const ScheduleVisitDialog = ({
     const payload: any = {
       lead_uuid: effectiveLead ? effectiveLead.uuid : selectedLeadUuid,
       doctor_id: Number(data.doctor_id),
-      visit_date_time: selectedDateTime.toISOString(),
+      visit_date_time: formatToStandardDateTime(selectedDateTime),
       visit_remarks: finalRemarks,
       location_id: selectedBranchId ? Number(selectedBranchId) : undefined,
       visit_status: Number(data.visit_status || defaultStatusId),
@@ -523,7 +517,7 @@ export const ScheduleVisitDialog = ({
                         setPeriod("");
                         setValue("visit_date_time", "");
                       } else {
-                        setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
+                        setValue("visit_date_time", formatToStandardDateTime(selectedDateTime), { shouldValidate: true });
                       }
                     } else {
                       setValue("visit_date_time", "");
@@ -580,7 +574,7 @@ export const ScheduleVisitDialog = ({
                         toast.error("Cannot select a time in the past");
                         setValue("visit_date_time", "");
                       } else {
-                        setValue("visit_date_time", selectedDateTime.toISOString(), { shouldValidate: true });
+                        setValue("visit_date_time", formatToStandardDateTime(selectedDateTime), { shouldValidate: true });
                       }
                     } else {
                       setValue("visit_date_time", "");

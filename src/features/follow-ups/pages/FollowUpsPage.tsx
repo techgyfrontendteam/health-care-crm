@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Minus,
 } from "lucide-react";
-import { cn } from "../../../utils";
+import { cn, formatToStandardDateTime, parseStandardDateTime } from "../../../utils";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useGetLeadsQuery } from "../../leads/api/leadsApi";
 import { initialFollowUps } from "../data/followUpsData";
@@ -590,14 +590,14 @@ export const FollowUpsPage: React.FC = () => {
     );
 
     if (scheduleNextFollowUp && nextFollowUpDate) {
-      // Build ISO Date Time
-      const isoDateTime = `${nextFollowUpDate}T${nextFollowUpTime || "12:00"}:00.000Z`;
+      // Build standard YYYY-MM-DD HH:mm:ss
+      const followup_date_time = formatToStandardDateTime(nextFollowUpDate, nextFollowUpTime || "12:00:00");
 
       createFollowUpApi({
         lead_uuid: completingFollowUp.leadUuid || "string",
         user_id: parseInt(user?.id || "0"),
         followup_type_id: 1, // e.g. 1 for Call
-        followup_date_time: isoDateTime,
+        followup_date_time,
         followup_status_id: 0, // Pending
         remarks: nextFollowUpRemarks.trim() || "Follow up after previous outcome.",
       })
@@ -612,6 +612,7 @@ export const FollowUpsPage: React.FC = () => {
         });
 
       const nextId = `fu-${Date.now()}`;
+      const { dateObj } = parseStandardDateTime(followup_date_time);
       const newFollowUp: FollowUp = {
         id: nextId,
         leadId: completingFollowUp.leadId,
@@ -622,16 +623,16 @@ export const FollowUpsPage: React.FC = () => {
         projectName: completingFollowUp.projectName,
         type: "Call",
         status: "Pending",
-        scheduledAt: new Date(isoDateTime).toLocaleDateString("en-US", {
+        scheduledAt: dateObj ? dateObj.toLocaleDateString("en-US", {
           day: "numeric",
           month: "long",
           year: "numeric",
-        }),
-        scheduledTime: new Date(isoDateTime).toLocaleTimeString("en-US", {
+        }) : nextFollowUpDate,
+        scheduledTime: dateObj ? dateObj.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
-        }),
+        }) : (nextFollowUpTime || "12:00 PM"),
         assignedRm: completingFollowUp.assignedRm,
         assignedEm: completingFollowUp.assignedEm,
         remarks: nextFollowUpRemarks.trim() || "Follow up after previous outcome.",
@@ -655,17 +656,9 @@ export const FollowUpsPage: React.FC = () => {
     try {
       const selectedLead = leads.find((l: any) => l.uuid === selectedLeadUuid);
       
-      // Parse custom 12-hour time if provided
-      let formattedTime = '00:00:00';
-      if (createFormTime) {
-        let [hours, minutes] = createFormTime.split(':');
-        let h = parseInt(hours || '0', 10);
-        if (createAmPm === 'PM' && h < 12) h += 12;
-        if (createAmPm === 'AM' && h === 12) h = 0;
-        formattedTime = `${String(h).padStart(2, '0')}:${minutes || '00'}:00`;
-      }
+      const timeStr = createFormTime ? `${createFormTime} ${createAmPm}` : "00:00:00";
+      const followup_date_time = formatToStandardDateTime(createFormDate, timeStr);
 
-      const followup_date_time = `${createFormDate} ${formattedTime}`;
       await createFollowUpApi({
         lead_uuid: selectedLeadUuid,
         user_id: selectedLead?.assigned_to_rm || Number(user?.id) || 1,
@@ -699,7 +692,7 @@ export const FollowUpsPage: React.FC = () => {
   // Date range filter options
 
   return (
-    <div className="w-full max-w-[1440px] xl:max-w-[1920px] mx-auto px-6 py-8 space-y-6 animate-in fade-in duration-300 relative text-slate-800">
+    <div className="space-y-4 animate-in fade-in duration-300 relative text-slate-800">
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -715,17 +708,18 @@ export const FollowUpsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#002d62] tracking-tight">Followups</h1>
           <p className="text-xs text-slate-400 font-medium">Track and manage lead follow-ups efficiently.</p>
         </div>
-        <button
-          onClick={() => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            setCreateFormDate(todayStr);
-            setIsGeneralCreateModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Create Follow-Up
-        </button>
+
+        {/* Search leads Input bar */}
+        <div className="relative w-full sm:w-80 md:w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search leads....."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-11 pr-4 py-2.5 w-full rounded-full border border-slate-200/80 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62] placeholder-slate-400 shadow-sm transition-all"
+          />
+        </div>
       </div>
 
       {/* Filters & Navigation Row */}
@@ -899,17 +893,6 @@ export const FollowUpsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search leads Input bar */}
-      <div className="relative w-full pt-1">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search leads....."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-13 pr-6 py-3 w-full rounded-full border border-slate-200/80 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#002d62] placeholder-slate-400 shadow-sm transition-all"
-        />
-      </div>
 
       {/* List cards section */}
       <div className="space-y-4 pt-2">
@@ -919,95 +902,92 @@ export const FollowUpsPage: React.FC = () => {
             <span>Fetching follow-ups from server...</span>
           </div>
         ) : filteredFollowUps.length === 0 ? (
-          <div className="bg-white border border-dashed border-slate-200 rounded-[20px] p-12 text-center text-xs font-bold text-slate-400 shadow-sm flex flex-col items-center justify-center gap-3">
+          <div className="bg-white border border-dashed border-slate-200 rounded-xl p-8 text-center text-xs font-bold text-slate-400 shadow-xs flex flex-col items-center justify-center gap-2">
             <span>No {activeTab.toLowerCase()} follow-ups found for your selection.</span>
-            <button
-              onClick={() => {
-                const todayStr = new Date().toISOString().split('T')[0];
-                setCreateFormDate(todayStr);
-                setIsGeneralCreateModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-[#0B3565] hover:bg-[#072445] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create Follow-Up
-            </button>
           </div>
         ) : (
           filteredFollowUps.map((item) => (
             <div
               key={item.id}
-              className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-[0px_1px_3px_rgba(0,0,0,0.05)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-4 py-2.5 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5"
             >
               {/* Left Side: Avatar & Details */}
-              <div className="flex items-center gap-5">
-                {/* Initials Avatar Squircle */}
-                <div className="w-14 h-14 rounded-[20px] flex items-center justify-center font-bold text-[16px] bg-[#EFF6FF] text-[#1E40AF] shrink-0 border border-blue-50/50 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Initials Avatar */}
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center text-xs font-bold shrink-0">
                   {getInitials(item.leadName)}
                 </div>
 
                 {/* Text details */}
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-[16px] leading-[24px] text-[#063669]">
+                    <h4
+                      onClick={() => {
+                        if (item.leadUuid) navigate(`/leads/${item.leadUuid}?tab=followups`);
+                        else navigate(`/leads`);
+                      }}
+                      className="font-bold text-[13px] text-slate-900 dark:text-zinc-100 hover:text-[#063669] dark:hover:text-blue-300 hover:underline cursor-pointer leading-tight truncate"
+                    >
                       {item.leadName}
                     </h4>
-                    <span className="text-[12px] text-[#64748B] font-medium">
+                    <span className="text-[11px] text-slate-400 font-normal">
                       • {item.leadId}
                     </span>
                   </div>
 
-                  {/* Scheduled Date and Time */}
-                  <div className="flex items-center gap-1.5 text-xs text-[#64748B] font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
+                  {/* Scheduled Date, Time, and Assignee */}
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-normal flex-wrap">
+                    <span className="flex items-center gap-1 text-slate-700 dark:text-zinc-300 font-medium">
+                      <Calendar className="w-3 h-3 text-slate-400" />
                       {item.scheduledAt}
                     </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
+                    <span className="text-slate-300 dark:text-zinc-700">•</span>
+                    <span className="flex items-center gap-1 text-slate-700 dark:text-zinc-300 font-medium">
+                      <Clock className="w-3 h-3 text-slate-400" />
                       {item.scheduledTime}
                     </span>
+                    {(item.assignedEm || item.assignedRm) && (
+                      <>
+                        <span className="text-slate-300 dark:text-zinc-700">•</span>
+                        <span className="text-slate-500">
+                          {item.assignedEm || item.assignedRm}
+                        </span>
+                      </>
+                    )}
                   </div>
-
-                  {/* Assignee */}
-                  <p className="text-[11px] text-[#64748B] font-medium pt-0.5">
-                    {item.assignedEm || item.assignedRm || "Sales Executive"}
-                  </p>
                 </div>
               </div>
 
               {/* Right Side: Action buttons */}
-              <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+              <div className="flex items-center justify-end gap-3 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-zinc-800">
                 {activeTab !== "Completed" ? (
                   isRM || isSalesAdmin ? (
-                    <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider cursor-default">
+                    <span className="text-slate-400 font-semibold text-[10px] tracking-wider uppercase cursor-default">
                       POST CALL FOLLOW UP
                     </span>
                   ) : (
                     <button
                       onClick={() => openCompleteModal(item)}
-                      className="text-[#0B3565] hover:underline font-bold text-[11px] uppercase tracking-wider transition-colors cursor-pointer"
+                      className="text-[#063669] dark:text-blue-400 hover:underline font-bold text-[10px] tracking-wider uppercase transition-colors cursor-pointer"
                     >
                       POST CALL FOLLOW UP
                     </button>
                   )
                 ) : (
-                  <span className="text-emerald-600 bg-emerald-55 font-bold text-[11px] uppercase tracking-wider cursor-default">
+                  <span className="text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/40 font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     COMPLETED
                   </span>
                 )}
 
                 <button
                   onClick={() => {
-                    // Navigate to details if uuid is present, or fallback
                     if (item.leadUuid) {
                       navigate(`/leads/${item.leadUuid}?tab=followups`);
                     } else {
                       navigate(`/leads`);
                     }
                   }}
-                  className="bg-[#0B3565] text-white text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-[#072445] transition-colors shadow-md"
+                  className="bg-[#063669] hover:bg-[#042548] text-white text-xs font-semibold px-3.5 py-1 rounded-lg transition-colors cursor-pointer"
                 >
                   View Lead
                 </button>
@@ -1441,3 +1421,4 @@ export const FollowUpsPage: React.FC = () => {
     </div>
   );
 };
+

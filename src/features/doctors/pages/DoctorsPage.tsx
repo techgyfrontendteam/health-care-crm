@@ -75,8 +75,14 @@ export const DoctorsPage = () => {
           department = "IPD";
         }
 
-        const startT = apiDoc.available_start_time ? apiDoc.available_start_time.slice(0, 5) : "09:00";
-        const endT = apiDoc.available_end_time ? apiDoc.available_end_time.slice(0, 5) : "17:00";
+        const extractTime = (timeStr?: string, fallback = "09:00") => {
+          if (!timeStr) return fallback;
+          const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+          return match ? `${match[1].padStart(2, "0")}:${match[2]}` : fallback;
+        };
+
+        const startT = extractTime(apiDoc.available_start_time, "09:00");
+        const endT = extractTime(apiDoc.available_end_time, "17:00");
 
         return {
           id: apiDoc.id,
@@ -105,30 +111,41 @@ export const DoctorsPage = () => {
       });
       setDoctors(mappedDocs);
     } else if (allDoctorsResp?.data && !masterData) {
-      const mappedDocs: Doctor[] = allDoctorsResp.data.map((apiDoc: ApiDoctor) => ({
-        id: apiDoc.id,
-        branch_id: apiDoc.branch_id,
-        specialization_id: apiDoc.specialization_id,
-        service_id: apiDoc.service_id,
-        available_start_time: apiDoc.available_start_time,
-        available_end_time: apiDoc.available_end_time,
-        name: `${apiDoc.first_name || ""} ${apiDoc.last_name || ""}`.trim(),
-        first_name: apiDoc.first_name,
-        last_name: apiDoc.last_name,
-        email: apiDoc.email,
-        phone_number: apiDoc.phone_number,
-        image_url: apiDoc.profile_img,
-        consultation_fee: Number(apiDoc.consultation_fee) || 0,
-        working_hours: "09:00 - 17:00",
-        department: "Both",
-        specialization: "Specialist",
-        service_type: "Both",
-        hospital_branch: "Branch",
-        qualification: apiDoc.education,
-        experience_years: Number(apiDoc.experience) || 0,
-        is_active: apiDoc.is_active,
-        created_at: apiDoc.created_on,
-      }));
+      const extractTime = (timeStr?: string, fallback = "09:00") => {
+        if (!timeStr) return fallback;
+        const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+        return match ? `${match[1].padStart(2, "0")}:${match[2]}` : fallback;
+      };
+
+      const mappedDocs: Doctor[] = allDoctorsResp.data.map((apiDoc: ApiDoctor) => {
+        const startT = extractTime(apiDoc.available_start_time, "09:00");
+        const endT = extractTime(apiDoc.available_end_time, "17:00");
+
+        return {
+          id: apiDoc.id,
+          branch_id: apiDoc.branch_id,
+          specialization_id: apiDoc.specialization_id,
+          service_id: apiDoc.service_id,
+          available_start_time: apiDoc.available_start_time,
+          available_end_time: apiDoc.available_end_time,
+          name: `${apiDoc.first_name || ""} ${apiDoc.last_name || ""}`.trim(),
+          first_name: apiDoc.first_name,
+          last_name: apiDoc.last_name,
+          email: apiDoc.email,
+          phone_number: apiDoc.phone_number,
+          image_url: apiDoc.profile_img,
+          consultation_fee: Number(apiDoc.consultation_fee) || 0,
+          working_hours: `${startT} - ${endT}`,
+          department: "Both",
+          specialization: "Specialist",
+          service_type: "Both",
+          hospital_branch: "Branch",
+          qualification: apiDoc.education,
+          experience_years: Number(apiDoc.experience) || 0,
+          is_active: apiDoc.is_active,
+          created_at: apiDoc.created_on,
+        };
+      });
       setDoctors(mappedDocs);
     }
   }, [allDoctorsResp, masterData]);
@@ -166,7 +183,6 @@ export const DoctorsPage = () => {
       setDoctors((prev) =>
         prev.map((d) => (d.id === editingDoctor.id ? { ...d, ...data } : d))
       );
-      toast.success("Doctor profile updated successfully");
     } else {
       const newDoc: Doctor = {
         ...data,

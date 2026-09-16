@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
+import { formatToStandardDateTime, parseStandardDateTime } from "../../../utils";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
 import { useGetAllDoctorsQuery } from "../../doctors/api/doctorsApiSlice";
 import { useCreateSurgeryMutation, useUpdateSurgeryMutation } from "../api/leadsApi";
@@ -240,21 +241,16 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
         setTimeError("");
 
         if (surgery.surgery_date_time) {
-          try {
-            const validStr = surgery.surgery_date_time.replace(/Z/g, "").split("+")[0].replace(" ", "T");
-            const d = new Date(validStr);
-            if (!isNaN(d.getTime())) {
-              setDate(d);
-              let h = d.getHours();
-              const p = h >= 12 ? "PM" : "AM";
-              h = h % 12;
-              h = h ? h : 12;
-              setHour(String(h).padStart(2, "0"));
-              setMinute(String(d.getMinutes()).padStart(2, "0"));
-              setPeriod(p);
+          const { dateObj, time12h } = parseStandardDateTime(surgery.surgery_date_time);
+          if (dateObj) {
+            setDate(dateObj);
+            if (time12h) {
+              const parts = time12h.split(" ");
+              const timeParts = parts[0]?.split(":") || [];
+              setHour(timeParts[0] || "");
+              setMinute(timeParts[1] || "");
+              setPeriod((parts[1] as "AM" | "PM") || "AM");
             }
-          } catch (e) {
-            console.error("Error parsing surgery date:", e);
           }
         }
       } else {
@@ -356,12 +352,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
       return;
     }
 
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const formattedDateTime = `${selectedDateTime.getFullYear()}-${pad(
-      selectedDateTime.getMonth() + 1
-    )}-${pad(selectedDateTime.getDate())} ${pad(selectedDateTime.getHours())}:${pad(
-      selectedDateTime.getMinutes()
-    )}:${pad(selectedDateTime.getSeconds())}`;
+    const formattedDateTime = formatToStandardDateTime(selectedDateTime);
 
     if (surgery) {
       const payload = {
@@ -391,7 +382,7 @@ export const ScheduleSurgeryDialog: React.FC<ScheduleSurgeryDialogProps> = ({
         lead_uuid: lead!.uuid,
         doctor_id: Number(selectedDoctorId),
         surgery_type_id: Number(selectedSurgeryTypeId),
-        surgery_date_time: selectedDateTime.toISOString(),
+        surgery_date_time: formattedDateTime,
         surgery_status_id: Number(selectedStatusId || 1),
         surgery_remarks: remarks.trim(),
         surgery_cost: Number(surgeryCost),

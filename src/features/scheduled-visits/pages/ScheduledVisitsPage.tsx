@@ -169,8 +169,6 @@ const getStatusBadgeStyle = (codeOrDesc: string) => {
   };
 };
 
-const BRANCH_CITIES = ["All", "Hyderabad", "Bengaluru", "Mumbai", "Delhi", "Chennai", "Pune"];
-
 export const ScheduledVisitsPage = () => {
   const { emId: paramEmId } = useParams();
   const navigate = useNavigate();
@@ -302,8 +300,7 @@ export const ScheduledVisitsPage = () => {
     return getDaysInMonth(activeMonth.getFullYear(), activeMonth.getMonth());
   }, [activeMonth]);
 
-  // 4. Branch & Search Filters
-  const [branchFilter, setBranchFilter] = useState("All");
+  // 4. Search Filter
   const [searchTerm, setSearchTerm] = useState("");
 
   // Click outside listener for dropdowns
@@ -440,7 +437,7 @@ export const ScheduledVisitsPage = () => {
     return [];
   }, [visitsData]);
 
-  // Local Search & Branch Filtering
+  // Local Search Filtering
   const filteredVisits = useMemo(() => {
     let list = rawVisitsList;
 
@@ -457,24 +454,15 @@ export const ScheduledVisitsPage = () => {
       });
     }
 
-    // Branch filter
-    if (branchFilter !== "All") {
-      const bQuery = branchFilter.toLowerCase();
-      list = list.filter((v: any) => {
-        const branchStr = (v.hospital_branch || v.branch_name || v.branch || v.visit_location_url || "").toLowerCase();
-        return branchStr.includes(bQuery);
-      });
-    }
-
     return list;
-  }, [rawVisitsList, searchTerm, branchFilter]);
+  }, [rawVisitsList, searchTerm]);
 
   // Pagination
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, branchFilter, selectedStatusId, selectedEmIds, startDate, endDate]);
+  }, [searchTerm, selectedStatusId, selectedEmIds, startDate, endDate]);
 
   const totalPages = Math.max(1, Math.ceil(filteredVisits.length / ITEMS_PER_PAGE));
   const paginatedVisits = useMemo(() => {
@@ -488,10 +476,10 @@ export const ScheduledVisitsPage = () => {
   }, [selectedStatusId, appointmentStatuses]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent pt-6 pb-20 px-4 sm:px-6 space-y-6 font-['Inter']">
+    <div className="flex flex-col space-y-4 font-['Inter']">
       
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* Header Row: Title */}
+      {/* Header Row: Title & Search                             */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -501,6 +489,17 @@ export const ScheduledVisitsPage = () => {
           <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
             Track and manage patient hospital visits &amp; OPD appointments.
           </p>
+        </div>
+
+        {/* Search Input Bar */}
+        <div className="relative w-full sm:w-80 md:w-96">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Search appointments by patient name, lead ID, doctor, or branch..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 h-10 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-xs font-medium placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#063669] shadow-xs"
+          />
         </div>
       </div>
 
@@ -819,24 +818,6 @@ export const ScheduledVisitsPage = () => {
               </div>
             )}
           </div>
-
-          {/* 4. BRANCH FILTER */}
-          <div>
-            <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 block mb-1 uppercase tracking-wider">
-              BRANCH
-            </span>
-            <select
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-              className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-[#063669] cursor-pointer shadow-2xs h-[37px]"
-            >
-              {BRANCH_CITIES.map((b) => (
-                <option key={b} value={b}>
-                  {b === "All" ? "All Branches" : b}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Count Summary Indicator */}
@@ -845,18 +826,6 @@ export const ScheduledVisitsPage = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* Search Input Bar                                       */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div className="relative w-full">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Search appointments by patient name, lead ID, doctor, or branch..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-11 pr-4 py-2.5 h-11 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-xs font-medium placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#063669]"
-        />
-      </div>
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/* Appointment Cards List                                 */}
@@ -868,8 +837,8 @@ export const ScheduledVisitsPage = () => {
             <span>Loading appointments...</span>
           </div>
         ) : filteredVisits.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-12 text-center text-xs font-semibold text-slate-400 dark:text-zinc-500 flex flex-col items-center justify-center gap-3">
-            <CalendarIcon className="w-9 h-9 text-slate-300 dark:text-zinc-700" />
+          <div className="bg-white dark:bg-zinc-900 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl p-8 text-center text-xs font-semibold text-slate-400 dark:text-zinc-500 flex flex-col items-center justify-center gap-2">
+            <CalendarIcon className="w-8 h-8 text-slate-300 dark:text-zinc-700" />
             <span>No appointments found for the selected filters.</span>
           </div>
         ) : (
@@ -879,110 +848,135 @@ export const ScheduledVisitsPage = () => {
             const fullName = `${firstName} ${lastName}`.trim() || "Patient";
             const initials = getInitials(firstName, lastName);
             const leadIdStr = visit.lead_id || `LEAD-${visit.id || "N/A"}`;
-            const statusStyle = getStatusBadgeStyle(
-              visit.visit_status_description || visit.status_code || visit.status || ""
+            const statusObj = appointmentStatuses.find(
+              (s: any) =>
+                Number(s.id) === Number(visit.appointments_status_id || visit.appointment_status_id || visit.visit_status_id || visit.status_id || visit.visit_status)
             );
+            const rawStatus =
+              visit.visit_status_description ||
+              visit.status_name ||
+              visit.appointment_status_description ||
+              statusObj?.description ||
+              statusObj?.code ||
+              visit.status_code ||
+              visit.status ||
+              "";
+
+            const statusStyle = rawStatus ? getStatusBadgeStyle(rawStatus) : null;
+            const isUnknown = !statusStyle || !statusStyle.label || statusStyle.label.toLowerCase() === "unknown";
             const rawDateTime = visit.visit_date_time || visit.appointment_date_time || visit.created_on || "";
+            const leadTarget = visit.lead_uuid || visit.customer_uuid || visit.lead_id;
+            const remarks = visit.visit_remarks || visit.remarks || visit.notes;
 
             return (
               <div
                 key={visit.id || visit.uuid || index}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col gap-3"
+                className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-4 py-2.5 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5"
               >
-                {/* Card Top Row: Patient Info & Status Pill */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {/* Avatar initials */}
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#063669] dark:text-blue-300 border border-blue-100 dark:border-blue-900 flex items-center justify-center text-xs font-bold shrink-0">
-                      {initials}
+                {/* Left Side: Avatar & Information */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Avatar */}
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center text-xs font-bold shrink-0">
+                    {initials}
+                  </div>
+
+                  {/* Text details */}
+                  <div className="min-w-0 space-y-0.5">
+                    {/* Row 1: Name, Lead ID, Phone */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4
+                        onClick={() => {
+                          if (leadTarget) navigate(`/leads/${leadTarget}?tab=activity`);
+                          else navigate(`/leads`);
+                        }}
+                        className="font-bold text-[13px] text-slate-900 dark:text-zinc-100 hover:text-[#063669] dark:hover:text-blue-300 hover:underline cursor-pointer leading-tight truncate"
+                      >
+                        {fullName}
+                      </h4>
+                      <span className="text-[11px] text-slate-400 font-normal">
+                        • #{leadIdStr}
+                      </span>
+                      {(visit.phone_number || visit.c_phone_number) && (
+                        <span className="flex items-center gap-1 text-[11px] text-slate-500 font-normal">
+                          <Phone className="w-3 h-3 text-slate-400" />
+                          <span>{visit.phone_number || visit.c_phone_number}</span>
+                        </span>
+                      )}
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-[#191C1E] dark:text-zinc-100 leading-snug">
-                          {fullName}
-                        </h3>
-                        <span className="text-zinc-400 text-xs font-medium">
-                          • #{leadIdStr}
-                        </span>
-                      </div>
-                      {(visit.phone_number || visit.c_phone_number) && (
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium mt-0.5">
-                          <Phone className="w-3 h-3 text-[#063669] dark:text-blue-400" />
-                          <span>{visit.phone_number || visit.c_phone_number}</span>
-                        </div>
+                    {/* Row 2: Date, Time, Doctor, Branch, Executive, Note */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-normal flex-wrap">
+                      <span className="flex items-center gap-1 text-slate-700 dark:text-zinc-300 font-medium">
+                        <CalendarIcon className="w-3 h-3 text-slate-400" />
+                        {formatDisplayDate(rawDateTime)}
+                      </span>
+                      <span className="text-slate-300 dark:text-zinc-700">•</span>
+                      <span className="flex items-center gap-1 text-slate-700 dark:text-zinc-300 font-medium">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {formatDisplayTime(rawDateTime)}
+                      </span>
+
+                      {(visit.doctor_name || visit.doctor) && (
+                        <>
+                          <span className="text-slate-300 dark:text-zinc-700">•</span>
+                          <span className="text-slate-600 dark:text-zinc-300">
+                            Dr. {visit.doctor_name || visit.doctor}
+                          </span>
+                        </>
+                      )}
+
+                      {(visit.hospital_branch || visit.branch || visit.department || visit.specialization) && (
+                        <>
+                          <span className="text-slate-300 dark:text-zinc-700">•</span>
+                          <span className="flex items-center gap-1 text-slate-500">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            <span>{visit.hospital_branch || visit.branch || visit.department || visit.specialization}</span>
+                          </span>
+                        </>
+                      )}
+
+                      {(visit.assigned_to_em_name || visit.assigned_em || visit.em_name) && (
+                        <>
+                          <span className="text-slate-300 dark:text-zinc-700">•</span>
+                          <span className="text-slate-500">
+                            {visit.assigned_to_em_name || visit.assigned_em || visit.em_name}
+                          </span>
+                        </>
+                      )}
+
+                      {remarks && (
+                        <>
+                          <span className="text-slate-300 dark:text-zinc-700">•</span>
+                          <span className="bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-1.5 py-0.5 rounded text-[10.5px] font-medium max-w-[240px] truncate inline-block">
+                            Note: {remarks}
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
-
-                  {/* Status Pill */}
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${statusStyle.bg}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
-                    <span>{visit.visit_status_description || statusStyle.label}</span>
-                  </span>
                 </div>
 
-                {/* Card Middle Row: Date, Time, Doctor, Branch, Sales Executive */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-zinc-500 font-medium pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
-                  {/* Date */}
-                  <span className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-semibold">
-                    <CalendarIcon className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400" />
-                    {formatDisplayDate(rawDateTime)}
-                  </span>
-                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
-
-                  {/* Time */}
-                  <span className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-semibold">
-                    <Clock className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400" />
-                    {formatDisplayTime(rawDateTime)}
-                  </span>
-
-                  {/* Doctor Name */}
-                  {(visit.doctor_name || visit.doctor) && (
-                    <>
-                      <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                      <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300">
-                        Doctor: <strong className="text-zinc-800 dark:text-zinc-100 font-semibold">{visit.doctor_name || visit.doctor}</strong>
-                      </span>
-                    </>
-                  )}
-
-                  {/* Department / Branch */}
-                  {(visit.hospital_branch || visit.branch || visit.department || visit.specialization) && (
-                    <>
-                      <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                      <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300">
-                        <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>{visit.hospital_branch || visit.branch || visit.department || visit.specialization}</span>
-                      </span>
-                    </>
-                  )}
-
-                  {/* Sales Executive */}
-                  {(visit.assigned_to_em_name || visit.assigned_em || visit.em_name) && (
-                    <>
-                      <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                      <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300">
-                        <User className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>Executive: <strong className="text-zinc-800 dark:text-zinc-100">{visit.assigned_to_em_name || visit.assigned_em || visit.em_name}</strong></span>
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Card Remarks / Notes */}
-                {(visit.visit_remarks || visit.remarks || visit.notes) && (
-                  <div className="bg-slate-50/90 dark:bg-zinc-950/60 border border-slate-200/70 dark:border-zinc-800/80 rounded-lg px-2.5 py-1.5 text-xs flex items-start gap-2 mt-0.5">
-                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-[#063669] bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 px-1.5 py-0.5 rounded">
-                      NOTES
+                {/* Right Side: Status Badge (if known) + View Lead Action */}
+                <div className="flex items-center justify-end gap-3 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-zinc-800">
+                  {!isUnknown && statusStyle && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${statusStyle.bg}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                      <span>{visit.visit_status_description || statusStyle.label}</span>
                     </span>
-                    <p className="text-zinc-700 dark:text-zinc-300 text-[11.5px] leading-snug whitespace-pre-wrap break-words">
-                      {visit.visit_remarks || visit.remarks || visit.notes}
-                    </p>
-                  </div>
-                )}
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (leadTarget) navigate(`/leads/${leadTarget}?tab=activity`);
+                      else navigate(`/leads`);
+                    }}
+                    className="bg-[#063669] hover:bg-[#042548] text-white text-xs font-semibold px-3.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  >
+                    View Lead
+                  </button>
+                </div>
               </div>
             );
           })

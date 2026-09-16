@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { Doctor, CreateDoctorRequest } from "../types";
+import type { Doctor, CreateDoctorRequest, UpdateDoctorRequest } from "../types";
 import { User, Upload } from "lucide-react";
 import { Dialog, DialogContent } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
@@ -14,7 +14,7 @@ import {
 } from "../../../components/ui/select";
 import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
 import { useGetAllMasterDataQuery } from "../../master/api/masterApi";
-import { useCreateDoctorMutation } from "../api/doctorsApiSlice";
+import { useCreateDoctorMutation, useUpdateDoctorMutation } from "../api/doctorsApiSlice";
 import { toast } from "sonner";
 import { TimePicker } from "../../../shared/components/DateTimePicker";
 
@@ -24,6 +24,48 @@ interface DoctorFormModalProps {
   onSubmit: (data: any) => void;
   doctor?: Doctor | null;
   isLoading?: boolean;
+}
+
+function extractTimeHHMM(timeStr?: string, fallback = ""): string {
+  if (!timeStr) return fallback;
+  const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    return `${match[1].padStart(2, "0")}:${match[2]}`;
+  }
+  return fallback;
+}
+
+export function formatDoctorDateTime(timeInput?: string): string {
+  if (!timeInput) return "";
+
+  // If already in YYYY-MM-DD HH:mm:ss:00 format
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}:\d{2}$/.test(timeInput)) {
+    return timeInput;
+  }
+
+  // Extract date part if present, otherwise use current date
+  let datePart = "";
+  const dateMatch = timeInput.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) {
+    datePart = dateMatch[1];
+  } else {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    datePart = `${y}-${m}-${d}`;
+  }
+
+  // Extract time HH:mm
+  let hh = "09";
+  let mm = "00";
+  const timeMatch = timeInput.match(/(\d{1,2}):(\d{2})/);
+  if (timeMatch) {
+    hh = timeMatch[1].padStart(2, "0");
+    mm = timeMatch[2];
+  }
+
+  return `${datePart} ${hh}:${mm}:00:00`;
 }
 
 export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
@@ -38,6 +80,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFile] = useUploadFileMutation();
   const [createDoctor, { isLoading: isCreating }] = useCreateDoctorMutation();
+  const [updateDoctor, { isLoading: isUpdating }] = useUpdateDoctorMutation();
   const { data: masterData } = useGetAllMasterDataQuery();
 
   const [formData, setFormData] = useState<any>({
@@ -90,16 +133,8 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
         )?.id ||
         0;
 
-      const startT = doctor.available_start_time
-        ? doctor.available_start_time.slice(0, 5)
-        : doctor.working_hours
-        ? doctor.working_hours.split(" - ")[0]
-        : "";
-      const endT = doctor.available_end_time
-        ? doctor.available_end_time.slice(0, 5)
-        : doctor.working_hours
-        ? doctor.working_hours.split(" - ")[1]
-        : "";
+      const startT = extractTimeHHMM(doctor.available_start_time || (doctor.working_hours ? doctor.working_hours.split(" - ")[0] : ""));
+      const endT = extractTimeHHMM(doctor.available_end_time || (doctor.working_hours ? doctor.working_hours.split(" - ")[1] : ""));
 
       setFormData({
         first_name: doctor.first_name || (doctor.name ? doctor.name.split(" ")[0] : ""),
@@ -185,10 +220,10 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
       setIsUploading(false);
     }
 
-    const startTFormatted = formData.available_start_time.length === 5 ? `${formData.available_start_time}:00` : formData.available_start_time;
-    const endTFormatted = formData.available_end_time.length === 5 ? `${formData.available_end_time}:00` : formData.available_end_time;
+    const startTFormatted = formatDoctorDateTime(formData.available_start_time);
+    const endTFormatted = formatDoctorDateTime(formData.available_end_time);
 
-    const payload: CreateDoctorRequest = {
+    const mockDoctorForUI = {
       first_name: formData.first_name,
       last_name: formData.last_name,
       email: formData.email,
@@ -202,26 +237,64 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
       available_start_time: startTFormatted,
       available_end_time: endTFormatted,
       profile_img: finalProfileImg,
-      country_code: formData.country_code,
-    };
-
-    const mockDoctorForUI = {
-      ...payload,
-      name: `${payload.first_name} ${payload.last_name}`,
+      country_code: formData.country_code || "+91",
+      name: `${formData.first_name} ${formData.last_name}`.trim(),
       department: "Both",
-      specialization: masterData?.specialisations?.find(s => s.id === payload.specialization_id)?.description || "N/A",
-      hospital_branch: masterData?.branches?.find(b => b.id === payload.branch_id)?.description || "N/A",
+      specialization: masterData?.specialisations?.find(s => s.id === Number(formData.specialization_id))?.description || "N/A",
+      hospital_branch: masterData?.branches?.find(b => b.id === Number(formData.branch_id))?.description || "N/A",
       image_url: finalProfileImg,
-      experience_years: payload.experience,
-      qualification: payload.education,
-      service_type: masterData?.services?.find(s => s.id === payload.service_id)?.description || "N/A",
+      experience_years: formData.experience === "" || formData.experience === undefined || formData.experience === null ? 0 : Number(formData.experience),
+      qualification: formData.education,
+      service_type: masterData?.services?.find(s => s.id === Number(formData.service_id))?.description || "N/A",
     };
 
     if (isEdit && doctor) {
-      onSubmit({ ...mockDoctorForUI, id: doctor.id });
-    } else {
+      const updatePayload: UpdateDoctorRequest = {
+        id: Number(doctor.id),
+        branch_id: Number(formData.branch_id),
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        profile_img: finalProfileImg,
+        education: formData.education,
+        specialization_id: Number(formData.specialization_id),
+        service_id: Number(formData.service_id),
+        country_code: formData.country_code || "+91",
+        phone_number: formData.phone_number,
+        consultation_fee: formData.consultation_fee === "" || formData.consultation_fee === undefined || formData.consultation_fee === null ? 0 : Number(formData.consultation_fee),
+        experience: formData.experience === "" || formData.experience === undefined || formData.experience === null ? 0 : Number(formData.experience),
+        available_start_time: startTFormatted,
+        available_end_time: endTFormatted,
+        is_active: doctor.is_active !== undefined ? Number(doctor.is_active) : 1,
+      };
+
       try {
-        await createDoctor(payload).unwrap();
+        await updateDoctor(updatePayload).unwrap();
+        toast.success("Doctor updated successfully");
+        onSubmit({ ...mockDoctorForUI, id: doctor.id, is_active: updatePayload.is_active });
+      } catch (err: any) {
+        toast.error(err?.data?.message || "Failed to update doctor");
+      }
+    } else {
+      const createPayload: CreateDoctorRequest = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone_number: formData.phone_number,
+        education: formData.education,
+        experience: formData.experience === "" || formData.experience === undefined || formData.experience === null ? 0 : Number(formData.experience),
+        consultation_fee: formData.consultation_fee === "" || formData.consultation_fee === undefined || formData.consultation_fee === null ? 0 : Number(formData.consultation_fee),
+        branch_id: Number(formData.branch_id),
+        specialization_id: Number(formData.specialization_id),
+        service_id: Number(formData.service_id),
+        available_start_time: startTFormatted,
+        available_end_time: endTFormatted,
+        profile_img: finalProfileImg,
+        country_code: formData.country_code || "+91",
+      };
+
+      try {
+        await createDoctor(createPayload).unwrap();
         toast.success("Doctor created successfully");
         onSubmit(mockDoctorForUI);
       } catch (err: any) {
@@ -484,10 +557,10 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || isUploading || isCreating}
+              disabled={isLoading || isUploading || isCreating || isUpdating}
               className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white px-6 h-10"
             >
-              {isUploading ? "Uploading..." : isCreating ? "Saving..." : isEdit ? "Update Doctor" : "Create Doctor"}
+              {isUploading ? "Uploading..." : isCreating || isUpdating ? "Saving..." : isEdit ? "Update Doctor" : "Create Doctor"}
             </Button>
           </div>
         </form>

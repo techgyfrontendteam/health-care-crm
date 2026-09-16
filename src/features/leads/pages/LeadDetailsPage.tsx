@@ -1194,6 +1194,8 @@ export const LeadDetailsPage = () => {
                     leadPhoneNumber={lead?.phone_number}
                     objections={lead?.objections}
                     masterObjections={masterData?.objections}
+                    lead={lead}
+                    refetch={refetch}
                   />
                 </TabsContent>
 
