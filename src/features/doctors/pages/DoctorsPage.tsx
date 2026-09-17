@@ -2,6 +2,13 @@ import React, { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "../../../shared/components/PageHeader/PageHeader";
 import { SearchInput } from "../../../shared/components/FilterBar/FilterBar";
 import { Button } from "../../../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import { DoctorTable } from "../components/DoctorTable";
 import { DoctorDetailsModal } from "../components/DoctorDetailsModal";
 import { DoctorFormModal } from "../components/DoctorFormModal";
@@ -205,27 +212,29 @@ export const DoctorsPage = () => {
   };
 
   return (
-    <div className="space-y-3.5 w-full px-2 sm:px-4 lg:px-6 pb-6 animate-in fade-in duration-200">
+    <div className="w-full flex-1 min-h-0 flex flex-col h-full gap-3 animate-in fade-in duration-200">
       {/* Header */}
-      <PageHeader
-        title="Doctor Directory & Medical Staff"
-        description="Manage medical practitioners, OP & IP doctors, schedules, and clinical affiliations"
-        actions={
-          <Button
-            onClick={() => {
-              setEditingDoctor(null);
-              setIsFormOpen(true);
-            }}
-            className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-xl h-9 px-4 font-bold text-xs shadow-xs"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            Add New Doctor
-          </Button>
-        }
-      />
+      <div className="shrink-0">
+        <PageHeader
+          title="Doctor Directory & Medical Staff"
+          description="Manage medical practitioners, OP & IP doctors, schedules, and clinical affiliations"
+          actions={
+            <Button
+              onClick={() => {
+                setEditingDoctor(null);
+                setIsFormOpen(true);
+              }}
+              className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-xl h-9 px-4 font-bold text-xs shadow-xs"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Add New Doctor
+            </Button>
+          }
+        />
+      </div>
 
       {/* Compact KPI Metrics Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Total Doctors */}
         <div className="bg-white dark:bg-zinc-950 p-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex items-center gap-3 hover:border-blue-200 dark:hover:border-blue-900 transition-all duration-150">
           <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-[#063669] dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -280,7 +289,7 @@ export const DoctorsPage = () => {
       </div>
 
       {/* Compact Filter & Search Bar */}
-      <div className="bg-white dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
+      <div className="shrink-0 bg-white dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
           {/* Search Bar */}
           <div className="w-full sm:w-80">
@@ -294,80 +303,94 @@ export const DoctorsPage = () => {
           {/* Dropdown Filters */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             {/* Service Type Select */}
-            <select
-              value={selectedServiceId}
-              onChange={(e) => setSelectedServiceId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
+            <Select
+              value={String(selectedServiceId)}
+              onValueChange={(val) => setSelectedServiceId(Number(val))}
             >
-              <option value={0}>All Service Types</option>
-              {masterData?.services && masterData.services.length > 0 ? (
-                masterData.services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.description}
-                  </option>
-                ))
-              ) : (
-                <>
-                  <option value={1}>OP Doctors (OPD)</option>
-                  <option value={2}>IP Doctors (IPD)</option>
-                  <option value={6}>Both (IPD &amp; OPD)</option>
-                </>
-              )}
-            </select>
+              <SelectTrigger className="!w-auto inline-flex items-center justify-between gap-1.5 px-3 !rounded-lg h-9 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-xs hover:border-zinc-300 transition-colors cursor-pointer [&>svg]:opacity-60 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
+                <SelectValue placeholder="All Service Types" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-zinc-900 z-50 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-[300px] overflow-y-auto custom-scrollbar">
+                <SelectItem value="0" className="text-xs font-semibold cursor-pointer">All Service Types</SelectItem>
+                {masterData?.services && masterData.services.length > 0 ? (
+                  masterData.services.map((service) => (
+                    <SelectItem key={service.id} value={String(service.id)} className="text-xs font-semibold cursor-pointer">
+                      {service.description}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="1" className="text-xs font-semibold cursor-pointer">OP Doctors (OPD)</SelectItem>
+                    <SelectItem value="2" className="text-xs font-semibold cursor-pointer">IP Doctors (IPD)</SelectItem>
+                    <SelectItem value="6" className="text-xs font-semibold cursor-pointer">Both (IPD &amp; OPD)</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
 
             {/* Branch Select */}
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
+            <Select
+              value={String(selectedBranchId)}
+              onValueChange={(val) => setSelectedBranchId(Number(val))}
             >
-              <option value={0}>All Branches</option>
-              {masterData?.branches?.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.description}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="!w-auto inline-flex items-center justify-between gap-1.5 px-3 !rounded-lg h-9 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-xs hover:border-zinc-300 transition-colors cursor-pointer [&>svg]:opacity-60 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-zinc-900 z-50 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-[300px] overflow-y-auto custom-scrollbar">
+                <SelectItem value="0" className="text-xs font-semibold cursor-pointer">All Branches</SelectItem>
+                {masterData?.branches?.map((branch) => (
+                  <SelectItem key={branch.id} value={String(branch.id)} className="text-xs font-semibold cursor-pointer">
+                    {branch.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Department / Specialization Select */}
-            <select
-              value={selectedSpecId}
-              onChange={(e) => setSelectedSpecId(Number(e.target.value))}
-              className="h-8.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] cursor-pointer"
+            <Select
+              value={String(selectedSpecId)}
+              onValueChange={(val) => setSelectedSpecId(Number(val))}
             >
-              <option value={0}>All Departments</option>
-              {masterData?.specialisations?.map((spec) => (
-                <option key={spec.id} value={spec.id}>
-                  {spec.description}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="!w-auto inline-flex items-center justify-between gap-1.5 px-3 !rounded-lg h-9 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-xs hover:border-zinc-300 transition-colors cursor-pointer [&>svg]:opacity-60 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-zinc-900 z-50 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-[300px] overflow-y-auto custom-scrollbar">
+                <SelectItem value="0" className="text-xs font-semibold cursor-pointer">All Departments</SelectItem>
+                {masterData?.specialisations?.map((spec) => (
+                  <SelectItem key={spec.id} value={String(spec.id)} className="text-xs font-semibold cursor-pointer">
+                    {spec.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
 
-      {/* Main 80vh Doctor Table View with Fixed Bottom Pagination */}
-      <DoctorTable
-        doctors={paginatedDoctors}
-        isLoading={isAllDoctorsLoading || isAllDoctorsFetching}
-        page={page}
-        limit={limit}
-        total={totalDoctors}
-        onPageChange={setPage}
-        onLimitChange={(newLimit) => {
-          setLimit(newLimit);
-          setPage(1);
-        }}
-        onViewDetails={(doc) => {
-          setSelectedDoctor(doc);
-          setIsDetailsOpen(true);
-        }}
-        onEdit={(doc) => {
-          setEditingDoctor(doc);
-          setIsFormOpen(true);
-        }}
-        onDelete={(id) => setDeleteId(id)}
-      />
+      {/* Main Doctor Table View with Fixed Bottom Pagination */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <DoctorTable
+          doctors={paginatedDoctors}
+          isLoading={isAllDoctorsLoading || isAllDoctorsFetching}
+          page={page}
+          limit={limit}
+          total={totalDoctors}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          onViewDetails={(doc) => {
+            setSelectedDoctor(doc);
+            setIsDetailsOpen(true);
+          }}
+          onEdit={(doc) => {
+            setEditingDoctor(doc);
+            setIsFormOpen(true);
+          }}
+          onDelete={(id) => setDeleteId(id)}
+        />
+      </div>
 
       {/* Doctor Details Modal */}
       <DoctorDetailsModal

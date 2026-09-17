@@ -22,6 +22,7 @@ interface DoctorTableProps {
   onViewDetails: (doctor: Doctor) => void;
   onEdit: (doctor: Doctor) => void;
   onDelete: (id: number) => void;
+  className?: string;
 }
 
 const DoctorAvatar = ({ doc }: { doc: Doctor }) => {
@@ -57,6 +58,7 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
   onViewDetails,
   onEdit,
   onDelete,
+  className,
 }) => {
   const totalPages = Math.ceil(total / limit);
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
@@ -75,8 +77,10 @@ export const DoctorTable: React.FC<DoctorTableProps> = ({
 
   return (
     <div
-      className="flex flex-col bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm overflow-hidden"
-      style={{ height: "80vh", maxHeight: "80vh" }}
+      className={cn(
+        "flex-1 min-h-0 flex flex-col bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm overflow-hidden h-full",
+        className
+      )}
     >
       {/* Table Scroll Area - Fixed Sticky Header with Internal Scrolling */}
       <div className="relative flex-1 overflow-x-auto overflow-y-auto custom-scrollbar min-h-0">

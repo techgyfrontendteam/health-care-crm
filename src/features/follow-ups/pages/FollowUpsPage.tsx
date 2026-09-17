@@ -877,12 +877,12 @@ export const FollowUpsPage: React.FC = () => {
         </div>
 
         {/* Scheduled / Completed / Missed Segmented Pill Tab */}
-        <div className="bg-[#f1f5f9] p-1 rounded-full flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
+        <div className="bg-[#f1f5f9] p-1 rounded-lg flex items-center shrink-0 self-end md:self-auto shadow-sm border border-slate-100">
           {(["Scheduled", "Completed", "Missed"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer ${activeTab === tab
+              className={`px-6 py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer ${activeTab === tab
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-slate-400 hover:text-slate-650"
                 }`}
@@ -909,18 +909,18 @@ export const FollowUpsPage: React.FC = () => {
           filteredFollowUps.map((item: any) => (
             <div
               key={item.id}
-              className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-4 py-2.5 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5"
+              className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-5 py-4 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
               {/* Left Side: Avatar & Details */}
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-4 min-w-0">
                 {/* Initials Avatar */}
                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center text-xs font-bold shrink-0">
                   {getInitials(item.leadName)}
                 </div>
 
                 {/* Text details */}
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="min-w-0 space-y-1.5">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <h4
                       onClick={() => {
                         if (item.leadUuid) navigate(`/leads/${item.leadUuid}?tab=followups`);
@@ -936,7 +936,7 @@ export const FollowUpsPage: React.FC = () => {
                   </div>
 
                   {/* Scheduled Date, Time, and Assignee */}
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-normal flex-wrap">
+                  <div className="flex items-center gap-2.5 text-[11px] text-slate-500 font-normal flex-wrap">
                     <span className="flex items-center gap-1 text-slate-700 dark:text-zinc-300 font-medium">
                       <Calendar className="w-3 h-3 text-slate-400" />
                       {item.scheduledAt}
@@ -959,7 +959,7 @@ export const FollowUpsPage: React.FC = () => {
               </div>
 
               {/* Right Side: Action buttons */}
-              <div className="flex items-center justify-end gap-3 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center justify-end gap-4 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-zinc-800">
                 {activeTab !== "Completed" ? (
                   isRM || isSalesAdmin ? (
                     <span className="text-slate-400 font-semibold text-[10px] tracking-wider uppercase cursor-default">
@@ -1421,4 +1421,3 @@ export const FollowUpsPage: React.FC = () => {
     </div>
   );
 };
-

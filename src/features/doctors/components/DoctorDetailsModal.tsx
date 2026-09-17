@@ -58,9 +58,9 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
+      <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl [&>button]:text-white [&>button]:opacity-100">
         {/* Banner / Header */}
-        <div className="bg-gradient-to-r from-[#063669] to-[#0f3d6b] p-6 text-white relative">
+        <div className="bg-[#0f1a34] p-6 text-white relative">
           <div className="flex items-center gap-5">
             {doctor.image_url && !imageError ? (
               <img
@@ -80,8 +80,8 @@ export const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
                   {doctor.service_type || (doctor.department === "Both" ? "OPD & IPD" : `${doctor.department} Specialist`)}
                 </span>
               </div>
-              <h2 className="text-xl font-black mt-1 leading-tight">{doctor.name}</h2>
-              <p className="text-xs text-blue-200 font-semibold">{doctor.specialization}</p>
+              <h2 className="text-xl font-black text-white mt-1 leading-tight">{doctor.name}</h2>
+              <p className="text-xs text-white font-semibold">{doctor.specialization}</p>
             </div>
           </div>
         </div>

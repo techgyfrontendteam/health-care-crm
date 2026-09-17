@@ -441,8 +441,8 @@ export const MainLayout = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-5 lg:p-6 relative">
-          <div className="crm-page-frame mx-auto w-full max-w-[1600px]">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-5 lg:p-6 relative flex flex-col min-h-0">
+          <div className="crm-page-frame mx-auto w-full max-w-[1600px] flex-1 flex flex-col min-h-0">
             <Outlet />
           </div>
         </main>

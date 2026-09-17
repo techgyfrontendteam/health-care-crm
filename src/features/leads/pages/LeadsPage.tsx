@@ -147,6 +147,7 @@ export const LeadsPage = () => {
   const [activeView, setActiveView] = useState<string>('leads');
   const [selectedJunkLead, setSelectedJunkLead] = useState<Lead | null>(null);
   const [showReassignModal, setShowReassignModal] = useState(false);
+  const [junkSearch, setJunkSearch] = useState('');
 
   const handleVerifyLead = React.useCallback((lead: Lead) => {
     setSelectedJunkLead(lead);
@@ -877,11 +878,11 @@ export const LeadsPage = () => {
   }, [activeLeadsData, leads.length, serverOffset]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex-1 flex flex-col min-h-0 h-full gap-4">
       {fromEMDashboard ? (
         <button
           onClick={() => navigate("/agents")}
-          className="flex items-center gap-2 text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer hover:underline mb-4"
+          className="shrink-0 flex items-center gap-2 text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer hover:underline mb-2"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to Sales Executive Dashboard
@@ -889,103 +890,107 @@ export const LeadsPage = () => {
       ) : fromRMDashboard ? (
         <button
           onClick={() => navigate("/relationship-managers")}
-          className="flex items-center gap-2 text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer hover:underline mb-4"
+          className="shrink-0 flex items-center gap-2 text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer hover:underline mb-2"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to Sales Head Dashboard
         </button>
       ) : null}
       {activeView === 'leads' || activeView === 'junk' ? (
-        <PageHeader
-          title={activeView === 'leads' ? "Lead Management Queue" : "Manage Junks"}
-          description={activeView === 'leads' ? "Manage and track your sales pipeline efficiency" : "Streamline and audit the junk lead restoration process"}
-          actions={
-            activeView === 'leads' && can(PERMISSIONS.LEAD_CREATE) ? (
-              <Button onClick={handleCreateNew} className="gap-2 bg-[#063669] hover:bg-[#063669]/90 text-white rounded-[16px] h-11 px-6 font-bold">
-                <UserPlus size={18} />
-                Create New Lead
-              </Button>
-            ) : undefined
-          }
-        />
+        <div className="shrink-0">
+          <PageHeader
+            title={activeView === 'leads' ? "Lead Management Queue" : "Manage Junks"}
+            description={activeView === 'leads' ? "Manage and track your sales pipeline efficiency" : "Streamline and audit the junk lead restoration process"}
+          />
+        </div>
       ) : null}
 
-      {/* Search + Tabs Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="w-full sm:w-1/2">
-          {activeView === 'leads' && (
+      {/* Search and queue selection */}
+      {activeView !== 'junk-review' && (activeView === 'leads' || showTabs) && (
+        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {activeView === 'leads' ? (
             <SearchInput
               value={search}
               onChange={(v) =>
                 dispatch(updateTabFilters({ tabKey, updates: { search: v, page: 1 } }))
               }
               placeholder="Search by Lead ID, Name, or Phone Number"
+              className="relative w-full sm:w-[360px]"
             />
+          ) : activeView === 'junk' ? (
+            <SearchInput
+              value={junkSearch}
+              onChange={(v) => setJunkSearch(v)}
+              placeholder="Search by name..."
+              className="relative w-full sm:w-[360px]"
+            />
+          ) : (
+            <div aria-hidden="true" />
+          )}
+
+          {showTabs && (
+            <div className="flex w-full items-center gap-2 self-end overflow-x-auto rounded-xl border border-zinc-200/50 bg-[#f0f2f5] p-1.5 dark:border-zinc-800/50 dark:bg-zinc-900/50 sm:ml-auto sm:w-fit">
+              <button
+                onClick={() => {
+                  dispatch(setActiveTabAction(0));
+                  setActiveView('leads');
+                }}
+                style={{
+                  width: (activeTab === 0 && activeView === 'leads') ? '210.87px' : '155.8px',
+                  height: (activeTab === 0 && activeView === 'leads') ? '39px' : '36px'
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
+                  activeTab === 0 && activeView === 'leads'
+                    ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
+                    : "text-slate-500 hover:text-primary p-2 px-6",
+                )}
+              >
+                Unassigned
+              </button>
+              <button
+                onClick={() => {
+                  dispatch(setActiveTabAction(1));
+                  setActiveView('leads');
+                }}
+                style={{
+                  width: (activeTab === 1 && activeView === 'leads') ? '210.87px' : '155.8px',
+                  height: (activeTab === 1 && activeView === 'leads') ? '39px' : '36px'
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
+                  activeTab === 1 && activeView === 'leads'
+                    ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
+                    : "text-slate-500 hover:text-primary p-2 px-6",
+                )}
+              >
+                Assigned
+              </button>
+              <button
+                onClick={() => setActiveView('junk')}
+                style={{
+                  width: (activeView === 'junk' || activeView === 'junk-review') ? '210.87px' : '155.8px',
+                  height: (activeView === 'junk' || activeView === 'junk-review') ? '39px' : '36px'
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
+                  (activeView === 'junk' || activeView === 'junk-review')
+                    ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
+                    : "text-slate-500 hover:text-primary p-2 px-6",
+                )}
+              >
+                Junk
+              </button>
+            </div>
           )}
         </div>
-
-        {showTabs && activeView !== 'junk-review' && (
-          <div className="flex items-center gap-2 p-2 bg-[#f0f2f5] dark:bg-zinc-900/50 rounded-xl w-fit border border-zinc-200/50 dark:border-zinc-800/50">
-            <button
-              onClick={() => {
-                dispatch(setActiveTabAction(0));
-                setActiveView('leads');
-              }}
-              style={{
-                width: (activeTab === 0 && activeView === 'leads') ? '210.87px' : '155.8px',
-                height: (activeTab === 0 && activeView === 'leads') ? '39px' : '36px'
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
-                activeTab === 0 && activeView === 'leads'
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
-                  : "text-slate-500 hover:text-primary p-2 px-6",
-              )}
-            >
-              Unassigned
-            </button>
-            <button
-              onClick={() => {
-                dispatch(setActiveTabAction(1));
-                setActiveView('leads');
-              }}
-              style={{
-                width: (activeTab === 1 && activeView === 'leads') ? '210.87px' : '155.8px',
-                height: (activeTab === 1 && activeView === 'leads') ? '39px' : '36px'
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
-                activeTab === 1 && activeView === 'leads'
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
-                  : "text-slate-500 hover:text-primary p-2 px-6",
-              )}
-            >
-              Assigned
-            </button>
-            <button
-              onClick={() => setActiveView('junk')}
-              style={{
-                width: (activeView === 'junk' || activeView === 'junk-review') ? '210.87px' : '155.8px',
-                height: (activeView === 'junk' || activeView === 'junk-review') ? '39px' : '36px'
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
-                activeView === 'junk' || activeView === 'junk-review'
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
-                  : "text-slate-500 hover:text-primary p-2 px-6",
-              )}
-            >
-              Junk
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Main Table Card */}
       {activeView === 'leads' && (
-        <div className="rounded-3xl border border-border/40 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col rounded-3xl border border-border/40 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
           {/* Card Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
+          <div className="flex shrink-0 flex-col items-start justify-between gap-3 border-b border-border/40 px-6 py-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
               <h2
                 className="font-bold text-[#191C1E] font-['Plus_Jakarta_Sans'] flex items-center gap-2"
@@ -995,7 +1000,7 @@ export const LeadsPage = () => {
                 <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: '#D92D20' }} />
               </h2>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => setIsFilterDialogOpen(true)}
@@ -1009,6 +1014,16 @@ export const LeadsPage = () => {
                   </span>
                 )}
               </Button>
+
+              {can(PERMISSIONS.LEAD_CREATE) && (
+                <Button
+                  onClick={handleCreateNew}
+                  className="h-11 shrink-0 gap-2 rounded-[16px] bg-[#063669] px-6 font-bold text-white hover:bg-[#063669]/90"
+                >
+                  <UserPlus size={18} />
+                  Create New Lead
+                </Button>
+              )}
 
               <FilterDialog
                 open={isFilterDialogOpen}
@@ -1080,7 +1095,7 @@ export const LeadsPage = () => {
             </div>
           </div>
 
-          <div>
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
 
             <LeadTable
               data={sortedLeads}
@@ -1102,15 +1117,17 @@ export const LeadsPage = () => {
               offset={serverOffset}
               selectedUuids={selectedUuids}
               onSelectUuids={handleSelectUuids}
+              containerHeight="100%"
             />
           </div>
         </div>
       )}
-
       {activeView === 'junk' && (
         <JunkLeadsPage
           canVerify={canVerifyJunk}
           onVerify={handleVerifyLead}
+          search={junkSearch}
+          onSearchChange={setJunkSearch}
         />
       )}
 

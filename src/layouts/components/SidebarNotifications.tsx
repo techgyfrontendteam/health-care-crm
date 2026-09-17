@@ -55,10 +55,10 @@ export const SidebarNotifications: React.FC<SidebarNotificationsProps> = ({ isSi
           className={cn(
             "relative flex items-center text-slate-600 hover:text-[#111625] transition-colors cursor-pointer",
             placement === "navbar"
-              ? "h-9 w-9 justify-center rounded-full border border-[#e2e8f0] hover:bg-[#f8f9fa] hover:border-slate-300"
-              : cn("h-11 hover:bg-[#f8f9fa]", isSidebarOpen ? "w-full gap-3 px-3 justify-start" : "w-11 justify-center")
+              ? "h-9 w-9 justify-center rounded-md border border-[#e2e8f0] bg-white hover:bg-[#f8f9fa] hover:border-slate-300 shadow-xs"
+              : cn("h-11 hover:bg-[#f8f9fa] rounded-md", isSidebarOpen ? "w-full gap-3 px-3 justify-start" : "w-11 justify-center")
           )}
-          style={placement === "navbar" ? { borderRadius: "9999px" } : undefined}
+          style={placement === "navbar" ? { borderRadius: "6px" } : undefined}
           aria-label="Notifications"
         >
           <Bell size={18} />

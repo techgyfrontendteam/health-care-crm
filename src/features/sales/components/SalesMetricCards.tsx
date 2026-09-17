@@ -130,10 +130,10 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
       </div>
 
       {/* 5. Branch Leads */}
-      <div className="bg-gradient-to-br from-[#063669] to-[#0b4b8c] p-4 rounded-2xl text-white shadow-sm hover:shadow-md transition-all group flex flex-col justify-between">
+      <div className="bg-[#0f1a34] p-4 rounded-2xl text-white shadow-sm hover:shadow-md transition-all group flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold text-blue-200 uppercase tracking-wider">
+            <span className="text-[11px] font-extrabold text-white uppercase tracking-wider">
               Branch Leads
             </span>
             <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
@@ -144,14 +144,14 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
             <h3 className="text-xl font-black text-white truncate">
               {metrics.total_branches_count} Branches
             </h3>
-            <p className="text-xs font-semibold text-blue-200 mt-0.5 truncate">
+            <p className="text-xs font-semibold text-white mt-0.5 truncate">
               Top: {metrics.top_performing_branch}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-          <span className="text-blue-200 font-medium">Leading Branch</span>
-          <span className="font-black text-emerald-300">520 Leads</span>
+          <span className="text-white font-medium">Leading Branch</span>
+          <span className="font-black text-white">520 Leads</span>
         </div>
       </div>
     </div>

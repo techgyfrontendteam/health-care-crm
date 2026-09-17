@@ -305,8 +305,8 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="p-0 max-w-xl overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between pr-12">
+      <DialogContent className="p-0 max-w-2xl max-h-[calc(100vh-2rem)] overflow-hidden rounded-3xl border-border bg-white dark:bg-zinc-950 shadow-2xl">
+        <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between pr-12">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
               {isEdit ? "Edit Doctor Profile" : "Add Doctor"}
@@ -317,7 +317,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-sm">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-bold">First Name *</Label>
@@ -326,7 +326,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.first_name}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 placeholder="e.g. Ananya"
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
             <div>
@@ -336,7 +336,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.last_name}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                 placeholder="e.g. Rao"
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
           </div>
@@ -348,7 +348,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.specialization_id ? String(formData.specialization_id) : ""}
                 onValueChange={(val) => setFormData((prev: any) => ({ ...prev, specialization_id: Number(val) }))}
               >
-                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                <SelectTrigger className="mt-1 rounded-xl h-9 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
@@ -366,7 +366,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.service_id ? String(formData.service_id) : ""}
                 onValueChange={(val) => setFormData((prev: any) => ({ ...prev, service_id: Number(val) }))}
               >
-                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                <SelectTrigger className="mt-1 rounded-xl h-9 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
                   <SelectValue placeholder="Select Service Type" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
@@ -388,7 +388,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.education}
                 onChange={(e) => setFormData({ ...formData, education: e.target.value })}
                 placeholder="e.g. MBBS, MD, DM"
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
             <div>
@@ -405,7 +405,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 }}
                 placeholder="e.g. 5"
                 min={0}
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
           </div>
@@ -418,7 +418,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.phone_number}
                 onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                 placeholder="e.g. 9876543210"
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
             <div>
@@ -429,7 +429,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="e.g. doctor@techgyhealth.com"
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
           </div>
@@ -449,7 +449,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 }}
                 placeholder="e.g. 1000"
                 min={0}
-                className="mt-1 rounded-xl h-10 text-xs"
+                className="mt-1 rounded-xl h-9 text-xs"
               />
             </div>
             <div>
@@ -458,7 +458,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
                 value={formData.branch_id ? String(formData.branch_id) : ""}
                 onValueChange={(val) => setFormData((prev: any) => ({ ...prev, branch_id: Number(val) }))}
               >
-                <SelectTrigger className="mt-1 rounded-xl h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
+                <SelectTrigger className="mt-1 rounded-xl h-9 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium">
                   <SelectValue placeholder="Select Branch" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 text-black dark:text-white z-[99999] max-h-56 overflow-y-auto">
@@ -474,7 +474,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-bold mb-1.5 block">Available Start Time *</Label>
+              <Label className="text-xs font-bold mb-1 block">Available Start Time *</Label>
               <TimePicker
                 value={formData.available_start_time}
                 onChange={(val) => setFormData({ ...formData, available_start_time: val })}
@@ -482,7 +482,7 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs font-bold mb-1.5 block">Available End Time *</Label>
+              <Label className="text-xs font-bold mb-1 block">Available End Time *</Label>
               <TimePicker
                 value={formData.available_end_time}
                 onChange={(val) => setFormData({ ...formData, available_end_time: val })}
@@ -491,25 +491,25 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             </div>
           </div>
 
-          <div className="col-span-2 mt-2">
-            <Label className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-2 block">Profile Picture</Label>
+          <div className="col-span-2">
+            <Label className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-1 block">Profile Picture</Label>
             <label
               htmlFor="doctor-avatar-upload"
-              className="flex items-center gap-4 p-4 w-full bg-white dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 hover:border-[#063669]/50 dark:border-zinc-800 dark:hover:border-blue-500/50 transition-all cursor-pointer group"
+              className="flex items-center gap-3 p-3 w-full bg-white dark:bg-zinc-900/50 rounded-xl border-2 border-dashed border-zinc-200 hover:border-[#063669]/50 dark:border-zinc-800 dark:hover:border-blue-500/50 transition-all cursor-pointer group"
             >
               <div className="relative shrink-0">
                 {formData.image_url ? (
                   <img
                     src={formData.image_url}
                     alt="Doctor Avatar Preview"
-                    className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md group-hover:scale-105 transition-transform duration-300"
+                    className="w-12 h-12 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center text-zinc-400 group-hover:scale-105 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-[#063669] dark:group-hover:text-blue-400 transition-all duration-300">
-                    <User className="h-7 w-7" />
+                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center text-zinc-400 group-hover:scale-105 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-[#063669] dark:group-hover:text-blue-400 transition-all duration-300">
+                    <User className="h-6 w-6" />
                   </div>
                 )}
                 <div className="absolute -bottom-1 -right-1 bg-[#063669] text-white p-1.5 rounded-full shadow-lg scale-0 group-hover:scale-100 transition-transform duration-300">
@@ -551,14 +551,14 @@ export const DoctorFormModal: React.FC<DoctorFormModalProps> = ({
             </label>
           </div>
 
-          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl text-xs font-bold">
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || isUploading || isCreating || isUpdating}
-              className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white px-6 h-10"
+              className="rounded-xl text-xs font-bold bg-[#063669] hover:bg-[#063669]/90 text-white px-6 h-9"
             >
               {isUploading ? "Uploading..." : isCreating || isUpdating ? "Saving..." : isEdit ? "Update Doctor" : "Create Doctor"}
             </Button>

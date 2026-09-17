@@ -2,7 +2,7 @@ import React from 'react';
 import { DataTable } from '../../../shared/components/DataTable/DataTable';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useMasterDataLookup } from '../../../shared/hooks/useMasterDataLookup';
-import { Pencil, Users, Phone, LayoutList } from 'lucide-react';
+import { Pencil, Users, Phone, LayoutList, Mail, Eye } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { formatDate, cn } from '../../../utils';
 import { ExperienceManagerListDialog } from './ExperienceManagerListDialog';
@@ -28,6 +28,7 @@ interface UserTableProps {
   onSort?: (field: 'created_on' | 'first_name') => void;
   offset?: number;
   onNameClick?: (user: User) => void;
+  headerActions?: React.ReactNode;
 }
 
 const AVATAR_PALETTE = [
@@ -63,6 +64,7 @@ export const UserTable = ({
   onSort,
   offset = 0,
   onNameClick,
+  headerActions,
 }: UserTableProps) => {
   const { can } = usePermissions();
   const navigate = useNavigate();
@@ -73,7 +75,7 @@ export const UserTable = ({
   const columns: ColumnDef<User>[] = [
     {
       key: 'first_name',
-      header: permissionPrefix === 'manager' ? 'RM Name' : 'EM Name',
+      header: permissionPrefix === 'manager' ? 'Sales Executive' : 'Experience Manager',
       sortable: true,
       render: (user) => {
         const initials = `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase();
@@ -89,17 +91,32 @@ export const UserTable = ({
             }}>
               {initials || '??'}
             </div>
-            <div
-              className={cn(
-                "max-w-[220px] truncate whitespace-nowrap overflow-hidden font-semibold text-sm",
-                onNameClick
-                  ? "cursor-pointer text-blue-600 hover:underline"
-                  : "text-zinc-900"
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div
+                className={cn(
+                  "max-w-[200px] truncate whitespace-nowrap overflow-hidden font-semibold text-sm",
+                  onNameClick
+                    ? "cursor-pointer text-blue-600 hover:underline"
+                    : "text-zinc-900 dark:text-zinc-100"
+                )}
+                title={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
+                onClick={() => onNameClick?.(user)}
+              >
+                {user.first_name} {user.last_name}
+              </div>
+              {can(`${permissionPrefix}.edit` as Permission) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(user);
+                  }}
+                  className="p-1 rounded-md text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition cursor-pointer shrink-0"
+                  title="Edit user"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
               )}
-              title={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
-              onClick={() => onNameClick?.(user)}
-            >
-              {user.first_name} {user.last_name}
             </div>
           </div>
         );
@@ -112,9 +129,8 @@ export const UserTable = ({
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5">
             <Phone size={12} className="text-zinc-400 shrink-0" />
-            <span className="font-medium text-sm" style={{ color: '#434653' }}>{user.phone_number}</span>
+            <span className="font-medium text-sm text-zinc-700 dark:text-zinc-300">{user.phone_number || '—'}</span>
           </div>
-          <span className="text-xs pl-[18px]" style={{ color: '#94A3B8' }}>{user.email}</span>
           {user.caller_id && (
             <span className="text-[11px] pl-[18px] text-zinc-400 font-medium">
               Caller ID: {user.caller_id}
@@ -124,11 +140,23 @@ export const UserTable = ({
       ),
     },
     {
+      key: 'email',
+      header: 'Mail',
+      render: (user) => (
+        <div className="flex items-center gap-1.5">
+          <Mail size={13} className="text-zinc-400 shrink-0" />
+          <span className="font-medium text-sm text-zinc-600 dark:text-zinc-300 truncate max-w-[200px]" title={user.email || ''}>
+            {user.email || '—'}
+          </span>
+        </div>
+      ),
+    },
+    {
       key: 'created_on',
       header: 'Creation Date',
       sortable: true,
       render: (user) => (
-        <span className="text-sm font-medium" style={{ color: '#64748B' }}>{formatDate(user.created_on)}</span>
+        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{formatDate(user.created_on)}</span>
       ),
     },
     ...(permissionPrefix === 'agent' ? [{
@@ -151,28 +179,19 @@ export const UserTable = ({
     {
       key: 'actions',
       header: 'Actions',
-      width: '120px',
+      width: '130px',
       render: (user: User) => (
-        <div className="flex items-center gap-1">
-          {can(`${permissionPrefix}.edit` as Permission) && (
-            <Button variant="ghost" size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-blue-50 transition cursor-pointer"
-              onClick={() => onEdit(user)} title="Edit">
-              <Pencil className="h-4 w-4 text-blue-500" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon"
-            className="h-8 w-8 rounded-lg hover:bg-blue-50 transition cursor-pointer"
-            onClick={() => setSelectedLeadsUser(user)} title="View Leads">
-            <LayoutList className="h-4 w-4 text-[#0f3d6b]" />
+        <div className="flex items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedLeadsUser(user)}
+            className="h-8 px-3 rounded-lg text-xs font-semibold text-[#0f3d6b] dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+            title="View Leads"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            View Leads
           </Button>
-          {user.role_id === 3 && (
-            <Button variant="ghost" size="icon"
-              className="h-8 w-8 rounded-lg hover:bg-blue-50 transition cursor-pointer"
-              onClick={() => setViewAgentsManager(user)} title="View Sales Executives">
-              <Users className="h-4 w-4 text-emerald-500" />
-            </Button>
-          )}
         </div>
       ),
     },
@@ -184,8 +203,7 @@ export const UserTable = ({
       style={{ fontFamily: 'Inter, sans-serif' }}
     >
       <style>{`
-        .user-table-wrapper thead th,
-        .user-table-wrapper thead th button {
+        .user-table-wrapper thead th {
           color: #64748B !important;
           text-transform: uppercase !important;
           font-size: 11px !important;
@@ -202,6 +220,7 @@ export const UserTable = ({
           </h2>
           <div className="h-2 w-2 rounded-full bg-red-500 mt-1" />
         </div>
+        {headerActions && <div>{headerActions}</div>}
       </div>
 
       <DataTable

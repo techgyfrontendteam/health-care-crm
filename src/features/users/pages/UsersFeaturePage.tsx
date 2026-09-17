@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '../../../shared/components/PageHeader/PageHeader';
-import { FilterBar, SearchInput } from '../../../shared/components/FilterBar/FilterBar';
+import { SearchInput } from '../../../shared/components/FilterBar/FilterBar';
 import { AppDrawer } from '../../../shared/components/AppDrawer/AppDrawer';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog/ConfirmDialog';
 import { Button } from '../../../components/ui/button';
@@ -137,29 +137,30 @@ export const UsersFeaturePage = ({
     }
   };
 
-  const actions = (can(`${permissionPrefix}.create`) || isAdmin) && (
+  const createAction = (can(`${permissionPrefix}.create`) || isAdmin) && (
     <Button
       onClick={() => { setEditingUser(null); setIsDrawerOpen(true); }}
-      className="bg-[#0f3d6b] hover:bg-[#0c2f54] text-white rounded-full px-5 py-2 flex items-center gap-2 
-       shadow-[0px_4px_6px_-4px_rgba(6,54,105,0.1),0px_10px_15px_-3px_rgba(6,54,105,0.1)]"
+      className="bg-[#0f3d6b] hover:bg-[#0c2f54] text-white rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm font-semibold shadow-sm transition-all cursor-pointer"
     >
       <UserPlus className="h-4 w-4" />
-      Create {permissionPrefix === 'manager' ? 'Sales Head' : 'Sales Executive'}
+      Create Sales Executive
     </Button>
   );
 
   return (
     <div className="space-y-4">
-      <PageHeader title={title} description={description} actions={actions} />
-
-      <FilterBar>
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by Name, Phone, or Project..."
-          className="relative w-[360px]"
-        />
-      </FilterBar>
+      <PageHeader
+        title={title}
+        description={description}
+        actions={
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by Name, Phone, or Project..."
+            className="relative w-[360px]"
+          />
+        }
+      />
 
       <UserTable
         data={sortedAndFilteredData}
@@ -176,6 +177,7 @@ export const UsersFeaturePage = ({
         sortOrder={sortOrder}
         onSort={handleSort}
         offset={serverOffset}
+        headerActions={createAction}
         onNameClick={
           roleId === 4
             ? (user) => {

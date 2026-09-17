@@ -126,7 +126,7 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
       </div>
 
       {/* 2. Lead Source Distribution Breakdown */}
-      <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between space-y-4">
+      <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col">
         <div>
           <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <Layers className="h-5 w-5 text-purple-600" />
@@ -137,9 +137,9 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-1 flex-col justify-evenly py-2">
           {leadSources.map((item) => (
-            <div key={item.source} className="space-y-1">
+            <div key={item.source} className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[160px]">
                   {item.source}

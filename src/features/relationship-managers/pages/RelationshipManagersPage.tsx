@@ -875,7 +875,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
         {["SADMIN", "ADMIN"].includes(roleCode) ? (
           <button
             onClick={() => navigate("/relationship-managers/table")}
-            className="bg-[#002d62] hover:bg-[#0c3669] text-white px-5 py-2.5 rounded-full text-xs font-bold transition-colors shadow-sm cursor-pointer"
+            className="bg-[#002d62] hover:bg-[#0c3669] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer"
           >
             View Sales Executives
           </button>
@@ -897,7 +897,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
 
       {/* Filter Row */}
       {["SADMIN", "ADMIN"].includes(roleCode) && (
-        <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/80 rounded-3xl p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-3xl p-4 shadow-[0_4px_20px_-2px_rgba(15,26,58,0.03),0_1px_3px_rgba(15,26,58,0.02)] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
           {/* Left Side: Managers Dropdown Filter */}
           <div className="flex flex-wrap items-center gap-3">
@@ -907,9 +907,9 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="flex items-center justify-between w-40 bg-[#f8fafc] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/50 dark:border-zinc-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors shadow-sm cursor-pointer"
+                      className="flex items-center justify-between min-w-[195px] w-auto bg-[#f8fafc] dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/50 dark:border-zinc-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors shadow-sm cursor-pointer"
                     >
-                      <span className="truncate">{selectedRmLabel === "All" ? "All Sales Executives" : selectedRmLabel}</span>
+                      <span className="whitespace-nowrap">{selectedRmLabel === "All" ? "All Sales Executives" : selectedRmLabel}</span>
                       <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-2" />
                     </button>
                   </DropdownMenuTrigger>
@@ -1120,7 +1120,10 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
       {/* Row 1: Compact Overview & Calls Metrics Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {/* Team Calls Summary */}
-        <div className="bg-[#002d62] dark:bg-zinc-950 border border-[#002d62] dark:border-zinc-800 rounded-2xl p-4.5 shadow-sm text-white flex flex-col justify-between min-h-[170px] hover:shadow-md transition-all duration-200">
+        <div
+          style={{ backgroundColor: '#0f1a34', borderColor: '#0f1a34' }}
+          className="bg-[#0f1a34] border border-[#0f1a34] rounded-2xl p-4.5 shadow-none text-white flex flex-col justify-between min-h-[170px] dashboard-focus-card"
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-white dark:text-white">
               Team Calls Summary
@@ -1155,7 +1158,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
         </div>
 
         {/* Escalated Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs flex flex-col justify-between min-h-[170px] hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-sm transition-all duration-200">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-2xl p-4.5 shadow-[0_4px_20px_-2px_rgba(15,26,58,0.04),0_1px_3px_rgba(15,26,58,0.02)] flex flex-col justify-between min-h-[170px] hover:border-red-200 dark:hover:border-red-900/50 transition-all duration-200">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">Escalated</h3>
             <button
@@ -1179,7 +1182,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
         </div>
 
         {/* Stale Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs flex flex-col justify-between min-h-[170px] hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-sm transition-all duration-200">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-2xl p-4.5 shadow-[0_4px_20px_-2px_rgba(15,26,58,0.04),0_1px_3px_rgba(15,26,58,0.02)] flex flex-col justify-between min-h-[170px] hover:border-blue-200 dark:hover:border-blue-900/50 transition-all duration-200">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">Stale Leads</h3>
             <button
@@ -1206,7 +1209,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
       {/* Row 2: Team-wide Lead Status & Lead Quality Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         {/* Team-wide Lead Status */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:shadow-sm transition-all duration-200">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-2xl p-5 shadow-[0_4px_20px_-2px_rgba(15,26,58,0.04),0_1px_3px_rgba(15,26,58,0.02)] flex flex-col justify-between transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-zinc-100 tracking-tight">
               Status wise Leads count

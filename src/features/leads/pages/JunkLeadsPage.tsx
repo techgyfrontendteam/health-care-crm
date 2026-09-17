@@ -13,12 +13,14 @@ import { Loader2 } from 'lucide-react';
 interface JunkLeadsPageProps {
   onVerify: (lead: Lead) => void;
   canVerify: boolean;
+  search?: string;
+  onSearchChange?: (v: string) => void;
 }
 
 export const InitialsAvatar = ({ firstName, lastName }: { firstName?: string; lastName?: string }) => {
   const initials = `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase() || '?';
   return (
-    <div className="h-6 w-6 rounded-4xl bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-bold shrink-0 text-[10px]">
+    <div className="h-6 w-6 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-bold shrink-0 text-[10px]">
       {initials}
     </div>
   );
@@ -26,11 +28,15 @@ export const InitialsAvatar = ({ firstName, lastName }: { firstName?: string; la
 
 export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
   onVerify,
-  canVerify
+  canVerify,
+  search: externalSearch,
+  onSearchChange,
 }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState('');
+  const [internalSearch, setInternalSearch] = useState('');
+  const search = externalSearch !== undefined ? externalSearch : internalSearch;
+  const setSearch = onSearchChange || setInternalSearch;
   const debouncedSearch = useDebounce(search, 500);
 
   const {
@@ -262,28 +268,30 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
   }, [canVerify, onVerify, getStatusLabel, getProjectLabel, getRmLabel, getSourceLabel, getEmLabel]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-
-      <div className="bg-white dark:bg-zinc-950 rounded-4xl border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
-        <div className="px-8 py-5 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-50/30 dark:bg-zinc-900/10">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Active Junk Leads Queue</h2>
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+    <div className="flex-1 min-h-0 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-zinc-950 rounded-3xl border border-border/40 overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <h2 className="font-bold text-[#191C1E] font-['Plus_Jakarta_Sans'] flex items-center gap-2" style={{ height: '28px', fontSize: '18px', lineHeight: '28px' }}>
+              Active Junk Leads Queue
+              <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: '#D92D20' }} />
+            </h2>
             {(isLoading || isFetching) && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
           </div>
-          <div className="w-full sm:w-64">
-            <SearchInput
-              value={search}
-              onChange={(v) => {
-                setSearch(v);
-                setPage(1);
-              }}
-              placeholder="Search by name..."
-            />
-          </div>
+          {externalSearch === undefined && (
+            <div className="w-full sm:w-64">
+              <SearchInput
+                value={search}
+                onChange={(v) => {
+                  setSearch(v);
+                  setPage(1);
+                }}
+                placeholder="Search by name..."
+              />
+            </div>
+          )}
         </div>
-        <div className="p-4">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <DataTable
             columns={columns}
             data={leads}
@@ -297,6 +305,8 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
               setPage(1);
             }}
             rowKey={(l) => l.uuid}
+            variant="embed"
+            containerHeight="100%"
           />
         </div>
       </div>

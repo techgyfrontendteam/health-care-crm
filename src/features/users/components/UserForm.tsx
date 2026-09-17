@@ -332,7 +332,7 @@ export const UserForm = ({
                         disabled={isLoading}
                         onKeyDown={handleKeyDown}
                         className={cn(
-                          "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm placeholder:text-zinc-400/30",
+                          "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary transition-all font-bold text-sm placeholder:text-zinc-400/30",
                           fieldState.invalid &&
                           "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
                         )}
@@ -362,7 +362,7 @@ export const UserForm = ({
                         disabled={isLoading}
                         onKeyDown={handleKeyDown}
                         className={cn(
-                          "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm placeholder:text-zinc-400/30",
+                          "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary transition-all font-bold text-sm placeholder:text-zinc-400/30",
                           fieldState.invalid &&
                           "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
                         )}
@@ -383,7 +383,7 @@ export const UserForm = ({
                     Email Address
                   </FormLabel>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-[#0f3d6b] transition-colors" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
                     <FormControl>
                       <Input
                         placeholder="vikram.s@leados.com"
@@ -394,7 +394,7 @@ export const UserForm = ({
                         disabled={isLoading}
                         onKeyDown={handleKeyDown}
                         className={cn(
-                          "pl-11 h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm placeholder:text-zinc-400/40",
+                          "pl-11 h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary transition-all font-bold text-sm placeholder:text-zinc-400/40",
                           fieldState.invalid &&
                           "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
                         )}
@@ -415,7 +415,7 @@ export const UserForm = ({
                     Phone Number
                   </FormLabel>
                   <div className="relative group">
-                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-[#0f3d6b] transition-colors" />
+                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
                     <FormControl>
                       <Input
                         placeholder="+91 98765 43210"
@@ -429,7 +429,7 @@ export const UserForm = ({
                         readOnly={isEdit}
                         onKeyDown={handleKeyDown}
                         className={cn(
-                          "pl-11 h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm placeholder:text-zinc-400/40",
+                          "pl-11 h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary transition-all font-bold text-sm placeholder:text-zinc-400/40",
                           isEdit &&
                           "opacity-70 cursor-not-allowed select-none bg-zinc-100 dark:bg-zinc-900",
                           !isEdit &&
@@ -473,7 +473,7 @@ export const UserForm = ({
                   >
                     <FormControl>
                       <SelectTrigger className={cn(
-                        "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] transition-all font-bold text-sm text-left px-4",
+                        "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary transition-all font-bold text-sm text-left px-4",
                         fieldState.invalid && "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
                         !field.value && "text-zinc-400/40"
                       )}>
@@ -512,7 +512,7 @@ export const UserForm = ({
                             role="combobox"
                             aria-expanded={open}
                             className={cn(
-                              "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 rounded-xl focus-visible:ring-[#0f3d6b]/10 focus-visible:border-[#0f3d6b] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all font-bold text-sm w-full flex items-center justify-between gap-2 overflow-hidden shadow-none",
+                              "h-11 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 rounded-xl focus-visible:ring-primary/10 focus-visible:border-primary hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all font-bold text-sm w-full flex items-center justify-between gap-2 overflow-hidden shadow-none",
                               !field.value && "text-zinc-400/40",
                               fieldState.invalid &&
                               "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
@@ -524,7 +524,7 @@ export const UserForm = ({
                                 ? `${managers.find((m) => m.id === field.value)?.first_name} ${managers.find((m) => m.id === field.value)?.last_name}`
                                 : "Select Sales Head"}
                             </span>
-                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-[#0f3d6b]" />
+                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 text-primary" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -534,7 +534,7 @@ export const UserForm = ({
                         sideOffset={6}
                         avoidCollisions={false}
                         onOpenAutoFocus={(e) => e.preventDefault()}
-                        className="w-[320px] h-[300px] p-0 rounded-2xl border border-zinc-100 shadow-2xl z-[99999] bg-white pointer-events-auto flex flex-col overflow-hidden"
+                        className="w-[320px] h-[300px] p-0 rounded-2xl border border-zinc-200 shadow-2xl z-[99999] bg-white pointer-events-auto flex flex-col overflow-hidden"
                       >
                         <Command className="flex-1 flex flex-col overflow-hidden">
                           <CommandInput

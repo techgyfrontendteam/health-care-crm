@@ -116,7 +116,10 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        "flex flex-col bg-white dark:bg-zinc-950 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden"
+        "flex flex-col min-h-0",
+        variant === 'embed'
+          ? "w-full h-full flex-1 bg-transparent border-0 rounded-none shadow-none overflow-hidden"
+          : "bg-white dark:bg-zinc-950 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden"
       )}
       style={
         containerHeight || maxHeight
@@ -153,19 +156,32 @@ export function DataTable<T>({
                         meta?.sortable ? (
                           <button
                             onClick={() => onSort?.(header.id)}
-                            className="flex items-center gap-1.5 w-full h-full px-4 py-3 hover:bg-zinc-100/50 dark:hover:bg-zinc-800 transition-colors text-left whitespace-nowrap"
+                            className={cn(
+                              "group flex items-center justify-between gap-2.5 w-full h-full px-4 py-3 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 transition-colors text-left whitespace-nowrap cursor-pointer select-none",
+                              sortField === header.id && "bg-blue-50/50 dark:bg-blue-950/20"
+                            )}
                           >
-                            <span className="truncate">
+                            <span className={cn(
+                              "truncate transition-colors font-bold",
+                              sortField === header.id
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-gray-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"
+                            )}>
                               {flexRender(
                                 header.column.columnDef.header,
                                 header.getContext()
                               )}
                             </span>
-                            <div className="flex flex-col opacity-40 shrink-0">
+                            <div className={cn(
+                              "flex items-center justify-center h-6 w-6 rounded-md transition-all shrink-0",
+                              sortField === header.id
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 ring-1 ring-blue-500/25 shadow-xs"
+                                : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 group-hover:bg-zinc-200/60 dark:group-hover:bg-zinc-800"
+                            )}>
                               {sortField === header.id ? (
-                                sortOrder === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                                sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" /> : <ArrowDown className="h-3.5 w-3.5 stroke-[2.5]" />
                               ) : (
-                                <ArrowUpDown className="h-2.5 w-2.5" />
+                                <ArrowUpDown className="h-3.5 w-3.5 stroke-[2]" />
                               )}
                             </div>
                           </button>

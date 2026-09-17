@@ -60,6 +60,7 @@ import { LeadChatsTab } from "../components/tabs/LeadChatsTab";
 import { LeadEnquiriesTab } from "../components/tabs/LeadEnquiriesTab";
 import { LeadFollowUpsTab } from "../components/tabs/LeadFollowUpsTab";
 import { PointsToTalkDialog } from "../components/PointsToTalkDialog";
+import { CallConfirmationDialog } from "../components/CallConfirmationDialog";
 import { usePermissions } from "../../../hooks/usePermissions";
 
 /* ── Reusable label style (Figma: Inter 600 11px uppercase #64748B) ── */
@@ -260,10 +261,27 @@ export const LeadDetailsPage = () => {
   const [uploadFile] = useUploadFileMutation();
   const [analyzeCall] = useAnalyzeCallMutation();
   const callRecordsPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const callConfirmationResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
+  const [isCallConfirmationOpen, setIsCallConfirmationOpen] = useState(false);
   const [localNote, setLocalNote] = useState<string | null>(null);
+
+  const requestCallConfirmation = () => {
+    return new Promise<boolean>((resolve) => {
+      callConfirmationResolverRef.current = resolve;
+      setIsCallConfirmationOpen(true);
+    });
+  };
+
+  const resolveCallConfirmation = (confirmed: boolean) => {
+    callConfirmationResolverRef.current?.(confirmed);
+    callConfirmationResolverRef.current = null;
+    setIsCallConfirmationOpen(false);
+  };
 
   useEffect(() => {
     return () => {
+      callConfirmationResolverRef.current?.(false);
+      callConfirmationResolverRef.current = null;
       if (callRecordsPollingRef.current) {
         clearInterval(callRecordsPollingRef.current);
         callRecordsPollingRef.current = null;
@@ -677,6 +695,9 @@ export const LeadDetailsPage = () => {
                       variant="outline"
                       size="icon"
                       onClick={async () => {
+                        const confirmed = await requestCallConfirmation();
+                        if (!confirmed) return;
+
                         console.log("call is clicked");
                         const customerUuid = lead.customer_uuid || (lead as any).customer_uuid;
                         const leadUuid = lead.uuid || leadId || (lead as any).lead_uuid;
@@ -872,6 +893,14 @@ export const LeadDetailsPage = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              <CallConfirmationDialog
+                open={isCallConfirmationOpen}
+                onClose={() => resolveCallConfirmation(false)}
+                onConfirm={() => resolveCallConfirmation(true)}
+                leadName={`${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead"}
+                phoneNumber={lead.phone_number || (lead as any).phone || "Phone number unavailable"}
+              />
 
               {/* Points to Talk Dialog */}
               <PointsToTalkDialog

@@ -419,7 +419,7 @@ export const LeadTable = ({
   onSelectUuids,
   offset = 0,
   maxHeight,
-  containerHeight = '85vh',
+  containerHeight = '100%',
 }: LeadTableProps) => {
   const dataArray = data || [];
   const [junkConfirm, setJunkConfirm] = useState<{ lead: Lead, newStatusId: number, isLoading?: boolean, error?: string | null } | null>(null);
@@ -771,6 +771,7 @@ export const LeadTable = ({
         offset={offset}
         maxHeight={maxHeight}
         containerHeight={containerHeight}
+        variant="embed"
       />
       <JunkValidationDialog
         open={!!junkConfirm}

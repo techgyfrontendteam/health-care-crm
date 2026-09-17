@@ -26,7 +26,7 @@ export const LeadQualityDistribution: React.FC<LeadQualityDistributionProps> = (
     : [{ name: "Placeholder", value: 100, color: "#e2e8f0" }]; // Grey ring if all 0%
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/50 rounded-[24px] p-6 xl:p-8 shadow-sm flex flex-col justify-between animate-in fade-in duration-200 h-full">
+    <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/50 rounded-[24px] p-6 xl:p-8 shadow-[0_4px_20px_-2px_rgba(15,26,58,0.04),0_1px_3px_rgba(15,26,58,0.02)] flex flex-col justify-between animate-in fade-in duration-200 h-full">
       <h2 className="text-base xl:text-lg font-extrabold tracking-tight text-slate-800 dark:text-zinc-100 mb-2">
         Lead Quality Distribution
       </h2>
