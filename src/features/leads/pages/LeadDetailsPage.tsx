@@ -1180,13 +1180,11 @@ export const LeadDetailsPage = () => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col">
               {/* Tab triggers */}
               <div className="border-b border-zinc-200 dark:border-zinc-800">
-                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-6" style={{ borderRadius: 0 }}>
-                  {["activity", "calls", "chats", "visits", "surgeries", "enquiries"].map((tab) => {
+                <TabsList className="w-full bg-transparent p-0 h-auto rounded-none grid grid-cols-5" style={{ borderRadius: 0 }}>
+                  {["activity", "calls", "chats", "visits", "enquiries"].map((tab) => {
                     const label =
                       tab === "visits"
                         ? "Appointments"
-                        : tab === "surgeries"
-                        ? "Surgeries"
                         : tab.charAt(0).toUpperCase() + tab.slice(1);
                     const isActive = activeTab === tab;
 
@@ -1266,6 +1264,7 @@ export const LeadDetailsPage = () => {
                   />
                 </TabsContent>
 
+                {/* 
                 <TabsContent value="surgeries" className="mt-0">
                   <LeadSurgeriesTab
                     lead={lead ? {
@@ -1275,6 +1274,7 @@ export const LeadDetailsPage = () => {
                     } : lead}
                   />
                 </TabsContent>
+                */}
 
                 <TabsContent value="enquiries" className="mt-0">
                   <div ref={enquiriesRef}>

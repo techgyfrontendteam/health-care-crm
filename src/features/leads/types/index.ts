@@ -278,9 +278,26 @@ export interface AIFollowUp {
 }
 
 export interface AIChecklistItem {
-  point: string;
-  covered: boolean;
-  evidence: string;
+  id?: number | string;
+  point?: string;
+  description?: string;
+  item?: string;
+  question?: string;
+  title?: string;
+  checklist_item?: string;
+  text?: string;
+  name?: string;
+  checked?: boolean | string | number;
+  covered?: boolean | string | number;
+  is_covered?: boolean | string | number;
+  status?: boolean | string | number;
+  pass?: boolean | string | number;
+  details?: string;
+  evidence?: string;
+  reason?: string;
+  quote?: string;
+  notes?: string;
+  [key: string]: any;
 }
 
 export interface AIToneMood {
