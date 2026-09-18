@@ -712,6 +712,8 @@ export const LeadTable = ({
                   </DropdownMenuItem>
                 )}
 
+                {/* Initialize Chat and Schedule Visit commented out as requested */}
+                {/* 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer gap-2 py-2"
@@ -732,6 +734,7 @@ export const LeadTable = ({
                     </DropdownMenuItem>
                   </>
                 )}
+                */}
 
                 {can(PERMISSIONS.LEAD_DELETE) && (
                   <>

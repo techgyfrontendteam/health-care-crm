@@ -483,7 +483,7 @@ export const ScheduledVisitsPage = () => {
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#063669] dark:text-blue-300 font-['Plus_Jakarta_Sans'] tracking-tight">
+          <h1 className="text-2xl font-bold text-[#0022ff] dark:text-blue-300 font-['Plus_Jakarta_Sans'] tracking-tight">
             Appointments
           </h1>
           <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">

@@ -863,7 +863,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
       {/* Page Title & Top Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-black text-[#002d62] dark:text-blue-400 tracking-tight flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-black text-[#0022ff] dark:text-blue-400 tracking-tight flex items-center gap-3">
             Sales Executive Dashboard
           </h1>
           {isFetching && (

@@ -221,7 +221,6 @@ export const LeadVisitsTab = ({
 
               const statusId = Number(v.appointments_status_id ?? v.appointment_status_id);
               const statusItem = masterData?.appointment_statuses?.find((s: any) => s.id === statusId);
-              console.log(statusItem, v.appointments_status_id ,v,'statusItem');
               const statusText = statusItem?.description || "";
               const statusCode = statusItem?.code?.toUpperCase() || "";
 

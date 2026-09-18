@@ -327,7 +327,7 @@ export const MarketingDashboardPage: React.FC = () => {
       {/* Header Row */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#002d62] tracking-tight">
+          <h1 className="text-2xl font-bold text-[#0022ff] tracking-tight">
             Marketing Manager Dashboard
           </h1>
         </div>

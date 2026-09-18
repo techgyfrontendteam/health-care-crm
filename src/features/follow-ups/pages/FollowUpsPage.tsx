@@ -705,7 +705,7 @@ export const FollowUpsPage: React.FC = () => {
       {/* Header Block */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[#002d62] tracking-tight">Followups</h1>
+          <h1 className="text-2xl font-bold text-[#0022ff] tracking-tight">Followups</h1>
           <p className="text-xs text-slate-400 font-medium">Track and manage lead follow-ups efficiently.</p>
         </div>
 

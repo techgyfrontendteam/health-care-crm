@@ -409,7 +409,8 @@ export const MainLayout = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#e2e8f0] bg-white px-5 lg:px-7">
+        <header className="flex h-[72px] shrink-0 items-center justify-end gap-4 border-b border-[#e2e8f0] bg-white px-5 lg:px-7">
+          {/*
           <form onSubmit={handleGlobalSearch} className="relative w-full max-w-sm lg:max-w-md">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
             <input
@@ -421,6 +422,7 @@ export const MainLayout = () => {
               className="h-11 w-full rounded-md border border-[#e2e8f0] bg-[#f8f9fa] pl-11 pr-4 text-sm text-[#111625] outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0022ff] focus:bg-white focus:ring-2 focus:ring-[#0022ff]/10"
             />
           </form>
+          */}
 
           <div className="flex shrink-0 items-center gap-2">
             <SidebarNotifications isSidebarOpen={false} placement="navbar" />

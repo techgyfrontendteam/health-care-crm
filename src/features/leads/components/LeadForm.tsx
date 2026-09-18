@@ -199,7 +199,7 @@ export const LeadForm = ({
     }
 
     // 5. Clean Note
-    let resolvedNote = init.appointment_note || init.lead_note || init.notes || (init as any).note || "";
+    let resolvedNote = init.visit_remarks || init.appointment_note || init.lead_note || init.notes || (init as any).note || "";
     if (resolvedNote && resolvedNote.toLowerCase() === "kukatpally") {
       resolvedNote = "";
     }
@@ -394,6 +394,8 @@ export const LeadForm = ({
       appointment_date: values.appointment_date || '',
       appointment_time: values.appointment_time || '',
       appointment_note: values.appointment_note || '',
+      visit_remarks: values.appointment_note || '',
+      lead_note: values.appointment_note || '',
       visit_date_time: visitDateTime,
     };
 

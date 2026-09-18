@@ -179,6 +179,8 @@ export interface CreateLeadRequest {
   appointment_date?: string;
   appointment_time?: string;
   appointment_note?: string;
+  visit_remarks?: string;
+  lead_note?: string;
   visit_date_time?: string;
 }
 

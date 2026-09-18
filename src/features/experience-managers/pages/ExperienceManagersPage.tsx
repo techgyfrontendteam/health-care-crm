@@ -808,7 +808,7 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
 
       {/* Top Header Row (Outside the white card) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl font-black text-slate-850 dark:text-zinc-150 tracking-tight flex items-center gap-3">
+        <h1 className="text-xl sm:text-2xl font-black text-[#0022ff] dark:text-blue-400 tracking-tight flex items-center gap-3">
           Sales Executive Dashboard
           {isFetching && (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#002d62] dark:border-blue-400 border-t-transparent" />

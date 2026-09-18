@@ -552,7 +552,7 @@ export const WarRoomPage: React.FC = () => {
       {/* Header Row */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-0.5">
-          <h1 className="font-['Plus_Jakarta_Sans'] text-[24px] font-bold leading-[28px] tracking-[-0.5px] text-[#063669] flex items-center h-[28px]">
+          <h1 className="font-['Plus_Jakarta_Sans'] text-[24px] font-bold leading-[28px] tracking-[-0.5px] text-[#0022ff] flex items-center h-[28px]">
             Management War Room
           </h1>
           {/* <p className="text-xs text-slate-400 font-medium">
