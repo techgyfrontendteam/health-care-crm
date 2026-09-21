@@ -530,8 +530,8 @@ export const LeadDetailsPage = () => {
         const vDate = new Date(v.visit_date_time.replace(/Z/g, '').split('+')[0].replace(' ', 'T'));
         return vDate >= now || v.visit_status === 1;
       });
-      if (upcoming.length > 0 && upcoming[0].visit_date_time) {
-        return `${upcoming.length} Scheduled (${formatDate(upcoming[0].visit_date_time)})`;
+      if (upcoming.length > 0) {
+        return `${upcoming.length} Scheduled`;
       }
     }
     const leadAny = lead as any;
@@ -1013,7 +1013,7 @@ export const LeadDetailsPage = () => {
               />
               */}
               <DetailField
-                label="Assigned RM"
+                label="Assigned Sales Executive"
                 value={
                   lead.assigned_to_rm ? (
                     <span className="flex items-center gap-2">

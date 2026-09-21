@@ -123,7 +123,7 @@ const dummyRemarks: Remark[] = [
 ];
 
 const activityLabelMap: Record<string, string> = {
-  CREATED: "Lead created via Facebook webhook",
+  CREATED: "Lead created",
   LEAD_CREATED: "Lead Created",
   WEBHOOK: "Lead created via Webhook",
   FIELD_CHANGED: "Information Updated",
@@ -204,4 +204,4 @@ export const LeadRemarksTab = ({ remarks }: LeadRemarksTabProps) => {
       </div>
     </div>
   );
-};
+};
