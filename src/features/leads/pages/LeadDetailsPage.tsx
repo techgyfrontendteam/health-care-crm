@@ -273,6 +273,39 @@ export const LeadDetailsPage = () => {
   const [callModalAttempt, setCallModalAttempt] = useState(1);
   const activeCallPayloadRef = useRef<any>(null);
 
+  // ── Call session persistence (sessionStorage) ──
+  // Keeps the click-to-call → poll → analyze workflow resumable across a page refresh.
+  const getCallSessionKey = (uuid: string) => `crm_active_call_${uuid}`;
+
+  const readCallSession = (uuid: string): any | null => {
+    try {
+      const raw = sessionStorage.getItem(getCallSessionKey(uuid));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error("Error reading call session:", e);
+      return null;
+    }
+  };
+
+  const saveCallSession = (uuid: string, updates: Record<string, any>) => {
+    try {
+      const existing = readCallSession(uuid) || {};
+      sessionStorage.setItem(getCallSessionKey(uuid), JSON.stringify({ ...existing, ...updates }));
+    } catch (e) {
+      console.error("Error saving call session:", e);
+    }
+  };
+
+  const clearCallSession = (uuid: string) => {
+    try {
+      sessionStorage.removeItem(getCallSessionKey(uuid));
+    } catch (e) {
+      console.error("Error clearing call session:", e);
+    }
+  };
+
+  const cleanPhone = (num: string) => String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
+
   const requestCallConfirmation = () => {
     return new Promise<boolean>((resolve) => {
       callConfirmationResolverRef.current = resolve;
@@ -296,28 +329,6 @@ export const LeadDetailsPage = () => {
       }
     };
   }, []);
-
-  // Check and restore active call session on mount (if user refreshed while call was active)
-  useEffect(() => {
-    const targetUuid = leadId || lead?.uuid;
-    if (!targetUuid) return;
-    try {
-      const savedSession = sessionStorage.getItem(`crm_active_call_${targetUuid}`);
-      if (savedSession) {
-        const parsed = JSON.parse(savedSession);
-        const ageMs = Date.now() - (parsed.startTime || 0);
-        // If session was created within the last 10 minutes, restore engagement modal
-        if (ageMs < 10 * 60 * 1000) {
-          setCallModalOpen(true);
-          setCallModalStage("in_progress");
-        } else {
-          sessionStorage.removeItem(`crm_active_call_${targetUuid}`);
-        }
-      }
-    } catch (e) {
-      console.error("Error restoring call session:", e);
-    }
-  }, [leadId, lead?.uuid]);
 
   const cleanLeadNote = React.useMemo(() => {
     if (localNote !== null) return localNote;
@@ -463,6 +474,226 @@ export const LeadDetailsPage = () => {
   } = useMasterDataLookup();
 
   const { roleCode, user: currentUser, currentRole } = usePermissions();
+
+  // ── Reusable call-analysis + polling logic ──
+  // Shared by the click-to-call handler (fresh call) and the resume effect below
+  // (continuing a call after the page was refreshed mid-flow).
+  const executeCallAnalysis = async (payload: any, targetUuid: string) => {
+    const maxRetries = 3;
+    const delayMs = 5000;
+    activeCallPayloadRef.current = payload;
+    setCallModalStage("analyzing");
+    saveCallSession(targetUuid, { stage: "analyzing", analysisPayload: payload });
+
+    // Initial 5s delay for recording file buffer
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      setCallModalAttempt(attempt);
+      saveCallSession(targetUuid, { attempt });
+      try {
+        saveCallSession(targetUuid, { analysisTriggered: true });
+        await analyzeCall(payload).unwrap();
+        setCallModalStage("completed");
+        clearCallSession(targetUuid);
+        refetch();
+        break;
+      } catch (processErr: any) {
+        console.error(`Error analyzing call recording (Attempt ${attempt}/${maxRetries}):`, processErr);
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        } else {
+          setCallModalStage("error");
+          setCallModalError(
+            processErr?.data?.message ||
+            processErr?.message ||
+            "Failed to analyze call recording after 3 attempts"
+          );
+          clearCallSession(targetUuid);
+        }
+      }
+    }
+  };
+
+  const pollRecords = async (params: {
+    targetUuid: string;
+    leadUuidVal: string;
+    leadName: string;
+    from_date: string;
+    to_date: string;
+  }) => {
+    const { targetUuid, leadUuidVal, leadName, from_date, to_date } = params;
+    try {
+      const res = await getCallRecords({
+        from_date,
+        to_date,
+        limit: 20,
+        offset: 0,
+      }).unwrap();
+
+      const foundRecord: any = (() => {
+        if (!res) return null;
+        if (res.data && typeof res.data === "object" && !Array.isArray(res.data)) {
+          if (Array.isArray(res.data.results)) {
+            return res.data.results.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
+          }
+          if (res.data.recording_url || res.data.call_id || res.data.id || res.data.answered_seconds !== undefined) {
+            return res.data;
+          }
+        }
+        if (Array.isArray(res?.results)) {
+          return res.results.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
+        }
+        if (Array.isArray(res?.data)) {
+          return res.data.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
+        }
+        if (Array.isArray(res)) {
+          return res.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
+        }
+        if (typeof res === "object" && !Array.isArray(res) && (res.recording_url || res.call_id || res.id || res.answered_seconds !== undefined)) {
+          return res;
+        }
+        return null;
+      })();
+
+      if (foundRecord) {
+        console.log("Found call record:", foundRecord);
+
+        const callId = String(foundRecord.call_id || foundRecord.id || "1");
+        const recFromNumber = cleanPhone(foundRecord.agent_number || foundRecord.from_number || lead?.phone_number || (lead as any)?.phone || "");
+        const toNumber = cleanPhone(foundRecord.client_number || foundRecord.to_number || "1800-123-4567");
+        const answeredSeconds = Number(foundRecord.answered_seconds ?? 0);
+
+        if (foundRecord.answered_seconds !== undefined && answeredSeconds <= 0) {
+          // 1. MISSED / UNANSWERED CALL
+          if (callRecordsPollingRef.current) {
+            clearInterval(callRecordsPollingRef.current);
+            callRecordsPollingRef.current = null;
+          }
+
+          try {
+            const callerUserId = currentUser?.id ? Number(currentUser.id) : 0;
+            const callerRoleId = currentUser?.role_id ? Number(currentUser.role_id) : (currentRole?.id ? Number(currentRole.id) : 0);
+            const createdOnDate = foundRecord.created_on || foundRecord.start_time || foundRecord.call_start_time || new Date().toISOString();
+
+            await createCall({
+              lead_uuid: leadUuidVal,
+              call_id: callId,
+              from_number: recFromNumber,
+              to_number: toNumber,
+              call_duration_in_seconds: 0,
+              call_summary: "",
+              call_remarks: "",
+              manual_call_notes: "",
+              caller_user_id: callerUserId,
+              caller_role_id: callerRoleId,
+              call_s3_data: "",
+              lead_call_status_id: 2,
+              created_on: createdOnDate,
+            }).unwrap();
+
+            setCallModalStage("missed");
+            clearCallSession(targetUuid);
+            refetch();
+          } catch (createCallErr: any) {
+            console.error("Failed to create missed call record:", createCallErr);
+            setCallModalStage("error");
+            setCallModalError(createCallErr?.data?.message || "Failed to log missed call");
+          }
+        } else {
+          // 2. ANSWERED CALL -> Wait for recording_url
+          const cleanUrl = foundRecord.recording_url ? String(foundRecord.recording_url).replace(/["']+/g, "").trim() : "";
+          if (!cleanUrl) {
+            console.log("Call was answered, waiting for recording_url to become available...");
+            return; // Continue polling next cycle
+          }
+
+          if (callRecordsPollingRef.current) {
+            clearInterval(callRecordsPollingRef.current);
+            callRecordsPollingRef.current = null;
+          }
+
+          const payload = {
+            call_id: callId,
+            lead_uuid: leadUuidVal,
+            lead_name: leadName,
+            from_number: recFromNumber,
+            to_number: toNumber,
+            file: cleanUrl,
+          };
+
+          saveCallSession(targetUuid, { callId });
+          await executeCallAnalysis(payload, targetUuid);
+        }
+      }
+    } catch (pollErr) {
+      console.error("Error polling call records:", pollErr);
+    }
+  };
+
+  // Resume an in-flight click-to-call session after a page refresh.
+  // Restores the modal AND re-enters the same poll/analyze pipeline the click handler uses,
+  // instead of only reopening the modal UI (which previously left it stuck on "in progress").
+  useEffect(() => {
+    const targetUuid = leadId || lead?.uuid;
+    if (!targetUuid) return;
+
+    const session = readCallSession(targetUuid);
+    if (!session) return;
+
+    const ageMs = Date.now() - (session.startTime || 0);
+    if (ageMs >= 10 * 60 * 1000) {
+      clearCallSession(targetUuid);
+      return;
+    }
+
+    const leadNameVal = session.leadName || "Lead";
+    const leadUuidVal = session.leadUuid || targetUuid;
+
+    setCallModalError(undefined);
+    setCallModalOpen(true);
+
+    if (session.stage === "analyzing" && session.analysisPayload) {
+      if (session.analysisTriggered) {
+        // Ambiguous: the previous run may have already called (or been mid-call to) the
+        // analyzer when the refresh happened. Don't risk a duplicate analyzeCall — surface
+        // an explicit retry instead of auto-resuming.
+        activeCallPayloadRef.current = session.analysisPayload;
+        setCallModalAttempt(session.attempt || 1);
+        setCallModalStage("error");
+        setCallModalError(
+          "The page was refreshed while AI analysis was in progress. Check the Calls tab to confirm the result, or retry analysis below."
+        );
+        return;
+      }
+      setCallModalAttempt(session.attempt || 1);
+      executeCallAnalysis(session.analysisPayload, targetUuid);
+      return;
+    }
+
+    if (session.from_date && session.to_date) {
+      setCallModalStage("in_progress");
+      if (callRecordsPollingRef.current) {
+        clearInterval(callRecordsPollingRef.current);
+        callRecordsPollingRef.current = null;
+      }
+      callRecordsPollingRef.current = setInterval(
+        () =>
+          pollRecords({
+            targetUuid,
+            leadUuidVal,
+            leadName: leadNameVal,
+            from_date: session.from_date,
+            to_date: session.to_date,
+          }),
+        6000
+      );
+    } else {
+      // Legacy/incomplete session with no window to resume polling against.
+      setCallModalStage("in_progress");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId, lead?.uuid]);
 
   const projectLeadStatusId = React.useMemo(() => {
     if (lead?.project_lead_status_id) return lead.project_lead_status_id;
@@ -769,8 +1000,8 @@ export const LeadDetailsPage = () => {
                           }).unwrap();
 
                           const leadName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead";
-                          const cleanPhone = (num: string) => String(num || "").trim().replace(/^\+91/, "").replace(/^\+/, "").trim();
                           const fromNumber = cleanPhone(lead.phone_number || (lead as any).phone || "");
+                          const currentTargetUuid = lead.uuid || leadUuid;
 
                           // Open Engagement Modal immediately
                           setCallModalStage("in_progress");
@@ -778,24 +1009,26 @@ export const LeadDetailsPage = () => {
                           setCallModalAttempt(1);
                           setCallModalOpen(true);
 
-                          // Save session in sessionStorage
-                          try {
-                            const currentTargetUuid = lead.uuid || leadUuid;
-                            if (currentTargetUuid) {
-                              sessionStorage.setItem(
-                                `crm_active_call_${currentTargetUuid}`,
-                                JSON.stringify({
-                                  leadUuid: currentTargetUuid,
-                                  customerUuid,
-                                  leadName,
-                                  fromNumber,
-                                  agentId,
-                                  startTime: Date.now(),
-                                })
-                              );
-                            }
-                          } catch (e) {
-                            console.error("Failed to save call session:", e);
+                          const now = new Date();
+                          const fromDate = new Date(now.getTime() - 1 * 60 * 1000); // current time - 1 min
+                          const toDate = new Date(now.getTime() + 5 * 60 * 1000);   // current time + 5 mins
+                          const from_date = formatDateTimeForTataTele(fromDate);
+                          const to_date = formatDateTimeForTataTele(toDate);
+
+                          // Save full session in sessionStorage so a page refresh can resume
+                          // polling/analysis instead of just reopening the modal.
+                          if (currentTargetUuid) {
+                            saveCallSession(currentTargetUuid, {
+                              leadUuid: currentTargetUuid,
+                              customerUuid,
+                              leadName,
+                              fromNumber,
+                              agentId,
+                              startTime: Date.now(),
+                              stage: "polling",
+                              from_date,
+                              to_date,
+                            });
                           }
 
                           // Clear previous polling interval if any
@@ -804,171 +1037,18 @@ export const LeadDetailsPage = () => {
                             callRecordsPollingRef.current = null;
                           }
 
-                          const now = new Date();
-                          const fromDate = new Date(now.getTime() - 1 * 60 * 1000); // current time - 1 min
-                          const toDate = new Date(now.getTime() + 5 * 60 * 1000);   // current time + 5 mins
-                          const from_date = formatDateTimeForTataTele(fromDate);
-                          const to_date = formatDateTimeForTataTele(toDate);
-
-                          const executeCallAnalysis = async (payload: any) => {
-                            const maxRetries = 3;
-                            const delayMs = 5000;
-                            activeCallPayloadRef.current = payload;
-                            setCallModalStage("analyzing");
-
-                            // Initial 5s delay for recording file buffer
-                            await new Promise((resolve) => setTimeout(resolve, delayMs));
-
-                            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                              setCallModalAttempt(attempt);
-                              try {
-                                await analyzeCall(payload).unwrap();
-                                setCallModalStage("completed");
-                                try {
-                                  const currentTargetUuid = lead.uuid || leadUuid;
-                                  if (currentTargetUuid) {
-                                    sessionStorage.removeItem(`crm_active_call_${currentTargetUuid}`);
-                                  }
-                                } catch (e) {}
-                                refetch();
-                                break;
-                              } catch (processErr: any) {
-                                console.error(`Error analyzing call recording (Attempt ${attempt}/${maxRetries}):`, processErr);
-                                if (attempt < maxRetries) {
-                                  await new Promise((resolve) => setTimeout(resolve, delayMs));
-                                } else {
-                                  setCallModalStage("error");
-                                  setCallModalError(
-                                    processErr?.data?.message ||
-                                    processErr?.message ||
-                                    "Failed to analyze call recording after 3 attempts"
-                                  );
-                                  try {
-                                    const currentTargetUuid = lead.uuid || leadUuid;
-                                    if (currentTargetUuid) {
-                                      sessionStorage.removeItem(`crm_active_call_${currentTargetUuid}`);
-                                    }
-                                  } catch (e) {}
-                                }
-                              }
-                            }
-                          };
-
-                          const pollRecords = async () => {
-                            try {
-                              const res = await getCallRecords({
+                          // Poll every 6 seconds
+                          callRecordsPollingRef.current = setInterval(
+                            () =>
+                              pollRecords({
+                                targetUuid: currentTargetUuid || "",
+                                leadUuidVal: leadUuid || currentTargetUuid || "",
+                                leadName,
                                 from_date,
                                 to_date,
-                                limit: 20,
-                                offset: 0,
-                              }).unwrap();
-
-                              const foundRecord: any = (() => {
-                                if (!res) return null;
-                                if (res.data && typeof res.data === "object" && !Array.isArray(res.data)) {
-                                  if (Array.isArray(res.data.results)) {
-                                    return res.data.results.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
-                                  }
-                                  if (res.data.recording_url || res.data.call_id || res.data.id || res.data.answered_seconds !== undefined) {
-                                    return res.data;
-                                  }
-                                }
-                                if (Array.isArray(res?.results)) {
-                                  return res.results.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
-                                }
-                                if (Array.isArray(res?.data)) {
-                                  return res.data.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
-                                }
-                                if (Array.isArray(res)) {
-                                  return res.find((r: any) => Boolean(r && (r.answered_seconds !== undefined || r.call_id || r.id || r.recording_url)));
-                                }
-                                if (typeof res === "object" && !Array.isArray(res) && (res.recording_url || res.call_id || res.id || res.answered_seconds !== undefined)) {
-                                  return res;
-                                }
-                                return null;
-                              })();
-
-                              if (foundRecord) {
-                                console.log("Found call record:", foundRecord);
-
-                                const callId = String(foundRecord.call_id || foundRecord.id || "1");
-                                const recFromNumber = cleanPhone(foundRecord.agent_number || foundRecord.from_number || lead.phone_number || (lead as any).phone || "");
-                                const toNumber = cleanPhone(foundRecord.client_number || foundRecord.to_number || "1800-123-4567");
-                                const answeredSeconds = Number(foundRecord.answered_seconds ?? 0);
-
-                                if (foundRecord.answered_seconds !== undefined && answeredSeconds <= 0) {
-                                  // 1. MISSED / UNANSWERED CALL
-                                  if (callRecordsPollingRef.current) {
-                                    clearInterval(callRecordsPollingRef.current);
-                                    callRecordsPollingRef.current = null;
-                                  }
-
-                                  try {
-                                    const callerUserId = currentUser?.id ? Number(currentUser.id) : 0;
-                                    const callerRoleId = currentUser?.role_id ? Number(currentUser.role_id) : (currentRole?.id ? Number(currentRole.id) : 0);
-                                    const createdOnDate = foundRecord.created_on || foundRecord.start_time || foundRecord.call_start_time || new Date().toISOString();
-
-                                    await createCall({
-                                      lead_uuid: lead.uuid || leadUuid,
-                                      call_id: callId,
-                                      from_number: recFromNumber,
-                                      to_number: toNumber,
-                                      call_duration_in_seconds: 0,
-                                      call_summary: "",
-                                      call_remarks: "",
-                                      manual_call_notes: "",
-                                      caller_user_id: callerUserId,
-                                      caller_role_id: callerRoleId,
-                                      call_s3_data: "",
-                                      lead_call_status_id: 2,
-                                      created_on: createdOnDate,
-                                    }).unwrap();
-
-                                    setCallModalStage("missed");
-                                    try {
-                                      const currentTargetUuid = lead.uuid || leadUuid;
-                                      if (currentTargetUuid) {
-                                        sessionStorage.removeItem(`crm_active_call_${currentTargetUuid}`);
-                                      }
-                                    } catch (e) {}
-                                    refetch();
-                                  } catch (createCallErr: any) {
-                                    console.error("Failed to create missed call record:", createCallErr);
-                                    setCallModalStage("error");
-                                    setCallModalError(createCallErr?.data?.message || "Failed to log missed call");
-                                  }
-                                } else {
-                                  // 2. ANSWERED CALL -> Wait for recording_url
-                                  const cleanUrl = foundRecord.recording_url ? String(foundRecord.recording_url).replace(/["']+/g, "").trim() : "";
-                                  if (!cleanUrl) {
-                                    console.log("Call was answered, waiting for recording_url to become available...");
-                                    return; // Continue polling next cycle
-                                  }
-
-                                  if (callRecordsPollingRef.current) {
-                                    clearInterval(callRecordsPollingRef.current);
-                                    callRecordsPollingRef.current = null;
-                                  }
-
-                                  const payload = {
-                                    call_id: callId,
-                                    lead_uuid: lead.uuid || leadUuid,
-                                    lead_name: leadName,
-                                    from_number: recFromNumber,
-                                    to_number: toNumber,
-                                    file: cleanUrl,
-                                  };
-
-                                  await executeCallAnalysis(payload);
-                                }
-                              }
-                            } catch (pollErr) {
-                              console.error("Error polling call records:", pollErr);
-                            }
-                          };
-
-                          // Poll every 6 seconds
-                          callRecordsPollingRef.current = setInterval(pollRecords, 6000);
+                              }),
+                            6000
+                          );
                         } catch (err) {
                           console.error("Call failed", err);
                           setCallModalStage("error");
@@ -1003,21 +1083,26 @@ export const LeadDetailsPage = () => {
                 errorMessage={callModalError}
                 onClose={() => {
                   setCallModalOpen(false);
-                  try {
-                    const currentTargetUuid = lead.uuid || leadId;
-                    if (currentTargetUuid) {
-                      sessionStorage.removeItem(`crm_active_call_${currentTargetUuid}`);
-                    }
-                  } catch (e) {}
+                  const currentTargetUuid = lead.uuid || leadId;
+                  if (currentTargetUuid) {
+                    clearCallSession(currentTargetUuid);
+                  }
                 }}
                 onRetry={() => {
                   if (activeCallPayloadRef.current) {
+                    const currentTargetUuid = lead.uuid || leadId;
                     setCallModalStage("analyzing");
+                    if (currentTargetUuid) {
+                      saveCallSession(currentTargetUuid, { analysisTriggered: true });
+                    }
                     // Re-trigger analysis
                     analyzeCall(activeCallPayloadRef.current)
                       .unwrap()
                       .then(() => {
                         setCallModalStage("completed");
+                        if (currentTargetUuid) {
+                          clearCallSession(currentTargetUuid);
+                        }
                         refetch();
                       })
                       .catch((err: any) => {
