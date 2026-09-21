@@ -25,6 +25,14 @@ import {
 } from "../api";
 import { useGetReporteesQuery } from "../../users/api/usersApi";
 import { DatePicker, TimePicker } from "../../../shared/components/DateTimePicker";
+import { Button } from "../../../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 
 // Date utility functions
 const getDaysInMonth = (year: number, month: number) => {
@@ -241,6 +249,15 @@ export const FollowUpsPage: React.FC = () => {
   const [activeMonth, setActiveMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
   const [quickSelect, setQuickSelect] = useState<string>("Next 7 Days");
   const [appliedQuickSelect, setAppliedQuickSelect] = useState<string>("Next 7 Days");
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeTab, startDate, endDate, selectedRmIds, selectedEm]);
 
   const calendarDays = useMemo(() => {
     return getDaysInMonth(activeMonth.getFullYear(), activeMonth.getMonth());
@@ -492,6 +509,16 @@ export const FollowUpsPage: React.FC = () => {
       return true;
     });
   }, [mergedFollowUps, searchQuery]);
+
+  // Pagination Calculations
+  const total = filteredFollowUps.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const from = total === 0 ? 0 : (page - 1) * limit + 1;
+  const to = Math.min(page * limit, total);
+  const paginatedFollowUps = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredFollowUps.slice(start, start + limit);
+  }, [filteredFollowUps, page, limit]);
 
   // Date Modal Handlers
   const handleQuickSelect = (option: string) => {
@@ -906,7 +933,7 @@ export const FollowUpsPage: React.FC = () => {
             <span>No {activeTab.toLowerCase()} follow-ups found for your selection.</span>
           </div>
         ) : (
-          filteredFollowUps.map((item: any) => (
+          paginatedFollowUps.map((item: any) => (
             <div
               key={item.id}
               className="bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-800 rounded-xl px-5 py-4 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
@@ -996,6 +1023,86 @@ export const FollowUpsPage: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Pinned Pagination Controls at Bottom */}
+      {!isFollowupsLoading && total > 0 && (
+        <div className="flex items-center justify-between px-5 py-2.5 border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl shrink-0 z-10 shadow-xs">
+          {/* Left text */}
+          <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+            Showing <span className="text-zinc-900 dark:text-zinc-100 font-semibold">{from} - {to}</span> of{" "}
+            <span className="text-zinc-900 dark:text-zinc-100 font-semibold">{total.toLocaleString()}</span> Follow-ups
+          </div>
+
+          {/* Right pagination buttons */}
+          <div className="flex items-center gap-2">
+            {/* Previous */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 flex items-center gap-1.5 text-xs font-medium shadow-none"
+              disabled={isFollowupsLoading || page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </Button>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1 mx-1">
+              {/* First page + Dots */}
+              {page > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => setPage(1)}
+                  >
+                    1
+                  </Button>
+                  {page > 2 && <span className="px-1 text-xs text-zinc-400">...</span>}
+                </>
+              )}
+
+              {/* Current page */}
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-lg text-xs bg-[#063669] hover:bg-[#052d58] text-white shadow-sm font-bold"
+              >
+                {page}
+              </Button>
+
+              {/* Dots + last page */}
+              {totalPages > 1 && totalPages > page && (
+                <>
+                  {totalPages > page + 1 && <span className="px-1 text-xs text-zinc-400">...</span>}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => setPage(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Next */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 flex items-center gap-1.5 text-xs font-medium shadow-none"
+              disabled={isFollowupsLoading || page >= totalPages || total === 0}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Log Outcome & Complete Modal */}
       {isCompleteModalOpen && (

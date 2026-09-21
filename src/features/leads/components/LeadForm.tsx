@@ -642,7 +642,7 @@ export const LeadForm = ({
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
                     value={field.value ? String(field.value) : ""}
-                    disabled={isLoading || isEdit || isEM}
+                    disabled={isLoading || isEM}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
@@ -672,7 +672,7 @@ export const LeadForm = ({
                     <Select
                       onValueChange={(v) => field.onChange(Number(v))}
                       value={field.value ? String(field.value) : ""}
-                      disabled={isLoading || isEdit || isEM}
+                      disabled={isLoading || isEM}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
@@ -713,7 +713,7 @@ export const LeadForm = ({
                     <Select
                       onValueChange={(v) => field.onChange(v)}
                       value={currentDeptValue}
-                      disabled={isLoading || isEdit || isEM}
+                      disabled={isLoading || isEM}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">

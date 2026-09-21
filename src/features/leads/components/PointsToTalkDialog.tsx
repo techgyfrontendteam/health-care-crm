@@ -19,13 +19,20 @@ const defaultQuestions = [
 interface PointsToTalkDialogProps {
   project?: string;
   status?: string;
+  leadStatusId?: number;
   projectLeadStatusId?: number;
 }
 
-export const PointsToTalkDialog = ({ project, status, projectLeadStatusId }: PointsToTalkDialogProps) => {
+export const PointsToTalkDialog = ({
+  project,
+  status,
+  leadStatusId,
+  projectLeadStatusId,
+}: PointsToTalkDialogProps) => {
+  const targetLeadStatusId = leadStatusId || projectLeadStatusId;
   const { data: pointsData } = useGetProjectStatusChecklistQuery(
-    { project_lead_status_id: Number(projectLeadStatusId) },
-    { skip: !projectLeadStatusId }
+    { lead_status_id: Number(targetLeadStatusId) },
+    { skip: !targetLeadStatusId }
   );
 
   const displayQuestions = useMemo(() => {
@@ -53,6 +60,7 @@ export const PointsToTalkDialog = ({ project, status, projectLeadStatusId }: Poi
       >
         {/* Contextual Controls Header (No borders) */}
         <div className="flex-none flex flex-row items-center px-6 py-6 2xl:px-8 2xl:py-8 gap-4 flex-wrap">
+          {/* Project selection/indicator commented out as there is no project concept
           {project && (
             <>
               <span className="font-inter font-bold text-[14px] 2xl:text-[16px] leading-[20px] 2xl:leading-[24px] tracking-[1.6px] uppercase text-[rgba(0,21,73,0.6)]">
@@ -65,6 +73,7 @@ export const PointsToTalkDialog = ({ project, status, projectLeadStatusId }: Poi
               </div>
             </>
           )}
+          */}
           <span className="font-inter font-bold text-[14px] 2xl:text-[16px] leading-[20px] 2xl:leading-[24px] tracking-[1.6px] uppercase text-[rgba(0,21,73,0.6)]">
             LEAD STATUS:
           </span>

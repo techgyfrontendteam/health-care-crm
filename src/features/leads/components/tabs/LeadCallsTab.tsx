@@ -42,16 +42,6 @@ import type { LeadCall, Lead } from '../../types';
 import type { CallSummaryJSON } from '../../types';
 import { S3_BASE_URL } from "@/config/constants";
 
-const ENGAGEMENT_MESSAGES = [
-  "AI analyzing your call...",
-  "Fetching call recording from telephony provider...",
-  "Processing audio waveform & extracting speech signals...",
-  "Transcribing dialogue & clinical terminology...",
-  "Detecting key clinical symptoms & patient sentiment...",
-  "Structuring follow-up actions and care recommendations...",
-  "Finalizing comprehensive AI clinical summary...",
-];
-
 interface CallProcessingState {
   status: 'idle' | 'fetching_record' | 'analyzing' | 'not_found' | 'error';
   errorMessage?: string;
@@ -240,72 +230,92 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
   const [callSummaries, setCallSummaries] = useState<Record<number, CallSummaryJSON>>({});
   const [summaryLoading, setSummaryLoading] = useState<Record<number, boolean>>({});
   const [callProcessing, setCallProcessing] = useState<Record<number, CallProcessingState>>({});
-  const [engagementIndex, setEngagementIndex] = useState(0);
   const inFlightCallIds = useRef<Set<number>>(new Set());
+  const attemptedCallIds = useRef<Set<number>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fetchedCallIds = useRef<Set<number>>(new Set());
   const [checklistFilters, setChecklistFilters] = useState<Record<number, 'all' | 'covered' | 'missed'>>({});
 
-  // Rotating engagement message ticker for active analyzing cards
-  useEffect(() => {
-    const hasActiveAnalyzing = Object.values(callProcessing).some(
-      s => s.status === 'fetching_record' || s.status === 'analyzing'
-    );
-    if (!hasActiveAnalyzing) return;
-
-    const interval = setInterval(() => {
-      setEngagementIndex(prev => (prev + 1) % ENGAGEMENT_MESSAGES.length);
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [callProcessing]);
-
-  const processUnanalyzedCall = async (call: LeadCall) => {
+  const processUnanalyzedCall = async (call: LeadCall, isManualRetry = false) => {
     const rawCallId = (call as any).call_id || call.id;
     if (!rawCallId) return;
 
     if (inFlightCallIds.current.has(call.id)) return;
+    if (!isManualRetry && attemptedCallIds.current.has(call.id)) return;
+
     inFlightCallIds.current.add(call.id);
+    attemptedCallIds.current.add(call.id);
 
     setCallProcessing(prev => ({
       ...prev,
       [call.id]: { status: 'fetching_record' },
     }));
 
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const maxRetries = 3;
+
     try {
-      // Step 1: Query call-records by call_id
-      const res = await getCallRecords({ call_id: rawCallId }).unwrap();
+      // Step 1: Query call-records by call_id with automatic retries
+      let foundRecord: any = null;
+      let cleanUrl = "";
 
-      const recordsList: any[] = Array.isArray(res?.data?.results)
-        ? res.data.results
-        : Array.isArray(res?.results)
-          ? res.results
-          : Array.isArray(res?.data)
-            ? res.data
-            : Array.isArray(res)
-              ? res
-              : [];
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const res = await getCallRecords({ call_id: rawCallId }).unwrap();
 
-      const foundRecord = recordsList.find(
-        (r: any) => Boolean(r && (r.recording_url || r.call_id || r.id))
-      );
+          foundRecord = (() => {
+            if (!res) return null;
+            if (res.data && typeof res.data === "object" && !Array.isArray(res.data)) {
+              if (Array.isArray(res.data.results)) {
+                return res.data.results.find((r: any) => Boolean(r && (r.recording_url || r.call_id || r.id)));
+              }
+              if (res.data.recording_url || res.data.call_id || res.data.id || res.data.answered_seconds !== undefined) {
+                return res.data;
+              }
+            }
+            if (Array.isArray(res?.results)) {
+              return res.results.find((r: any) => Boolean(r && (r.recording_url || r.call_id || r.id)));
+            }
+            if (Array.isArray(res?.data)) {
+              return res.data.find((r: any) => Boolean(r && (r.recording_url || r.call_id || r.id)));
+            }
+            if (Array.isArray(res)) {
+              return res.find((r: any) => Boolean(r && (r.recording_url || r.call_id || r.id)));
+            }
+            if (typeof res === "object" && !Array.isArray(res) && (res.recording_url || res.call_id || res.id)) {
+              return res;
+            }
+            return null;
+          })();
 
-      const rawUrl = foundRecord?.recording_url || (recordsList.length > 0 ? recordsList[0]?.recording_url : null);
-      const cleanUrl = rawUrl ? String(rawUrl).replace(/["']+/g, "").trim() : "";
+          const rawUrl = foundRecord?.recording_url || null;
+          cleanUrl = rawUrl ? String(rawUrl).replace(/["']+/g, "").trim() : "";
+
+          if (cleanUrl) {
+            break;
+          }
+        } catch (e) {
+          console.warn(`[LeadCallsTab] Attempt ${attempt} failed fetching call records:`, e);
+        }
+
+        if (attempt < maxRetries) {
+          await delay(2500);
+        }
+      }
 
       if (!cleanUrl) {
         setCallProcessing(prev => ({
           ...prev,
           [call.id]: {
             status: 'not_found',
-            errorMessage: 'Call record not found or recording is unavailable in telephony system.',
+            errorMessage: 'Call record or recording is unavailable in telephony system.',
           },
         }));
         inFlightCallIds.current.delete(call.id);
         return;
       }
 
-      // Step 2: Send recording URL to Call Analyzer API
+      // Step 2: Send recording URL to Call Analyzer API with automatic retries
       setCallProcessing(prev => ({
         ...prev,
         [call.id]: { status: 'analyzing' },
@@ -324,14 +334,33 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
         foundRecord?.client_number || foundRecord?.to_number || call.to_number || ""
       );
 
-      await analyzeCall({
-        call_id: rawCallId,
-        lead_uuid: leadUuid,
-        lead_name: leadName,
-        from_number: fromNumber,
-        to_number: toNumber,
-        file: cleanUrl,
-      }).unwrap();
+      let analyzeSuccess = false;
+      let lastError: any = null;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await analyzeCall({
+            call_id: rawCallId,
+            lead_uuid: leadUuid,
+            lead_name: leadName,
+            from_number: fromNumber,
+            to_number: toNumber,
+            file: cleanUrl,
+          }).unwrap();
+          analyzeSuccess = true;
+          break;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[LeadCallsTab] Attempt ${attempt} failed analyzing call:`, err);
+          if (attempt < maxRetries) {
+            await delay(2500);
+          }
+        }
+      }
+
+      if (!analyzeSuccess) {
+        throw lastError || new Error("Failed to analyze call recording after retries");
+      }
 
       // Step 3: Success -> Clear in-flight and refresh lead details
       setCallProcessing(prev => ({
@@ -355,15 +384,15 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
     }
   };
 
-  // Auto-scan for non-recording calls and process
+  // Automatically scan and trigger analysis for calls missing call_s3_data
   useEffect(() => {
     if (!calls || calls.length === 0) return;
 
     calls.forEach(call => {
       if (!call.call_s3_data) {
         const state = callProcessing[call.id];
-        if (!state && !inFlightCallIds.current.has(call.id)) {
-          processUnanalyzedCall(call);
+        if (!state && !inFlightCallIds.current.has(call.id) && !attemptedCallIds.current.has(call.id)) {
+          processUnanalyzedCall(call, false);
         }
       }
     });
@@ -775,12 +804,9 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                     <Loader2 className="w-3.5 h-3.5 text-[#063669] animate-spin" />
                                   </div>
                                   <span className="font-semibold text-xs text-[#063669]">
-                                    AI analyzing your call...
+                                    Processing call recording...
                                   </span>
                                 </div>
-                                <span className="text-[11px] text-slate-500 font-medium truncate max-w-[280px]">
-                                  {ENGAGEMENT_MESSAGES[engagementIndex]}
-                                </span>
                               </div>
                             );
                           }
@@ -801,7 +827,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    processUnanalyzedCall(call);
+                                    processUnanalyzedCall(call, true);
                                   }}
                                   className="text-xs text-[#063669] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                 >
@@ -860,33 +886,14 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
 
                         if (isProcessing) {
                           return (
-                            <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center space-y-4">
-                              <div className="relative">
-                                <div className="w-14 h-14 rounded-2xl bg-[#063669]/10 text-[#063669] flex items-center justify-center shadow-inner">
-                                  <Sparkles className="w-7 h-7 animate-pulse text-[#063669]" />
-                                </div>
-                                <div className="absolute -top-1 -right-1">
-                                  <span className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#063669]"></span>
-                                  </span>
-                                </div>
+                            <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-8 text-center flex flex-col items-center justify-center space-y-3">
+                              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#063669] mb-1">
+                                <Loader2 className="w-5 h-5 text-[#063669] animate-spin" />
                               </div>
-
-                              <div className="space-y-1.5 max-w-md">
-                                <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-base text-[#063669]">
-                                  AI analyzing your call
-                                </h4>
-                                <div className="h-6 flex items-center justify-center">
-                                  <p className="text-xs text-slate-500 font-medium transition-all duration-300 animate-in fade-in">
-                                    {ENGAGEMENT_MESSAGES[engagementIndex]}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-blue-500 via-[#063669] to-blue-400 rounded-full animate-pulse w-full"></div>
-                              </div>
+                              <h4 className="font-bold text-sm text-[#063669]">Analyzing Call Recording</h4>
+                              <p className="text-xs text-slate-500 max-w-sm">
+                                Retrieving conversation audio and compiling AI summary & insights...
+                              </p>
                             </div>
                           );
                         }
@@ -904,7 +911,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  processUnanalyzedCall(call);
+                                  processUnanalyzedCall(call, true);
                                 }}
                                 className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#063669] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
                               >
@@ -928,7 +935,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  processUnanalyzedCall(call);
+                                  processUnanalyzedCall(call, true);
                                 }}
                                 className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#063669] hover:bg-[#042548] transition-colors cursor-pointer"
                               >
@@ -963,7 +970,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    processUnanalyzedCall(call);
+                                    processUnanalyzedCall(call, true);
                                   }}
                                   className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#063669] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
                                 >

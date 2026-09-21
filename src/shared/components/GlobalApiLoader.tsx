@@ -16,7 +16,10 @@ export const GlobalApiLoader = () => {
         mutation?.status === "pending" &&
         mutation?.endpointName !== "deviceHeartbeat" &&
         mutation?.endpointName !== "registerDevice" &&
-        mutation?.endpointName !== "getCallRecords"
+        mutation?.endpointName !== "getCallRecords" &&
+        mutation?.endpointName !== "analyzeCall" &&
+        mutation?.endpointName !== "initiateClickToCall" &&
+        mutation?.endpointName !== "createCall"
     );
 
     return isAnyQueryPending || isAnyMutationPending;

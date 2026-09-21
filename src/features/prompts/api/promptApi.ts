@@ -1,7 +1,8 @@
 import { baseApi } from "../../../app/api/baseApi";
 
 export interface GetProjectStatusChecklistRequest {
-  project_lead_status_id: number;
+  lead_status_id?: number;
+  project_lead_status_id?: number;
 }
 
 export interface CreateProjectStatusChecklistRequest {
