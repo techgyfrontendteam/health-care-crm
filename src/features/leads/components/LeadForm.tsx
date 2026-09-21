@@ -615,7 +615,7 @@ export const LeadForm = ({
                       <Input
                         placeholder="E-mail *"
                         {...field}
-                        disabled={isLoading || isEdit || isEM}
+                        disabled={isLoading || isEM}
                         type="email"
                         className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 h-11 focus:ring-primary/20 transition-all placeholder:text-[#94A3B8] placeholder:font-normal placeholder:text-[14px]"
                       />

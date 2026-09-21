@@ -781,7 +781,7 @@ export const LeadsPage = () => {
         project_lead_status_id: lead.project_lead_status_id,
       };
       await updateLead(payload).unwrap();
-      toast.success(rmId ? 'RM assigned successfully!' : 'RM unassigned');
+      toast.success(rmId ? 'Sales Executive assigned successfully!' : 'Sales Executive unassigned');
       handleRefetch();
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to assign RM');

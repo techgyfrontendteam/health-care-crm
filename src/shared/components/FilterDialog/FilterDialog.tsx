@@ -141,7 +141,7 @@ export const FilterDialog = ({
     { key: "status" as FilterSection, label: "Status", show: true },
     // { key: "opdLeads" as FilterSection, label: "OPD Leads", show: true },
     // { key: "ipdLeads" as FilterSection, label: "IPD Leads", show: true },
-    { key: "rms" as FilterSection, label: "Sales Heads", show: showRmFilter },
+    { key: "rms" as FilterSection, label: "Sales Executives", show: showRmFilter },
     // { key: "ems" as FilterSection, label: "Sales Executives", show: showEmFilter },
   ].filter((s) => s.show);
 
@@ -458,7 +458,7 @@ export const FilterDialog = ({
                   <Input
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Search Sales Heads..."
+                    placeholder="Search Sales Executives..."
                     className="pl-9 rounded-lg h-10 text-sm"
                   />
                 </div>
@@ -468,7 +468,7 @@ export const FilterDialog = ({
                       u,
                       localRmId === String(u.id),
                       () => handleSelectRm(String(u.id)),
-                      "Sales Head",
+                      "Sales Executive",
                     ),
                   )}
                 </div>

@@ -174,7 +174,7 @@ export const CallAnalyzerPage = () => {
                   <input
                     type="file"
                     id="audio-upload"
-                    accept="audio/*,video/mpeg,audio/mpeg,video/mp4,audio/mp4,.mpeg,.mpg,.mp4"
+                    accept="audio/*,video/mpeg,audio/mpeg,video/mp4,audio/mp4,audio/aac,.mpeg,.mpg,.mp4,.aac"
                     className="hidden"
                     onChange={handleFileChange}
                   />
@@ -185,7 +185,7 @@ export const CallAnalyzerPage = () => {
                     <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       {selectedFile ? selectedFile.name : "Click to select audio recording"}
                     </p>
-                    <p className="text-xs text-zinc-500 mt-1">MP3, WAV, M4A, MP4, MPEG (up to 50MB)</p>
+                    <p className="text-xs text-zinc-500 mt-1">MP3, WAV, M4A, MP4, MPEG, AAC (up to 50MB)</p>
                   </label>
                 </div>
               </div>

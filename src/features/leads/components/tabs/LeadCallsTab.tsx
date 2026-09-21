@@ -1053,7 +1053,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                         <Calendar className="w-4 h-4" />
                                       </div>
                                       <span className="font-['Inter'] font-bold text-[11px] leading-[15px] tracking-[1.5px] uppercase text-[#063669]">
-                                        CONFIRMED APPOINTMENT DETAILS
+                                        AI-SUGGESTED APPOINTMENT DETAILS
                                       </span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
