@@ -1086,6 +1086,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                           </div>
                                         </div>
                                       )}
+                                      {/* Booking Status card - commented out
                                       {summaryData.confirmed_details.booking_status && (
                                         <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 flex items-start gap-3">
                                           <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
@@ -1097,6 +1098,7 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                                           </div>
                                         </div>
                                       )}
+                                      */}
                                     </div>
                                   </div>
                                 )}

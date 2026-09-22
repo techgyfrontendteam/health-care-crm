@@ -734,54 +734,54 @@ export const LeadForm = ({
               }}
             />
 
+            <FormField
+              control={form.control}
+              name="doctor_id"
+              render={({ field }) => (
+                <FormItem className="space-y-1.5">
+                  <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
+                    Select Doctor
+                  </FormLabel>
+                  <Select
+                    onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                    value={field.value ? String(field.value) : ""}
+                    disabled={isLoading || isEM || isLoadingDoctors}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
+                        <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {isLoadingDoctors ? (
+                        <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Loading doctors...</span>
+                        </div>
+                      ) : doctorsList.length === 0 ? (
+                        <div className="p-3 text-xs text-zinc-500 text-center">
+                          No doctors available for selected department / branch
+                        </div>
+                      ) : (
+                        doctorsList.map((doc: ApiDoctor) => {
+                          const specName = masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)?.description;
+                          const docName = `Dr. ${doc.first_name || ''} ${doc.last_name || ''}`.trim();
+                          return (
+                            <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
+                              {docName} {specName ? `(${specName})` : ''}
+                            </SelectItem>
+                          );
+                        })
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {!isEdit && (
               <>
-                <FormField
-                  control={form.control}
-                  name="doctor_id"
-                  render={({ field }) => (
-                    <FormItem className="space-y-1.5">
-                      <FormLabel style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', lineHeight: '16.5px', letterSpacing: '0.55px', textTransform: 'uppercase', color: '#64748B' }}>
-                        Select Doctor
-                      </FormLabel>
-                      <Select
-                        onValueChange={(v) => field.onChange(v ? Number(v) : null)}
-                        value={field.value ? String(field.value) : ""}
-                        disabled={isLoading || isEM || isLoadingDoctors}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-11 px-4 focus:ring-primary/20 transition-all font-medium">
-                            <SelectValue placeholder={isLoadingDoctors ? "Loading doctors..." : "-- Select Doctor --"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-white text-black z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
-                          {isLoadingDoctors ? (
-                            <div className="p-3 text-xs text-zinc-500 text-center flex items-center justify-center gap-2">
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              <span>Loading doctors...</span>
-                            </div>
-                          ) : doctorsList.length === 0 ? (
-                            <div className="p-3 text-xs text-zinc-500 text-center">
-                              No doctors available for selected department / branch
-                            </div>
-                          ) : (
-                            doctorsList.map((doc: ApiDoctor) => {
-                              const specName = masterData?.specialisations?.find((s: any) => s.id === doc.specialization_id)?.description;
-                              const docName = `Dr. ${doc.first_name || ''} ${doc.last_name || ''}`.trim();
-                              return (
-                                <SelectItem key={doc.id} value={String(doc.id)} className="text-black cursor-pointer font-medium">
-                                  {docName} {specName ? `(${specName})` : ''}
-                                </SelectItem>
-                              );
-                            })
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}

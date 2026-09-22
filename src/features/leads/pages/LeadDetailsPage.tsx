@@ -919,22 +919,29 @@ export const LeadDetailsPage = () => {
                     </span>
                   </span>
                   <span className="text-[#CBD5E1]">·</span>
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          className="flex items-center gap-1.5 cursor-pointer hover:text-[#0f3d6b] transition-colors"
-                          onClick={() => console.log("call is clicked")}
-                        >
-                          <Phone className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
-                          {lead.phone_number || (lead as any).phone || "N/A"}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Call</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  {roleCode === 'RELMNG' ? (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className="flex items-center gap-1.5 cursor-pointer hover:text-[#0f3d6b] transition-colors"
+                            onClick={() => console.log("call is clicked")}
+                          >
+                            <Phone className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
+                            {lead.phone_number || (lead as any).phone || "N/A"}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Call</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-[#0f3d6b] dark:text-blue-400" />
+                      {lead.phone_number || (lead as any).phone || "N/A"}
+                    </span>
+                  )}
                   {(lead.email_address || lead.email) && (
                     <>
                       <span className="text-[#CBD5E1]">·</span>
@@ -949,6 +956,7 @@ export const LeadDetailsPage = () => {
             </div>
 
             <div className="flex items-center gap-2.5">
+              {roleCode === 'RELMNG' && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1065,6 +1073,7 @@ export const LeadDetailsPage = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              )}
 
               <CallConfirmationDialog
                 open={isCallConfirmationOpen}
@@ -1118,10 +1127,12 @@ export const LeadDetailsPage = () => {
               />
 
               {/* Points to Talk Dialog */}
-              <PointsToTalkDialog
-                status={displayStatusLabel}
-                leadStatusId={lead?.lead_status_id}
-              />
+              {roleCode === 'RELMNG' && (
+                <PointsToTalkDialog
+                  status={displayStatusLabel}
+                  leadStatusId={lead?.lead_status_id}
+                />
+              )}
             </div>
           </div>
 
