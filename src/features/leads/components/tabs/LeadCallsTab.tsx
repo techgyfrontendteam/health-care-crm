@@ -37,7 +37,7 @@ import {
 import { cn } from '../../../../utils';
 import { useMasterDataLookup } from '../../../../shared/hooks/useMasterDataLookup';
 import { useGetCallRecordsMutation } from '../../api/callsApi';
-import { useAnalyzeCallMutation } from '../../../call-analyzer/api/callAnalyzerApiSlice';
+// import { useAnalyzeCallMutation } from '../../../call-analyzer/api/callAnalyzerApiSlice'; // ANALYSIS DISABLED
 import type { LeadCall, Lead } from '../../types';
 import type { CallSummaryJSON } from '../../types';
 import { S3_BASE_URL } from "@/config/constants";
@@ -218,7 +218,7 @@ const normalizeChecklist = (summaryData?: CallSummaryJSON | null): NormalizedChe
 export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjections, lead, refetch }: LeadCallsTabProps) => {
   const { masterData: lookupMasterData, getRmLabel } = useMasterDataLookup();
   const [getCallRecords] = useGetCallRecordsMutation();
-  const [analyzeCall] = useAnalyzeCallMutation();
+  // const [analyzeCall] = useAnalyzeCallMutation(); // ANALYSIS DISABLED
   const [expandedCallIds, setExpandedCallIds] = useState<number[]>(() => {
     if (calls && calls.length > 0) return [calls[0].id];
     return [];
@@ -316,6 +316,10 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
       }
 
       // Step 2: Send recording URL to Call Analyzer API with automatic retries
+      // -- ANALYSIS DISABLED: just logging the call-record response instead.
+      console.log('[LeadCallsTab] Call record found:', foundRecord);
+
+      /*
       setCallProcessing(prev => ({
         ...prev,
         [call.id]: { status: 'analyzing' },
@@ -361,16 +365,14 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
       if (!analyzeSuccess) {
         throw lastError || new Error("Failed to analyze call recording after retries");
       }
+      */
 
-      // Step 3: Success -> Clear in-flight and refresh lead details
+      // Step 3: Clear in-flight state (analysis disabled, so no refetch needed)
       setCallProcessing(prev => ({
         ...prev,
         [call.id]: { status: 'idle' },
       }));
       inFlightCallIds.current.delete(call.id);
-      if (refetch) {
-        refetch();
-      }
     } catch (err: any) {
       console.error(`Error analyzing call recording for call ${call.id}:`, err);
       setCallProcessing(prev => ({
