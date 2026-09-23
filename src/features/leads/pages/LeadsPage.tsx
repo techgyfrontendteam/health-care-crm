@@ -73,10 +73,10 @@ export const LeadsPage = () => {
   const canVerifyJunk = isAdmin && !isSADMIN;
   const isRM = currentRole?.code === "RELMNG";
   const isEM = currentRole?.code === "EXPMNG";
-  const showTabs = isAdmin;
+  const showTabs = isAdmin || isRM || isEM;
 
   const { activeTab, tabFilters } = useAppSelector((state) => state.leads);
-  const tabKey = isRM ? "0" : (showTabs ? String(activeTab) : "all");
+  const tabKey = isRM ? "0" : (isAdmin ? String(activeTab) : "all");
   const currentFilters = tabFilters[tabKey];
 
   const {
@@ -930,36 +930,40 @@ export const LeadsPage = () => {
 
           {showTabs && (
             <div className="flex w-full items-center gap-2 self-end overflow-x-auto rounded-xl border border-zinc-200/50 bg-[#f0f2f5] p-1.5 dark:border-zinc-800/50 dark:bg-zinc-900/50 sm:ml-auto sm:w-fit">
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    dispatch(setActiveTabAction(0));
+                    setActiveView('leads');
+                  }}
+                  style={{
+                    width: (activeTab === 0 && activeView === 'leads') ? '210.87px' : '155.8px',
+                    height: (activeTab === 0 && activeView === 'leads') ? '39px' : '36px'
+                  }}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold cursor-pointer",
+                    activeTab === 0 && activeView === 'leads'
+                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
+                      : "text-slate-500 hover:text-primary p-2 px-6",
+                  )}
+                >
+                  Unassigned
+                </button>
+              )}
               <button
                 onClick={() => {
-                  dispatch(setActiveTabAction(0));
+                  if (isAdmin) {
+                    dispatch(setActiveTabAction(1));
+                  }
                   setActiveView('leads');
                 }}
                 style={{
-                  width: (activeTab === 0 && activeView === 'leads') ? '210.87px' : '155.8px',
-                  height: (activeTab === 0 && activeView === 'leads') ? '39px' : '36px'
+                  width: ((isAdmin ? activeTab === 1 : true) && activeView === 'leads') ? '210.87px' : '155.8px',
+                  height: ((isAdmin ? activeTab === 1 : true) && activeView === 'leads') ? '39px' : '36px'
                 }}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
-                  activeTab === 0 && activeView === 'leads'
-                    ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
-                    : "text-slate-500 hover:text-primary p-2 px-6",
-                )}
-              >
-                Unassigned
-              </button>
-              <button
-                onClick={() => {
-                  dispatch(setActiveTabAction(1));
-                  setActiveView('leads');
-                }}
-                style={{
-                  width: (activeTab === 1 && activeView === 'leads') ? '210.87px' : '155.8px',
-                  height: (activeTab === 1 && activeView === 'leads') ? '39px' : '36px'
-                }}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
-                  activeTab === 1 && activeView === 'leads'
+                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold cursor-pointer",
+                  ((isAdmin ? activeTab === 1 : true) && activeView === 'leads')
                     ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
                     : "text-slate-500 hover:text-primary p-2 px-6",
                 )}
@@ -973,7 +977,7 @@ export const LeadsPage = () => {
                   height: (activeView === 'junk' || activeView === 'junk-review') ? '39px' : '36px'
                 }}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold",
+                  "flex items-center justify-center gap-2 rounded-[8px] transition-all duration-200 text-sm font-bold cursor-pointer",
                   (activeView === 'junk' || activeView === 'junk-review')
                     ? "bg-white dark:bg-zinc-800 text-primary shadow-sm border border-zinc-200 pt-[7.5px] pb-[9.5px] px-6"
                     : "text-slate-500 hover:text-primary p-2 px-6",

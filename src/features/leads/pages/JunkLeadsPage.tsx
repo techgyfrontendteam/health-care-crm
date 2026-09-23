@@ -9,6 +9,7 @@ import { useGetLeadsQuery } from '../api/leadsApi';
 import { SearchInput } from '../../../shared/components/FilterBar/FilterBar';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { Loader2 } from 'lucide-react';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 interface JunkLeadsPageProps {
   onVerify: (lead: Lead) => void;
@@ -32,6 +33,10 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
   search: externalSearch,
   onSearchChange,
 }) => {
+  const { currentRole, user: currentUser } = usePermissions();
+  const isRM = currentRole?.code === "RELMNG";
+  const isEM = currentRole?.code === "EXPMNG";
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [internalSearch, setInternalSearch] = useState('');
@@ -78,6 +83,8 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
     offset: (page - 1) * limit,
     search_text: debouncedSearch || undefined,
     status: allJunkStatusIds.length > 0 ? allJunkStatusIds : undefined,
+    rm: isRM && currentUser?.id ? [Number(currentUser.id)] : undefined,
+    em: isEM && currentUser?.id ? [Number(currentUser.id)] : undefined,
   }, {
     skip: allJunkStatusIds.length === 0
   });
