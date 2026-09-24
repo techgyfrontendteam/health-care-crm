@@ -53,6 +53,20 @@ export const callsApi = baseApi.injectEndpoints({
         },
       }),
     }),
+    getCallStatus: builder.mutation<any, { ref_id: string; call_id: string }>({
+      query: (payload) => ({
+        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/call-status",
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    hangupCall: builder.mutation<any, { ref_id: string; call_id: string }>({
+      query: (payload) => ({
+        url: "https://upload-uncouple-rephrase.ngrok-free.dev/tataTele/hangup",
+        method: "POST",
+        body: payload,
+      }),
+    }),
     createCall: builder.mutation<any, {
       lead_uuid: string;
       call_id: string;
@@ -82,6 +96,8 @@ export const callsApi = baseApi.injectEndpoints({
 export const { 
   useInitiateClickToCallMutation, 
   useGetCallRecordsMutation,
+  useGetCallStatusMutation,
+  useHangupCallMutation,
   useGetTelephonyProvidersMutation,
   useGetExtensionTypesMutation,
   useUpsertTelephonyAgentMutation,

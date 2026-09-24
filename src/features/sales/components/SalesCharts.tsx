@@ -20,6 +20,7 @@ interface SalesChartsProps {
   dailyTrends: DailySalesTrend[];
   leadSources: LeadSourceItem[];
   departmentLeads: DepartmentLeadItem[];
+  isLoading?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -51,7 +52,17 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
   dailyTrends,
   leadSources,
   departmentLeads,
+  isLoading,
 }) => {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm animate-pulse h-[360px]" />
+        <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm animate-pulse h-[360px]" />
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* 1. Daily Calls & New Leads Trend Chart */}
@@ -152,7 +163,7 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${item.percentage * 2.5}%`,
+                    width: `${Math.min(100, Math.max(0, item.percentage))}%`,
                     backgroundColor: item.color,
                   }}
                 />

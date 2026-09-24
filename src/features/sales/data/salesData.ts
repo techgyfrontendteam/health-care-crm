@@ -8,23 +8,15 @@ import type {
 } from "../types";
 
 export const salesMetricsData: SalesMetrics = {
-  total_calls: 4820,
-  calls_connected: 4240,
-  calls_growth: 15.4,
-
-  total_leads: 1450,
-  new_leads_this_month: 385,
-  leads_growth: 18.2,
-
-  overdue_leads: 84,
-  overdue_high_priority: 26,
-  overdue_percentage: 5.8,
-
-  total_opd_leads: 980,
-  total_ipd_leads: 470,
-
-  total_branches_count: 5,
-  top_performing_branch: "Hitec City Main Hospital",
+  no_of_calls: 0,
+  no_of_leads: 0,
+  no_of_branches: 0,
+  no_of_depertments: 0,
+  total_calls: 0,
+  total_leads: 0,
+  total_branches_count: 0,
+  total_opd_leads: 0,
+  total_ipd_leads: 0,
 };
 
 export const leadSourcesData: LeadSourceItem[] = [

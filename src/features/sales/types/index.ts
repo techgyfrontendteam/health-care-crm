@@ -1,21 +1,80 @@
+export interface SalesStatsRequest {
+  offset?: number;
+}
+
+export interface SalesStatsResponse {
+  no_of_calls?: number;
+  no_of_leads?: number;
+  no_of_branches?: number;
+  no_of_depertments?: number;
+  no_of_departments?: number;
+  success?: boolean;
+  message?: string;
+  data?: any;
+  results?: any;
+  [key: string]: any;
+}
+
+export interface CallsLoggedAndNewLeadsRequest {
+  present_date?: string;
+}
+
+export interface CallsLoggedAndNewLeadsResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  results?: any;
+  [key: string]: any;
+}
+
+export interface LeadSourceBreakDownRequest {
+  [key: string]: any;
+}
+
+export interface LeadSourceBreakDownResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  results?: any;
+  [key: string]: any;
+}
+
+export interface BranchLeadPerformanceRequest {
+  [key: string]: any;
+}
+
+export interface BranchLeadPerformanceResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  results?: any;
+  [key: string]: any;
+}
+
+export interface DepartmentLeadBreakDownRequest {
+  offset?: number;
+  [key: string]: any;
+}
+
+export interface DepartmentLeadBreakDownResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  results?: any;
+  [key: string]: any;
+}
+
 export interface SalesMetrics {
-  total_calls: number;
-  calls_connected: number;
-  calls_growth: number; // percentage
-
-  total_leads: number;
-  new_leads_this_month: number;
-  leads_growth: number; // percentage
-
-  overdue_leads: number;
-  overdue_high_priority: number;
-  overdue_percentage: number;
-
-  total_opd_leads: number;
-  total_ipd_leads: number;
-
-  total_branches_count: number;
-  top_performing_branch: string;
+  no_of_calls: number;
+  no_of_leads: number;
+  no_of_branches: number;
+  no_of_depertments: number;
+  total_calls?: number;
+  total_leads?: number;
+  total_branches_count?: number;
+  total_opd_leads?: number;
+  total_ipd_leads?: number;
+  [key: string]: any;
 }
 
 export interface LeadSourceItem {

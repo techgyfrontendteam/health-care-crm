@@ -11,6 +11,7 @@ import {
   Mic,
   Brain,
   Search,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 
@@ -31,6 +32,9 @@ interface CallEngagementModalProps {
   retryAttempt?: number;
   maxRetries?: number;
   errorMessage?: string;
+  callStatusText?: string;
+  isHangingUp?: boolean;
+  onHangup?: () => void | Promise<void>;
   onClose: () => void;
   onRetry?: () => void;
   onViewDetails?: () => void;
@@ -67,6 +71,9 @@ export const CallEngagementModal: React.FC<CallEngagementModalProps> = ({
   retryAttempt = 1,
   maxRetries = 3,
   errorMessage,
+  callStatusText,
+  isHangingUp = false,
+  onHangup,
   onClose,
   onRetry,
   onViewDetails,
@@ -145,7 +152,7 @@ export const CallEngagementModal: React.FC<CallEngagementModalProps> = ({
           {/* 1. CALL IN PROGRESS STATE                   */}
           {/* ═══════════════════════════════════════════ */}
           {(stage === "calling" || stage === "in_progress") && (
-            <div className="flex flex-col items-center space-y-5">
+            <div className="flex flex-col items-center space-y-5 w-full">
               {/* Radar Pulsing Icon */}
               <div className="relative flex items-center justify-center">
                 <div className="absolute w-24 h-24 rounded-full bg-blue-500/15 animate-ping" />
@@ -158,7 +165,7 @@ export const CallEngagementModal: React.FC<CallEngagementModalProps> = ({
               <div className="space-y-1">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/50 text-[#063669] dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase tracking-wider">
                   <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-                  Call in Progress
+                  {callStatusText || "Call in Progress"}
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
                   {leadName}
@@ -187,6 +194,31 @@ export const CallEngagementModal: React.FC<CallEngagementModalProps> = ({
                   {formatTimer(elapsedTimer)}
                 </span>
               </div>
+
+              {/* Hangup / End Call Action Button */}
+              {onHangup && (
+                <div className="w-full pt-1">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={onHangup}
+                    disabled={isHangingUp}
+                    className="w-full h-11 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+                  >
+                    {isHangingUp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Disconnecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PhoneOff className="w-4 h-4" />
+                        <span>End Call</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
 
               <p className="text-[11px] text-slate-400 dark:text-zinc-500 text-center font-medium max-w-xs">
                 Awaiting call wrap-up. AI analysis will begin automatically once the call ends.

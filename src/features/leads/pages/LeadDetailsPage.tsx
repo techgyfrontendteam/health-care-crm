@@ -17,7 +17,13 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { useGetLeadByIdQuery, useUpdateLeadMutation } from "../api/leadsApi";
-import { useInitiateClickToCallMutation, useGetCallRecordsMutation, useCreateCallMutation } from "../api/callsApi";
+import { 
+  useInitiateClickToCallMutation, 
+  useGetCallRecordsMutation, 
+  useGetCallStatusMutation,
+  useHangupCallMutation,
+  useCreateCallMutation 
+} from "../api/callsApi";
 import { useGetUserByIdMutation } from "../../auth/api/authApi";
 import { useUploadFileMutation } from "../../../shared/api/s3ApiSlice";
 import { useAnalyzeCallMutation } from "../../call-analyzer/api/callAnalyzerApiSlice";
@@ -256,12 +262,15 @@ export const LeadDetailsPage = () => {
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
   const [initiateClickToCall] = useInitiateClickToCallMutation();
+  const [getCallStatus] = useGetCallStatusMutation();
+  const [hangupCall] = useHangupCallMutation();
   const [getUserById] = useGetUserByIdMutation();
   const [getCallRecords] = useGetCallRecordsMutation();
   const [createCall] = useCreateCallMutation();
   const [uploadFile] = useUploadFileMutation();
   const [analyzeCall] = useAnalyzeCallMutation();
   const callRecordsPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const callStatusPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const callConfirmationResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
   const [isCallConfirmationOpen, setIsCallConfirmationOpen] = useState(false);
   const [localNote, setLocalNote] = useState<string | null>(null);
@@ -271,7 +280,75 @@ export const LeadDetailsPage = () => {
   const [callModalStage, setCallModalStage] = useState<CallStage>("in_progress");
   const [callModalError, setCallModalError] = useState<string | undefined>(undefined);
   const [callModalAttempt, setCallModalAttempt] = useState(1);
+  const [activeTataRefId, setActiveTataRefId] = useState<string | null>(null);
+  const [callStatusText, setCallStatusText] = useState<string | undefined>(undefined);
+  const [isHangingUp, setIsHangingUp] = useState(false);
   const activeCallPayloadRef = useRef<any>(null);
+
+  const stopCallStatusPolling = () => {
+    if (callStatusPollingRef.current) {
+      clearInterval(callStatusPollingRef.current);
+      callStatusPollingRef.current = null;
+    }
+  };
+
+  const pollCallStatus = async (refId: string) => {
+    if (!refId) return;
+    try {
+      const statusRes = await getCallStatus({ ref_id: refId, call_id: refId }).unwrap();
+      console.log("Call status response:", statusRes);
+      const statusVal = (
+        statusRes?.status ||
+        statusRes?.call_status ||
+        statusRes?.data?.status ||
+        statusRes?.data?.call_status ||
+        statusRes?.message ||
+        ""
+      ).toString().toLowerCase();
+
+      if (statusVal) {
+        if (statusVal.includes("talk") || statusVal.includes("ongoing") || statusVal.includes("in-progress") || statusVal.includes("answered")) {
+          setCallStatusText("Talking / Ongoing");
+        } else if (statusVal.includes("ring")) {
+          setCallStatusText("Ringing");
+        } else if (statusVal.includes("initiat") || statusVal.includes("call")) {
+          setCallStatusText("Calling...");
+        } else if (
+          statusVal.includes("complete") ||
+          statusVal.includes("end") ||
+          statusVal.includes("hangup") ||
+          statusVal.includes("disconnect") ||
+          statusVal.includes("reject") ||
+          statusVal.includes("cancel") ||
+          statusVal.includes("miss")
+        ) {
+          stopCallStatusPolling();
+          setCallStatusText(undefined);
+        }
+      }
+    } catch (err) {
+      console.error("Error polling call status:", err);
+    }
+  };
+
+  const handleHangupCall = async () => {
+    if (!activeTataRefId) {
+      toast.error("Call Reference ID is not available.");
+      return;
+    }
+    setIsHangingUp(true);
+    try {
+      await hangupCall({ ref_id: activeTataRefId, call_id: activeTataRefId }).unwrap();
+      toast.success("Call ended successfully");
+      stopCallStatusPolling();
+      setCallStatusText(undefined);
+    } catch (err: any) {
+      console.error("Failed to hang up call:", err);
+      toast.error(err?.data?.message || err?.message || "Failed to hang up call.");
+    } finally {
+      setIsHangingUp(false);
+    }
+  };
 
   // ── Call session persistence (sessionStorage) ──
   // Keeps the click-to-call → poll → analyze workflow resumable across a page refresh.
@@ -326,6 +403,10 @@ export const LeadDetailsPage = () => {
       if (callRecordsPollingRef.current) {
         clearInterval(callRecordsPollingRef.current);
         callRecordsPollingRef.current = null;
+      }
+      if (callStatusPollingRef.current) {
+        clearInterval(callStatusPollingRef.current);
+        callStatusPollingRef.current = null;
       }
     };
   }, []);
@@ -566,6 +647,8 @@ export const LeadDetailsPage = () => {
 
         if (foundRecord.answered_seconds !== undefined && answeredSeconds <= 0) {
           // 1. MISSED / UNANSWERED CALL
+          stopCallStatusPolling();
+          setCallStatusText(undefined);
           if (callRecordsPollingRef.current) {
             clearInterval(callRecordsPollingRef.current);
             callRecordsPollingRef.current = null;
@@ -608,6 +691,8 @@ export const LeadDetailsPage = () => {
             return; // Continue polling next cycle
           }
 
+          stopCallStatusPolling();
+          setCallStatusText(undefined);
           if (callRecordsPollingRef.current) {
             clearInterval(callRecordsPollingRef.current);
             callRecordsPollingRef.current = null;
@@ -669,6 +754,15 @@ export const LeadDetailsPage = () => {
       setCallModalAttempt(session.attempt || 1);
       executeCallAnalysis(session.analysisPayload, targetUuid);
       return;
+    }
+
+    if (session.tataRefId) {
+      setActiveTataRefId(session.tataRefId);
+      stopCallStatusPolling();
+      pollCallStatus(session.tataRefId);
+      callStatusPollingRef.current = setInterval(() => {
+        pollCallStatus(session.tataRefId);
+      }, 3500);
     }
 
     if (session.from_date && session.to_date) {
@@ -1001,11 +1095,23 @@ export const LeadDetailsPage = () => {
                         }
 
                         try {
-                          await initiateClickToCall({ 
+                          const callRes = await initiateClickToCall({ 
                             customer_uuid: customerUuid,
                             lead_uuid: leadUuid || "",
                             agent_id: agentId,
                           }).unwrap();
+
+                          const tataRefId = String(
+                            callRes?.tata_ref_id || 
+                            callRes?.ref_id || 
+                            callRes?.data?.tata_ref_id || 
+                            callRes?.data?.ref_id || 
+                            callRes?.call_id || 
+                            ""
+                          );
+                          if (tataRefId) {
+                            setActiveTataRefId(tataRefId);
+                          }
 
                           const leadName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Lead";
                           const fromNumber = cleanPhone(lead.phone_number || (lead as any).phone || "");
@@ -1016,6 +1122,16 @@ export const LeadDetailsPage = () => {
                           setCallModalError(undefined);
                           setCallModalAttempt(1);
                           setCallModalOpen(true);
+                          setCallStatusText("Calling...");
+
+                          // Start 3.5s status polling
+                          stopCallStatusPolling();
+                          if (tataRefId) {
+                            pollCallStatus(tataRefId);
+                            callStatusPollingRef.current = setInterval(() => {
+                              pollCallStatus(tataRefId);
+                            }, 3500);
+                          }
 
                           const now = new Date();
                           const fromDate = new Date(now.getTime() - 1 * 60 * 1000); // current time - 1 min
@@ -1032,6 +1148,7 @@ export const LeadDetailsPage = () => {
                               leadName,
                               fromNumber,
                               agentId,
+                              tataRefId,
                               startTime: Date.now(),
                               stage: "polling",
                               from_date,
@@ -1090,8 +1207,14 @@ export const LeadDetailsPage = () => {
                 phoneNumber={lead.phone_number || (lead as any).phone}
                 retryAttempt={callModalAttempt}
                 errorMessage={callModalError}
+                callStatusText={callStatusText}
+                isHangingUp={isHangingUp}
+                onHangup={activeTataRefId ? handleHangupCall : undefined}
                 onClose={() => {
                   setCallModalOpen(false);
+                  stopCallStatusPolling();
+                  setActiveTataRefId(null);
+                  setCallStatusText(undefined);
                   const currentTargetUuid = lead.uuid || leadId;
                   if (currentTargetUuid) {
                     clearCallSession(currentTargetUuid);

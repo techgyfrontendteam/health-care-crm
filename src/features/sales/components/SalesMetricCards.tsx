@@ -14,9 +14,57 @@ import {
 
 interface SalesMetricCardsProps {
   metrics: SalesMetrics;
+  isLoading?: boolean;
 }
 
-export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) => {
+export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm animate-pulse flex flex-col justify-between h-[155px]"
+          >
+            <div className="flex items-center justify-between">
+              <div className="h-3 w-24 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+            </div>
+            <div className="space-y-2 mt-2">
+              <div className="h-7 w-20 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="h-3.5 w-28 bg-zinc-100 dark:bg-zinc-800 rounded" />
+            </div>
+            <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex justify-between">
+              <div className="h-3 w-16 bg-zinc-100 dark:bg-zinc-800 rounded" />
+              <div className="h-3 w-12 bg-zinc-100 dark:bg-zinc-800 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const noOfCalls = Number(metrics?.no_of_calls ?? metrics?.total_calls ?? 0);
+  const callsConnected = metrics?.calls_connected ? Number(metrics.calls_connected) : null;
+  const callsGrowth = metrics?.calls_growth !== undefined ? Number(metrics.calls_growth) : null;
+
+  const noOfLeads = Number(metrics?.no_of_leads ?? metrics?.total_leads ?? 0);
+  const newLeads = metrics?.new_leads_this_month !== undefined ? Number(metrics.new_leads_this_month) : null;
+  const leadsGrowth = metrics?.leads_growth !== undefined ? Number(metrics.leads_growth) : null;
+
+  const overdueLeads = Number(metrics?.overdue_leads ?? metrics?.no_of_overdue ?? 0);
+  const overdueHighPriority = Number(metrics?.overdue_high_priority ?? 0);
+  const overduePercentage = metrics?.overdue_percentage !== undefined
+    ? Number(metrics.overdue_percentage)
+    : (noOfLeads > 0 ? Number(((overdueLeads / noOfLeads) * 100).toFixed(1)) : 0);
+
+  const noOfDepartments = Number(metrics?.no_of_depertments ?? metrics?.no_of_departments ?? metrics?.total_departments ?? 0);
+  const totalOpd = metrics?.total_opd_leads !== undefined ? Number(metrics.total_opd_leads) : null;
+  const totalIpd = metrics?.total_ipd_leads !== undefined ? Number(metrics.total_ipd_leads) : null;
+
+  const noOfBranches = Number(metrics?.no_of_branches ?? metrics?.total_branches_count ?? 0);
+  const topBranch = metrics?.top_performing_branch || "Main Hospital";
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {/* 1. Number of Calls */}
@@ -32,17 +80,23 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
           </div>
           <div className="mt-3">
             <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-              {metrics.total_calls.toLocaleString()}
+              {noOfCalls.toLocaleString()}
             </h3>
             <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-0.5">
-              {metrics.calls_connected.toLocaleString()} Connected
+              {callsConnected !== null ? `${callsConnected.toLocaleString()} Connected` : "Total Telephony Calls"}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
-          <span className="text-zinc-400 font-medium">Monthly Growth</span>
+          <span className="text-zinc-400 font-medium">Activity</span>
           <span className="font-extrabold text-emerald-600 flex items-center gap-0.5">
-            <TrendingUp className="h-3 w-3" />+{metrics.calls_growth}%
+            {callsGrowth !== null ? (
+              <>
+                <TrendingUp className="h-3 w-3" />+{callsGrowth}%
+              </>
+            ) : (
+              <span className="text-blue-600 dark:text-blue-400 font-bold">Calls Logged</span>
+            )}
           </span>
         </div>
       </div>
@@ -60,17 +114,23 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
           </div>
           <div className="mt-3">
             <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-              {metrics.total_leads.toLocaleString()}
+              {noOfLeads.toLocaleString()}
             </h3>
             <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              +{metrics.new_leads_this_month} New This Month
+              {newLeads !== null ? `+${newLeads.toLocaleString()} New This Month` : "Active Pipeline"}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
-          <span className="text-zinc-400 font-medium">Acquisition Rate</span>
+          <span className="text-zinc-400 font-medium">Pipeline</span>
           <span className="font-extrabold text-emerald-600 flex items-center gap-0.5">
-            <TrendingUp className="h-3 w-3" />+{metrics.leads_growth}%
+            {leadsGrowth !== null ? (
+              <>
+                <TrendingUp className="h-3 w-3" />+{leadsGrowth}%
+              </>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Total Leads</span>
+            )}
           </span>
         </div>
       </div>
@@ -88,17 +148,19 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
           </div>
           <div className="mt-3">
             <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400">
-              {metrics.overdue_leads}
+              {overdueLeads.toLocaleString()}
             </h3>
             <p className="text-xs font-bold text-rose-500 mt-0.5">
-              {metrics.overdue_high_priority} High Priority Urgent
+              {overdueHighPriority > 0
+                ? `${overdueHighPriority.toLocaleString()} High Priority Urgent`
+                : "0 Urgent Leads"}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
-          <span className="text-zinc-400 font-medium">SLA Breach</span>
+          <span className="text-zinc-400 font-medium">SLA Status</span>
           <span className="font-extrabold text-rose-600">
-            {metrics.overdue_percentage}% of total
+            {overduePercentage > 0 ? `${overduePercentage}% SLA Breach` : "0% SLA Breach"}
           </span>
         </div>
       </div>
@@ -115,17 +177,19 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
             </div>
           </div>
           <div className="mt-3">
-            <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-              {metrics.total_opd_leads} OP / {metrics.total_ipd_leads} IP
+            <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+              {noOfDepartments.toLocaleString()}
             </h3>
             <p className="text-xs font-bold text-teal-600 dark:text-teal-400 mt-0.5">
-              Cardiology & Ortho Top
+              {totalOpd !== null && totalIpd !== null
+                ? `${totalOpd.toLocaleString()} OP / ${totalIpd.toLocaleString()} IP`
+                : "Specialties & Clinical Units"}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
           <span className="text-zinc-400 font-medium">Departments</span>
-          <span className="font-extrabold text-teal-600">6 Specialties</span>
+          <span className="font-extrabold text-teal-600">Active Units</span>
         </div>
       </div>
 
@@ -141,17 +205,17 @@ export const SalesMetricCards: React.FC<SalesMetricCardsProps> = ({ metrics }) =
             </div>
           </div>
           <div className="mt-3">
-            <h3 className="text-xl font-black text-white truncate">
-              {metrics.total_branches_count} Branches
+            <h3 className="text-2xl font-black text-white truncate">
+              {noOfBranches} Branches
             </h3>
-            <p className="text-xs font-semibold text-white mt-0.5 truncate">
-              Top: {metrics.top_performing_branch}
+            <p className="text-xs font-semibold text-white/80 mt-0.5 truncate">
+              Top: {topBranch}
             </p>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-          <span className="text-white font-medium">Leading Branch</span>
-          <span className="font-black text-white">520 Leads</span>
+          <span className="text-white/70 font-medium">Network</span>
+          <span className="font-black text-white">All Locations</span>
         </div>
       </div>
     </div>

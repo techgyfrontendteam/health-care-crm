@@ -9,7 +9,15 @@ export const GlobalApiLoader = () => {
     const mutations = state.baseApi.mutations;
 
     const isAnyQueryPending = Object.values(queries).some(
-      (query: any) => query?.status === "pending" && query?.endpointName !== "getLeadById" && query?.endpointName !== "getCallRecords"
+      (query: any) =>
+        query?.status === "pending" &&
+        query?.endpointName !== "getLeadById" &&
+        query?.endpointName !== "getCallRecords" &&
+        query?.endpointName !== "getSalesStats" &&
+        query?.endpointName !== "getCallsLoggedAndNewLeads" &&
+        query?.endpointName !== "getLeadSourceBreakDown" &&
+        query?.endpointName !== "getBranchLeadPerformance" &&
+        query?.endpointName !== "getDepertmentLeadBreakDown"
     );
     const isAnyMutationPending = Object.values(mutations).some(
       (mutation: any) =>
@@ -17,6 +25,8 @@ export const GlobalApiLoader = () => {
         mutation?.endpointName !== "deviceHeartbeat" &&
         mutation?.endpointName !== "registerDevice" &&
         mutation?.endpointName !== "getCallRecords" &&
+        mutation?.endpointName !== "getCallStatus" &&
+        mutation?.endpointName !== "hangupCall" &&
         mutation?.endpointName !== "analyzeCall" &&
         mutation?.endpointName !== "initiateClickToCall" &&
         mutation?.endpointName !== "createCall"
