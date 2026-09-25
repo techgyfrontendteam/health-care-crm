@@ -12,6 +12,9 @@ export interface TabFilterState {
   sortField: string;
   sortOrder: 'asc' | 'desc';
   selectedUuids: string[];
+  startDate: string | null;
+  endDate: string | null;
+  dateQuickSelect: string;
 }
 
 const getInitialProjectIds = (): string[] => {
@@ -41,6 +44,9 @@ const initialTabState: TabFilterState = {
   sortField: 'created_on',
   sortOrder: 'desc',
   selectedUuids: [],
+  startDate: null,
+  endDate: null,
+  dateQuickSelect: '',
 };
 
 interface LeadsState {

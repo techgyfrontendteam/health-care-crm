@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { PageHeader } from "../../../shared/components/PageHeader/PageHeader";
 import { Button } from "../../../components/ui/button";
 import { SalesMetricCards } from "../components/SalesMetricCards";
 import { SalesCharts } from "../components/SalesCharts";
 import { BranchLeadsCards } from "../components/BranchLeadsCards";
 import { SalesLeadTable } from "../components/SalesLeadTable";
+import { ReportFilterDialog } from "../../reports/components/ReportFilterDialog";
 import {
   useGetSalesStatsQuery,
   useGetCallsLoggedAndNewLeadsQuery,
@@ -27,14 +30,7 @@ import {
   dailySalesTrendsData,
   salesLeadRecordsData,
 } from "../data/salesData";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select";
-import { FileSpreadsheet, Calendar, Filter } from "lucide-react";
+import { FileSpreadsheet, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_SOURCE_COLORS = [
@@ -61,24 +57,110 @@ const DEFAULT_DEPARTMENT_COLORS = [
   "#f97316", // Orange
 ];
 
+const formatDateForApi = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatFilterButtonLabel = (start: Date | null, end: Date | null): string => {
+  if (!start && !end) return "All Time";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const formatD = (d: Date) => `${d.getDate()} ${months[d.getMonth()]}`;
+
+  if (start && !end) return formatD(start);
+  if (!start && end) return formatD(end);
+  if (start && end) {
+    if (start.toDateString() === end.toDateString()) {
+      return formatD(start);
+    }
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    if (start.toDateString() === firstDay.toDateString() && end.toDateString() === lastDay.toDateString()) {
+      return `This Month (${months[now.getMonth()]} ${now.getFullYear()})`;
+    }
+    return `${formatD(start)} – ${formatD(end)}`;
+  }
+  return "Filter Date";
+};
+
 export const SalesDashboardPage: React.FC = () => {
+  const { roleCode } = usePermissions();
+  const isSuperAdmin = roleCode === "SADMIN" || roleCode === "ADMIN";
+
   const todayStr = useMemo(() => {
     return new Date().toISOString().split("T")[0];
   }, []);
 
-  const { data: statsResponse, isLoading: isStatsLoading } = useGetSalesStatsQuery({ offset: 0 });
-  const { data: callsAndLeadsResponse, isLoading: isCallsAndLeadsLoading } = useGetCallsLoggedAndNewLeadsQuery({
-    present_date: todayStr,
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const { data: leadSourceResponse, isLoading: isLeadSourceLoading } = useGetLeadSourceBreakDownQuery({});
-  const { data: branchResponse, isLoading: isBranchLoading } = useGetBranchLeadPerformanceQuery({});
+  const [endDate, setEndDate] = useState<Date | null>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  });
+
+  const dateRange = useMemo(() => {
+    if (startDate && endDate) {
+      return {
+        start_date: formatDateForApi(startDate),
+        end_date: formatDateForApi(endDate),
+      };
+    }
+    if (startDate && !endDate) {
+      const s = formatDateForApi(startDate);
+      return { start_date: s, end_date: s };
+    }
+    if (!startDate && endDate) {
+      const e = formatDateForApi(endDate);
+      return { start_date: e, end_date: e };
+    }
+    // "All Time" selected -> No date restrictions (fetch all historical data)
+    return {
+      start_date: undefined,
+      end_date: undefined,
+    };
+  }, [startDate, endDate]);
+
+  const { data: statsResponse, isLoading: isStatsLoading } = useGetSalesStatsQuery({
+    offset: 0,
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  }, { skip: !isSuperAdmin });
+  const { data: callsAndLeadsResponse, isLoading: isCallsAndLeadsLoading } = useGetCallsLoggedAndNewLeadsQuery({
+    present_date: dateRange.start_date ? (dateRange.end_date || todayStr) : undefined,
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  }, { skip: !isSuperAdmin });
+  const { data: leadSourceResponse, isLoading: isLeadSourceLoading } = useGetLeadSourceBreakDownQuery({
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  }, { skip: !isSuperAdmin });
+  const { data: branchResponse, isLoading: isBranchLoading } = useGetBranchLeadPerformanceQuery({
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  }, { skip: !isSuperAdmin });
   const { data: departmentResponse, isLoading: isDepartmentLoading } = useGetDepertmentLeadBreakDownQuery({
     offset: 0,
-  });
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  }, { skip: !isSuperAdmin });
+
+  if (roleCode && !isSuperAdmin) {
+    if (roleCode === "EXPMNG") {
+      return <Navigate to="/agents/dashboard" replace />;
+    }
+    if (roleCode === "RELMNG") {
+      return <Navigate to="/relationship-managers/dashboard" replace />;
+    }
+    return <Navigate to="/leads" replace />;
+  }
 
   const [leads] = useState(salesLeadRecordsData);
-
-  const [dateFilter, setDateFilter] = useState<string>("This Month");
 
   const branches = useMemo<BranchLeadItem[]>(() => {
     if (!branchResponse) {
@@ -214,11 +296,22 @@ export const SalesDashboardPage: React.FC = () => {
 
     if (rawList && rawList.length > 0) {
       return rawList.map((item: any, idx: number) => {
+        const department_id =
+          item.department_id !== undefined && item.department_id !== null
+            ? item.department_id
+            : item.depertment_id !== undefined && item.depertment_id !== null
+            ? item.depertment_id
+            : item.dept_id !== undefined && item.dept_id !== null
+            ? item.dept_id
+            : item.id !== undefined && item.id !== null
+            ? item.id
+            : `DEP-0${idx + 1}`;
+
         const department_name = String(
           item.department_name ||
+          item.depertment_name ||
           item.name ||
           item.department ||
-          item.depertment_name ||
           item.depertment ||
           item.specialty ||
           item.title ||
@@ -227,9 +320,9 @@ export const SalesDashboardPage: React.FC = () => {
 
         const lead_count = Number(
           item.lead_count ??
+          item.no_of_leads ??
           item.total_leads ??
           item.leads ??
-          item.no_of_leads ??
           item.count ??
           0
         );
@@ -251,6 +344,7 @@ export const SalesDashboardPage: React.FC = () => {
         const color = item.color || DEFAULT_DEPARTMENT_COLORS[idx % DEFAULT_DEPARTMENT_COLORS.length];
 
         return {
+          department_id,
           department_name,
           lead_count,
           converted_count,
@@ -275,7 +369,11 @@ export const SalesDashboardPage: React.FC = () => {
 
       if (entries.length > 0) {
         return entries.map(([key, val]: [string, any], idx: number) => {
-          const lead_count = typeof val === "number" ? val : Number(val?.lead_count ?? val?.total_leads ?? val?.leads ?? val?.count ?? 0);
+          const department_id =
+            typeof val === "object" && (val?.department_id ?? val?.depertment_id ?? val?.id)
+              ? (val.department_id ?? val.depertment_id ?? val.id)
+              : `DEP-0${idx + 1}`;
+          const lead_count = typeof val === "number" ? val : Number(val?.lead_count ?? val?.no_of_leads ?? val?.total_leads ?? val?.leads ?? val?.count ?? 0);
           const converted_count = typeof val === "object" ? Number(val?.converted_count ?? val?.converted ?? 0) : 0;
           const revenue = typeof val === "object" ? Number(val?.revenue ?? 0) : 0;
           const color =
@@ -284,6 +382,7 @@ export const SalesDashboardPage: React.FC = () => {
               : DEFAULT_DEPARTMENT_COLORS[idx % DEFAULT_DEPARTMENT_COLORS.length];
 
           return {
+            department_id,
             department_name: key,
             lead_count,
             converted_count,
@@ -432,8 +531,10 @@ export const SalesDashboardPage: React.FC = () => {
 
   const trends = useMemo<DailySalesTrend[]>(() => {
     if (!callsAndLeadsResponse) {
-      return dailySalesTrendsData;
+      return [];
     }
+
+    const isAllTime = !startDate && !endDate;
 
     const rawList =
       Array.isArray(callsAndLeadsResponse)
@@ -442,6 +543,12 @@ export const SalesDashboardPage: React.FC = () => {
         ? callsAndLeadsResponse.data
         : Array.isArray(callsAndLeadsResponse.results)
         ? callsAndLeadsResponse.results
+        : Array.isArray(callsAndLeadsResponse.yearly)
+        ? callsAndLeadsResponse.yearly
+        : Array.isArray(callsAndLeadsResponse.yearly_trends)
+        ? callsAndLeadsResponse.yearly_trends
+        : Array.isArray(callsAndLeadsResponse.yearly_data)
+        ? callsAndLeadsResponse.yearly_data
         : Array.isArray(callsAndLeadsResponse.trends)
         ? callsAndLeadsResponse.trends
         : Array.isArray(callsAndLeadsResponse.daily_trends)
@@ -450,9 +557,69 @@ export const SalesDashboardPage: React.FC = () => {
         ? callsAndLeadsResponse.records
         : Array.isArray(callsAndLeadsResponse.list)
         ? callsAndLeadsResponse.list
+        : Array.isArray(callsAndLeadsResponse.calls_and_leads)
+        ? callsAndLeadsResponse.calls_and_leads
+        : Array.isArray(callsAndLeadsResponse.daily_calls)
+        ? callsAndLeadsResponse.daily_calls
         : null;
 
     if (rawList && rawList.length > 0) {
+      if (isAllTime) {
+        // Group by Year for All Time
+        const yearMap = new Map<string, { calls: number; new_leads: number; conversions: number }>();
+
+        rawList.forEach((item: any) => {
+          const rawDate = item.year || item.date || item.day || item.present_date || item.label || item.created_at;
+          let yearKey = "";
+          if (rawDate) {
+            const strVal = String(rawDate).trim();
+            if (/^\d{4}$/.test(strVal)) {
+              yearKey = strVal;
+            } else {
+              try {
+                const parsed = new Date(rawDate);
+                if (!isNaN(parsed.getFullYear())) {
+                  yearKey = String(parsed.getFullYear());
+                }
+              } catch {
+                yearKey = strVal;
+              }
+            }
+          }
+          if (!yearKey) {
+            yearKey = item.year ? String(item.year) : "Year";
+          }
+
+          const calls = Number(item.calls ?? item.no_of_calls ?? item.calls_logged ?? item.total_calls ?? item.calls_count ?? 0);
+          const new_leads = Number(item.new_leads ?? item.no_of_leads ?? item.leads ?? item.total_leads ?? item.leads_count ?? 0);
+          const conversions = Number(item.conversions ?? item.converted_leads ?? item.no_of_conversions ?? 0);
+
+          if (!yearMap.has(yearKey)) {
+            yearMap.set(yearKey, { calls: 0, new_leads: 0, conversions: 0 });
+          }
+          const curr = yearMap.get(yearKey)!;
+          curr.calls += calls;
+          curr.new_leads += new_leads;
+          curr.conversions += conversions;
+        });
+
+        if (yearMap.size > 0) {
+          const sortedYears = Array.from(yearMap.entries()).sort(([a], [b]) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+          });
+
+          return sortedYears.map(([year, val]) => ({
+            date: year,
+            calls: val.calls,
+            new_leads: val.new_leads,
+            conversions: val.conversions,
+          }));
+        }
+      }
+
       return rawList.map((item: any, idx: number) => {
         const rawDate = item.date || item.day || item.present_date || item.label || item.created_at;
         let formattedDate = `Day ${idx + 1}`;
@@ -503,25 +670,127 @@ export const SalesDashboardPage: React.FC = () => {
       });
     }
 
-    // If the API returns a single object summary for the date
+    // Check if response is a key-value dictionary { "2023": { calls: 5, new_leads: 2 }, ... }
+    const payload = callsAndLeadsResponse.data || callsAndLeadsResponse.results || callsAndLeadsResponse;
+    if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+      const entries = Object.entries(payload).filter(([key, val]) => {
+        return (
+          key !== "success" &&
+          key !== "message" &&
+          key !== "status" &&
+          key !== "code" &&
+          key !== "no_of_calls" &&
+          key !== "no_of_leads" &&
+          key !== "calls" &&
+          key !== "new_leads" &&
+          key !== "total_calls" &&
+          key !== "total_leads" &&
+          key !== "calls_logged" &&
+          key !== "converted_leads" &&
+          key !== "conversions" &&
+          (typeof val === "number" || (typeof val === "object" && val !== null))
+        );
+      });
+
+      if (entries.length > 0) {
+        if (isAllTime) {
+          const yearMap = new Map<string, { calls: number; new_leads: number; conversions: number }>();
+          entries.forEach(([key, val]: [string, any]) => {
+            let yearKey = key;
+            if (/^\d{4}$/.test(key.trim())) {
+              yearKey = key.trim();
+            } else {
+              try {
+                const parsed = new Date(key);
+                if (!isNaN(parsed.getFullYear())) {
+                  yearKey = String(parsed.getFullYear());
+                }
+              } catch {
+                // retain
+              }
+            }
+
+            const calls = typeof val === "number" ? val : Number(val?.calls ?? val?.no_of_calls ?? val?.calls_logged ?? 0);
+            const new_leads = typeof val === "object" ? Number(val?.new_leads ?? val?.no_of_leads ?? val?.leads ?? 0) : 0;
+            const conversions = typeof val === "object" ? Number(val?.conversions ?? val?.converted_leads ?? 0) : 0;
+
+            if (!yearMap.has(yearKey)) {
+              yearMap.set(yearKey, { calls: 0, new_leads: 0, conversions: 0 });
+            }
+            const curr = yearMap.get(yearKey)!;
+            curr.calls += calls;
+            curr.new_leads += new_leads;
+            curr.conversions += conversions;
+          });
+
+          const sortedYears = Array.from(yearMap.entries()).sort(([a], [b]) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+          });
+
+          return sortedYears.map(([year, val]) => ({
+            date: year,
+            calls: val.calls,
+            new_leads: val.new_leads,
+            conversions: val.conversions,
+          }));
+        }
+
+        return entries.map(([key, val]: [string, any]) => {
+          let formattedDate = key;
+          try {
+            const parsed = new Date(key);
+            if (!isNaN(parsed.getTime())) {
+              formattedDate = parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            }
+          } catch {
+            // retain key
+          }
+
+          const calls = typeof val === "number" ? val : Number(val?.calls ?? val?.no_of_calls ?? val?.calls_logged ?? 0);
+          const new_leads = typeof val === "object" ? Number(val?.new_leads ?? val?.no_of_leads ?? val?.leads ?? 0) : 0;
+          const conversions = typeof val === "object" ? Number(val?.conversions ?? val?.converted_leads ?? 0) : 0;
+
+          return {
+            date: formattedDate,
+            calls,
+            new_leads,
+            conversions,
+          };
+        });
+      }
+    }
+
+    // If the API returns a single object summary for the date/period
     const singleData = callsAndLeadsResponse.data || callsAndLeadsResponse;
     if (
       singleData &&
       (singleData.no_of_calls !== undefined ||
         singleData.calls !== undefined ||
         singleData.no_of_leads !== undefined ||
-        singleData.new_leads !== undefined)
+        singleData.new_leads !== undefined ||
+        singleData.total_calls !== undefined ||
+        singleData.total_leads !== undefined ||
+        singleData.calls_logged !== undefined)
     ) {
-      const calls = Number(singleData.no_of_calls ?? singleData.calls ?? singleData.calls_logged ?? 0);
-      const new_leads = Number(singleData.no_of_leads ?? singleData.new_leads ?? singleData.leads ?? 0);
+      const calls = Number(singleData.no_of_calls ?? singleData.calls ?? singleData.calls_logged ?? singleData.total_calls ?? 0);
+      const new_leads = Number(singleData.no_of_leads ?? singleData.new_leads ?? singleData.leads ?? singleData.total_leads ?? 0);
       const conversions = Number(singleData.conversions ?? singleData.converted_leads ?? 0);
 
-      // Create a 1-entry or update the today's entry in trend
-      const todayFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const label =
+        startDate && endDate
+          ? (startDate.toDateString() === endDate.toDateString()
+              ? startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`)
+          : startDate && !endDate
+          ? startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+          : "All Time";
+
       return [
-        ...dailySalesTrendsData.slice(0, dailySalesTrendsData.length - 1),
         {
-          date: todayFormatted,
+          date: label,
           calls,
           new_leads,
           conversions,
@@ -529,8 +798,8 @@ export const SalesDashboardPage: React.FC = () => {
       ];
     }
 
-    return dailySalesTrendsData;
-  }, [callsAndLeadsResponse]);
+    return [];
+  }, [callsAndLeadsResponse, startDate, endDate]);
 
   const metrics = useMemo<SalesMetrics>(() => {
     if (!statsResponse) {
@@ -623,27 +892,19 @@ export const SalesDashboardPage: React.FC = () => {
         description="Real-time analytics for calls, lead sources, overdue follow-ups, departments, and hospital branches"
         actions={
           <div className="flex items-center gap-3">
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="!w-auto inline-flex items-center justify-start gap-1.5 px-4 !rounded-lg h-11 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-[#063669] shadow-xs hover:border-zinc-300 transition-colors cursor-pointer [&>svg]:opacity-60 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
-                <SelectValue placeholder="This Month (Aug 2026)">
-                  {dateFilter === "This Month"
-                    ? "This Month (Aug 2026)"
-                    : dateFilter === "Last Month"
-                    ? "Last Month (Jul 2026)"
-                    : dateFilter === "Q3 2026"
-                    ? "Q3 2026"
-                    : dateFilter === "YTD 2026"
-                    ? "Year-to-Date 2026"
-                    : dateFilter}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-zinc-900 z-50 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg min-w-[190px]">
-                <SelectItem value="This Month" className="text-xs font-semibold cursor-pointer">This Month (Aug 2026)</SelectItem>
-                <SelectItem value="Last Month" className="text-xs font-semibold cursor-pointer">Last Month (Jul 2026)</SelectItem>
-                <SelectItem value="Q3 2026" className="text-xs font-semibold cursor-pointer">Q3 2026</SelectItem>
-                <SelectItem value="YTD 2026" className="text-xs font-semibold cursor-pointer">Year-to-Date 2026</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Reused App Filter Button */}
+            <button
+              onClick={() => setIsFilterDialogOpen(true)}
+              className="flex items-center justify-center gap-2 border border-[rgba(0,51,102,0.24)] bg-white dark:bg-zinc-900 px-[20px] py-[10px] h-11 rounded-lg font-['Inter'] font-semibold text-[13px] leading-[20px] text-[#003366] dark:text-blue-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors duration-200 shadow-xs cursor-pointer relative"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-[#003366] dark:text-blue-300" />
+              <span>{formatFilterButtonLabel(startDate, endDate)}</span>
+              {(startDate || endDate) && (
+                <span className="flex items-center justify-center min-w-[18px] h-4.5 px-1 text-[9px] font-bold bg-[#003366] dark:bg-blue-500 text-white rounded-full">
+                  1
+                </span>
+              )}
+            </button>
 
             <Button
               onClick={handleExport}
@@ -676,6 +937,28 @@ export const SalesDashboardPage: React.FC = () => {
 
       {/* 4. Active Sales Leads & Overdue Follow-ups Audit Table */}
       <SalesLeadTable leads={leads} />
+
+      {/* Reused Date Range Filter Dialog */}
+      <ReportFilterDialog
+        open={isFilterDialogOpen}
+        onClose={() => setIsFilterDialogOpen(false)}
+        tabs={["date"]}
+        onApply={(filters) => {
+          setStartDate(filters.startDate);
+          setEndDate(filters.endDate);
+          setIsFilterDialogOpen(false);
+        }}
+        onReset={() => {
+          setStartDate(null);
+          setEndDate(null);
+          setIsFilterDialogOpen(false);
+        }}
+        projectOptions={[]}
+        appliedProjectIds={[]}
+        appliedStartDate={startDate}
+        appliedEndDate={endDate}
+        initialTab="date"
+      />
     </div>
   );
 };

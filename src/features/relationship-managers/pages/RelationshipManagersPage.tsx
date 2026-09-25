@@ -172,9 +172,9 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
     {
       start_date: formattedStartDate,
       end_date: formattedEndDate,
-      rm_ids: selectedRmId ? [selectedRmId] : rmIds,
+      rm_ids: selectedRmId ? [selectedRmId] : [],
     },
-    { skip: rmIds.length === 0 }
+    {}
   );
 
   // Fetch Experience Manager users (role 4) to query stale and escalated leads
@@ -650,14 +650,14 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                   <th className="py-4 px-4">Contact Details</th>
                   <th className="py-4 px-4">Status</th>
                   <th className="py-4 px-4">Escalation Reason</th>
-                  <th className="py-4 px-4">Assigned EM</th>
+                  {/* <th className="py-4 px-4">Assigned EM</th> */}
                   <th className="py-4 px-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50 dark:divide-zinc-850 text-xs font-bold text-slate-700 dark:text-zinc-300">
                 {filteredEscalationsList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-zinc-500 font-semibold">
+                    <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-zinc-500 font-semibold">
                       No active escalations found
                     </td>
                   </tr>
@@ -678,7 +678,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                         </span>
                       </td>
                       <td className="py-4 px-4 text-slate-500 dark:text-zinc-400 font-semibold">{item.reason}</td>
-                      <td className="py-4 px-4">{item.em}</td>
+                      {/* <td className="py-4 px-4">{item.em}</td> */}
                       <td className="py-4 px-4 text-center">
                         <Button
                           variant="outline"
@@ -763,14 +763,14 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                   <th className="py-4 px-4">Contact Details</th>
                   <th className="py-4 px-4">Status</th>
                   <th className="py-4 px-4">Idle Duration</th>
-                  <th className="py-4 px-4">Assigned EM</th>
+                  {/* <th className="py-4 px-4">Assigned EM</th> */}
                   <th className="py-4 px-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50 dark:divide-zinc-850 text-xs font-bold text-slate-700 dark:text-zinc-300">
                 {filteredStaleList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-zinc-550 font-semibold">
+                    <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-zinc-550 font-semibold">
                       No stale leads found
                     </td>
                   </tr>
@@ -791,7 +791,7 @@ export const RelationshipManagersPage: React.FC<RelationshipManagersPageProps> =
                         </span>
                       </td>
                       <td className="py-4 px-4 text-blue-600 dark:text-blue-400 font-extrabold">{item.idle}</td>
-                      <td className="py-4 px-4">{item.em}</td>
+                      {/* <td className="py-4 px-4">{item.em}</td> */}
                       <td className="py-4 px-4 text-center">
                         <Button
                           variant="outline"

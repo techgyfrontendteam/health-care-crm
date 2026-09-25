@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { X, Search, Check, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { X, Search, Check, Loader2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { cn } from "../../../utils";
 import { useGetReporteesQuery } from "../../../features/users/api/usersApi";
 
-type FilterSection = "projects" | "status" | "opdLeads" | "ipdLeads" | "rms" | "ems";
+type FilterSection = "status" | "date" | "projects" | "opdLeads" | "ipdLeads" | "rms" | "ems";
 
 interface Option {
   value: string;
@@ -44,6 +44,9 @@ interface FilterDialogProps {
     projectIds: string[];
     rmIds: string[];
     emIds: string[];
+    startDate?: string | null;
+    endDate?: string | null;
+    dateQuickSelect?: string;
     opdLeads?: string[];
     ipdLeads?: string[];
   }) => void;
@@ -53,6 +56,9 @@ interface FilterDialogProps {
   projectIds: string[];
   rmIds: string[];
   emIds: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+  dateQuickSelect?: string;
   opdLeads?: string[];
   ipdLeads?: string[];
   // Options
@@ -63,7 +69,105 @@ interface FilterDialogProps {
   showRmFilter?: boolean;
   showEmFilter?: boolean;
   showProjectFilter?: boolean;
+  showDateFilter?: boolean;
 }
+
+// ── Date Utility Helpers ──
+const formatApiDate = (d: Date | null): string => {
+  if (!d) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateSafe = (val: string | null | undefined): Date | null => {
+  if (!val) return null;
+  try {
+    const clean = val.replace(/Z/g, "").split("+")[0].replace(" ", "T");
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) return d;
+    const fallback = new Date(val);
+    return isNaN(fallback.getTime()) ? null : fallback;
+  } catch {
+    return null;
+  }
+};
+
+const formatShortDate = (d: Date | null): string => {
+  if (!d) return "";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+};
+
+const formatRangeLabel = (start: Date | null, end: Date | null, quickSelect?: string): string => {
+  if (quickSelect && quickSelect !== "Custom Range" && quickSelect !== "All Time") {
+    return quickSelect;
+  }
+  if (!start && !end) return "All Time";
+  if (start && !end) return formatShortDate(start);
+  if (!start && end) return `Until ${formatShortDate(end)}`;
+  if (start && end) {
+    if (start.toDateString() === end.toDateString()) {
+      return formatShortDate(start);
+    }
+    return `${formatShortDate(start)} – ${formatShortDate(end)}`;
+  }
+  return "All Time";
+};
+
+const getDaysInMonth = (year: number, month: number) => {
+  const date = new Date(year, month, 1);
+  const days = [];
+
+  let firstDayIndex = date.getDay();
+  firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Mon = 0
+
+  const prevMonth = new Date(year, month, 0);
+  const prevMonthDaysCount = prevMonth.getDate();
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    days.push({
+      date: new Date(year, month - 1, prevMonthDaysCount - i),
+      isCurrentMonth: false,
+    });
+  }
+
+  const currentMonthDaysCount = new Date(year, month + 1, 0).getDate();
+  for (let i = 1; i <= currentMonthDaysCount; i++) {
+    days.push({
+      date: new Date(year, month, i),
+      isCurrentMonth: true,
+    });
+  }
+
+  const totalCells = days.length > 35 ? 42 : 35;
+  const nextDaysCount = totalCells - days.length;
+  for (let i = 1; i <= nextDaysCount; i++) {
+    days.push({
+      date: new Date(year, month + 1, i),
+      isCurrentMonth: false,
+    });
+  }
+
+  return days;
+};
+
+const isSameDay = (d1: Date | null, d2: Date | null) => {
+  if (!d1 || !d2) return false;
+  return (
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear()
+  );
+};
+
+const isWithinRange = (d: Date, start: Date | null, end: Date | null) => {
+  if (!start || !end) return false;
+  const time = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const startTime = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+  const endTime = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+  return time >= startTime && time <= endTime;
+};
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -92,6 +196,9 @@ export const FilterDialog = ({
   projectIds,
   rmIds,
   emIds,
+  startDate = null,
+  endDate = null,
+  dateQuickSelect = "",
   opdLeads = [],
   ipdLeads = [],
   statusOptions,
@@ -100,6 +207,7 @@ export const FilterDialog = ({
   showRmFilter = true,
   showEmFilter = false,
   showProjectFilter = false,
+  showDateFilter = true,
 }: FilterDialogProps) => {
   const [activeSection, setActiveSection] = useState<FilterSection>("status");
   const [localStatus, setLocalStatus] = useState<string[]>(statusIds);
@@ -108,6 +216,11 @@ export const FilterDialog = ({
   const [localEmIds, setLocalEmIds] = useState<string[]>(emIds);
   const [localOpdLeads, setLocalOpdLeads] = useState<string[]>(opdLeads);
   const [localIpdLeads, setLocalIpdLeads] = useState<string[]>(ipdLeads);
+  const [localStartDate, setLocalStartDate] = useState<Date | null>(() => parseDateSafe(startDate));
+  const [localEndDate, setLocalEndDate] = useState<Date | null>(() => parseDateSafe(endDate));
+  const [localDateQuickSelect, setLocalDateQuickSelect] = useState<string>(dateQuickSelect || "");
+  const [activeMonth, setActiveMonth] = useState<Date>(() => parseDateSafe(startDate) || new Date());
+  const [hoverDate, setHoverDate] = useState<Date | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -122,7 +235,7 @@ export const FilterDialog = ({
       setIsInitialized(false);
       return;
     }
-    
+
     if (open && !isInitialized) {
       setLocalStatus(statusIds || []);
       setLocalProjects(projectIds || []);
@@ -130,15 +243,24 @@ export const FilterDialog = ({
       setLocalEmIds(emIds || []);
       setLocalOpdLeads(opdLeads || []);
       setLocalIpdLeads(ipdLeads || []);
+      const parsedStart = parseDateSafe(startDate);
+      const parsedEnd = parseDateSafe(endDate);
+      setLocalStartDate(parsedStart);
+      setLocalEndDate(parsedEnd);
+      setLocalDateQuickSelect(dateQuickSelect || "");
+      if (parsedStart) {
+        setActiveMonth(new Date(parsedStart.getFullYear(), parsedStart.getMonth(), 1));
+      }
       setUserSearch("");
       setActiveSection("status");
       setIsInitialized(true);
     }
-  }, [open, isInitialized, projectIds, rmIds, emIds, statusIds, opdLeads, ipdLeads]);
+  }, [open, isInitialized, projectIds, rmIds, emIds, statusIds, opdLeads, ipdLeads, startDate, endDate, dateQuickSelect]);
 
   const sections: { key: FilterSection; label: string; show: boolean }[] = [
     // { key: "projects" as FilterSection, label: "Projects", show: showProjectFilter },
     { key: "status" as FilterSection, label: "Status", show: true },
+    { key: "date" as FilterSection, label: "Date Range", show: showDateFilter },
     // { key: "opdLeads" as FilterSection, label: "OPD Leads", show: true },
     // { key: "ipdLeads" as FilterSection, label: "IPD Leads", show: true },
     { key: "rms" as FilterSection, label: "Sales Executives", show: showRmFilter },
@@ -167,12 +289,82 @@ export const FilterDialog = ({
     }
   };
 
+  const handleQuickSelect = (preset: string) => {
+    setLocalDateQuickSelect(preset);
+    const today = new Date();
+
+    if (preset === "Today") {
+      setLocalStartDate(today);
+      setLocalEndDate(today);
+      setActiveMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    } else if (preset === "Yesterday") {
+      const y = new Date();
+      y.setDate(today.getDate() - 1);
+      setLocalStartDate(y);
+      setLocalEndDate(y);
+      setActiveMonth(new Date(y.getFullYear(), y.getMonth(), 1));
+    } else if (preset === "Last 7 Days") {
+      const s = new Date();
+      s.setDate(today.getDate() - 6);
+      setLocalStartDate(s);
+      setLocalEndDate(today);
+      setActiveMonth(new Date(s.getFullYear(), s.getMonth(), 1));
+    } else if (preset === "Last 30 Days") {
+      const s = new Date();
+      s.setDate(today.getDate() - 29);
+      setLocalStartDate(s);
+      setLocalEndDate(today);
+      setActiveMonth(new Date(s.getFullYear(), s.getMonth(), 1));
+    } else if (preset === "This Month") {
+      const s = new Date(today.getFullYear(), today.getMonth(), 1);
+      const e = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      setLocalStartDate(s);
+      setLocalEndDate(e);
+      setActiveMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    } else if (preset === "Last Month") {
+      const s = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const e = new Date(today.getFullYear(), today.getMonth(), 0);
+      setLocalStartDate(s);
+      setLocalEndDate(e);
+      setActiveMonth(new Date(s.getFullYear(), s.getMonth(), 1));
+    } else if (preset === "All Time") {
+      setLocalStartDate(null);
+      setLocalEndDate(null);
+    }
+  };
+
+  const handleDayClick = (dayDate: Date) => {
+    const today = new Date();
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const clickMidnight = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate()).getTime();
+    if (clickMidnight > todayMidnight) {
+      return; // Disallow future dates
+    }
+
+    setLocalDateQuickSelect("");
+    if (!localStartDate || (localStartDate && localEndDate)) {
+      setLocalStartDate(dayDate);
+      setLocalEndDate(null);
+    } else {
+      if (dayDate < localStartDate) {
+        setLocalStartDate(dayDate);
+        setLocalEndDate(localStartDate);
+      } else {
+        setLocalEndDate(dayDate);
+      }
+    }
+  };
+
   const handleApply = () => {
+    const effectiveEndDate = localStartDate && !localEndDate ? localStartDate : localEndDate;
     onApply({
       statusIds: localStatus,
       projectIds: localProjects,
       rmIds: localRmId ? [localRmId] : [],
       emIds: localEmIds,
+      startDate: formatApiDate(localStartDate) || null,
+      endDate: formatApiDate(effectiveEndDate) || null,
+      dateQuickSelect: localDateQuickSelect,
       opdLeads: localOpdLeads,
       ipdLeads: localIpdLeads,
     });
@@ -186,6 +378,9 @@ export const FilterDialog = ({
     setLocalEmIds([]);
     setLocalOpdLeads([]);
     setLocalIpdLeads([]);
+    setLocalStartDate(null);
+    setLocalEndDate(null);
+    setLocalDateQuickSelect("");
     onReset();
     onClose();
   };
@@ -201,6 +396,10 @@ export const FilterDialog = ({
       .toLowerCase()
       .includes(userSearch.toLowerCase()),
   );
+
+  const monthDays = useMemo(() => {
+    return getDaysInMonth(activeMonth.getFullYear(), activeMonth.getMonth());
+  }, [activeMonth]);
 
   const renderChips = (
     selected: string[],
@@ -343,6 +542,228 @@ export const FilterDialog = ({
                   </div>
                 </div>
               </>
+            )}
+
+            {/* ── Date Range ── */}
+            {activeSection === "date" && (
+              <div className="space-y-6">
+                {/* 1. Selected Range Preview */}
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-2.5">
+                    Selected Range
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {localStartDate || localEndDate || (localDateQuickSelect && localDateQuickSelect !== "All Time") ? (
+                      <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-xs">
+                        <CalendarIcon className="w-3.5 h-3.5 opacity-80" />
+                        {formatRangeLabel(localStartDate, localEndDate, localDateQuickSelect)}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLocalStartDate(null);
+                            setLocalEndDate(null);
+                            setLocalDateQuickSelect("All Time");
+                          }}
+                          className="hover:opacity-75 cursor-pointer ml-1 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">All Time (No date constraint applied)</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Quick Select Presets */}
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-2.5">
+                    Quick Select Presets
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {["All Time", "Today", "Yesterday", "Last 7 Days", "Last 30 Days", "This Month", "Last Month"].map(
+                      (preset) => {
+                        const isSelected = localDateQuickSelect === preset;
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => handleQuickSelect(preset)}
+                            className={cn(
+                              "px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                              isSelected
+                                ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                                : "border-border-2 text-foreground hover:border-primary hover:text-primary bg-background"
+                            )}
+                          >
+                            {preset}
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Interactive Calendar & Manual Inputs */}
+                <div className="pt-2 border-t border-border-2">
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Calendar Month View */}
+                    <div className="w-full sm:w-[280px] p-3 rounded-2xl border border-border-2 bg-muted/20 space-y-3">
+                      {/* Month Navigation Header */}
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() - 1, 1))
+                          }
+                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-bold text-foreground">
+                          {activeMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={
+                            activeMonth.getFullYear() > new Date().getFullYear() ||
+                            (activeMonth.getFullYear() === new Date().getFullYear() && activeMonth.getMonth() >= new Date().getMonth())
+                          }
+                          onClick={() => {
+                            const now = new Date();
+                            const isCurrentOrFuture =
+                              activeMonth.getFullYear() > now.getFullYear() ||
+                              (activeMonth.getFullYear() === now.getFullYear() && activeMonth.getMonth() >= now.getMonth());
+                            if (!isCurrentOrFuture) {
+                              setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 1));
+                            }
+                          }}
+                          className={cn(
+                            "p-1.5 rounded-lg transition-colors",
+                            activeMonth.getFullYear() > new Date().getFullYear() ||
+                            (activeMonth.getFullYear() === new Date().getFullYear() && activeMonth.getMonth() >= new Date().getMonth())
+                              ? "opacity-30 cursor-not-allowed text-muted-foreground/40"
+                              : "hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                          )}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Day of Week Headers */}
+                      <div className="grid grid-cols-7 text-center">
+                        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+                          <span key={d} className="text-[10px] font-bold text-muted-foreground py-0.5">
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Days Grid */}
+                      <div className="grid grid-cols-7 gap-y-1">
+                        {monthDays.map((item, index) => {
+                          const today = new Date();
+                          const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+                          const cellMidnight = new Date(item.date.getFullYear(), item.date.getMonth(), item.date.getDate()).getTime();
+                          const isFuture = cellMidnight > todayMidnight;
+
+                          const isStart = isSameDay(item.date, localStartDate);
+                          const isEnd = isSameDay(item.date, localEndDate || (localStartDate && hoverDate && hoverDate > localStartDate ? hoverDate : null));
+                          const inRange = isWithinRange(
+                            item.date,
+                            localStartDate,
+                            localEndDate || (localStartDate && hoverDate && hoverDate > localStartDate ? hoverDate : null)
+                          );
+                          const isToday = isSameDay(item.date, today);
+
+                          return (
+                            <div
+                              key={index}
+                              className={cn(
+                                "relative py-0.5 flex items-center justify-center transition-colors",
+                                !isFuture && inRange && !isStart && !isEnd && "bg-blue-50/80 dark:bg-blue-950/40",
+                                !isFuture && isStart && (localEndDate || hoverDate) && "bg-gradient-to-r from-transparent to-blue-50/80 dark:to-blue-950/40 rounded-l-full",
+                                !isFuture && isEnd && localStartDate && "bg-gradient-to-l from-transparent to-blue-50/80 dark:to-blue-950/40 rounded-r-full"
+                              )}
+                              onMouseEnter={() => {
+                                if (localStartDate && !localEndDate && !isFuture) {
+                                  setHoverDate(item.date);
+                                }
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={isFuture ? undefined : () => handleDayClick(item.date)}
+                                disabled={isFuture}
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all relative z-10",
+                                  isFuture && "opacity-25 cursor-not-allowed pointer-events-none text-muted-foreground/30",
+                                  !isFuture && !item.isCurrentMonth && "text-muted-foreground/40 cursor-pointer",
+                                  !isFuture && item.isCurrentMonth && "text-foreground hover:bg-muted cursor-pointer",
+                                  !isFuture && isToday && !isStart && !isEnd && "border border-primary font-bold text-primary",
+                                  !isFuture && (isStart || isEnd) &&
+                                    "bg-primary text-primary-foreground font-bold shadow-xs hover:bg-primary scale-105"
+                                )}
+                              >
+                                {item.date.getDate()}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Direct Inputs & Summary */}
+                    <div className="flex-1 space-y-4 flex flex-col justify-between">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">
+                            From Date
+                          </label>
+                          <input
+                            type="date"
+                            value={formatApiDate(localStartDate)}
+                            onChange={(e) => {
+                              const d = parseDateSafe(e.target.value);
+                              setLocalStartDate(d);
+                              setLocalDateQuickSelect("Custom Range");
+                              if (d) setActiveMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                            }}
+                            className="w-full rounded-xl border border-border-2 bg-background px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">
+                            To Date
+                          </label>
+                          <input
+                            type="date"
+                            value={formatApiDate(localEndDate)}
+                            onChange={(e) => {
+                              const d = parseDateSafe(e.target.value);
+                              setLocalEndDate(d);
+                              setLocalDateQuickSelect("Custom Range");
+                            }}
+                            className="w-full rounded-xl border border-border-2 bg-background px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickSelect("All Time")}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Reset Date Filter
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* ── Projects (Commented out) ── */}

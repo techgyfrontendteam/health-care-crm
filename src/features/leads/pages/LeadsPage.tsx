@@ -90,6 +90,9 @@ export const LeadsPage = () => {
     sortField,
     sortOrder,
     selectedUuids,
+    startDate,
+    endDate,
+    dateQuickSelect,
   } = currentFilters;
 
 
@@ -221,11 +224,29 @@ export const LeadsPage = () => {
     return Array.from(validIds);
   }, [projectLeadStatuses, masterData, debouncedFilters.projectIds, currentUser]);
 
-  const queryStatusIds = React.useMemo(() =>
-    debouncedFilters.statusIds.length > 0
-      ? debouncedFilters.statusIds.map(Number)
-      : (activeView === 'leads' ? defaultProjectLeadStatusIds : undefined)
-    , [debouncedFilters.statusIds, activeView, defaultProjectLeadStatusIds]);
+  const queryStatusIds = React.useMemo(() => {
+    if (debouncedFilters.statusIds.length > 0) {
+      const selectedGlobalIds = new Set(debouncedFilters.statusIds.map(Number));
+      const allMatchingIds = new Set<number>(selectedGlobalIds);
+
+      if (projectLeadStatuses) {
+        projectLeadStatuses.forEach((proj: any) => {
+          if (Array.isArray(proj.status)) {
+            proj.status.forEach((statusObj: any) => {
+              if (
+                selectedGlobalIds.has(Number(statusObj.lead_status_id)) ||
+                selectedGlobalIds.has(Number(statusObj.id))
+              ) {
+                allMatchingIds.add(Number(statusObj.id));
+              }
+            });
+          }
+        });
+      }
+      return Array.from(allMatchingIds);
+    }
+    return activeView === "leads" ? defaultProjectLeadStatusIds : undefined;
+  }, [debouncedFilters.statusIds, activeView, defaultProjectLeadStatusIds, projectLeadStatuses]);
 
   const queryProjectIds = React.useMemo(() =>
     debouncedFilters.projectIds.length > 0
@@ -245,6 +266,9 @@ export const LeadsPage = () => {
       : undefined
     , [debouncedFilters.emIds]);
 
+  const effectiveStartDate = startDate || (endDate ? endDate : undefined);
+  const effectiveEndDate = endDate || (startDate ? startDate : undefined);
+
   // Admin view uses getLeads
   const {
     data: rawAdminLeads,
@@ -259,6 +283,8 @@ export const LeadsPage = () => {
     project: queryProjectIds,
     rm: queryRmIds,
     em: queryEmIds,
+    start_date: effectiveStartDate,
+    end_date: effectiveEndDate,
   }, { skip: !isAdmin });
 
   // RM view uses getLeadsByRmId
@@ -275,6 +301,8 @@ export const LeadsPage = () => {
     project: queryProjectIds,
     em: queryEmIds,
     search_text: debouncedSearch || undefined,
+    start_date: effectiveStartDate,
+    end_date: effectiveEndDate,
   }, { skip: !isRM });
 
   // EM view uses getLeadsByEmId
@@ -290,6 +318,8 @@ export const LeadsPage = () => {
     project: queryProjectIds,
     rm: queryRmIds,
     search_text: debouncedSearch || undefined,
+    start_date: effectiveStartDate,
+    end_date: effectiveEndDate,
   }, { skip: !isEM });
 
   const adminLeads = React.useMemo(() => {
@@ -459,17 +489,82 @@ export const LeadsPage = () => {
       );
     }
 
+    // Status filtering
+    if (statusIds && statusIds.length > 0) {
+      const selectedStatusSet = new Set(statusIds.map(String));
+      list = list.filter((l) => {
+        const projectOptions = getProjectStatusOptions(l.project_id, projectLeadStatuses || []);
+        const matchedOption = projectOptions.find((o: any) => o.id === l.project_lead_status_id);
+        const globalStatusId = matchedOption?.lead_status_id != null ? String(matchedOption.lead_status_id) : (l.lead_status_id != null ? String(l.lead_status_id) : null);
+        const projectStatusId = l.project_lead_status_id != null ? String(l.project_lead_status_id) : null;
+        const directStatusId = (l as any).status != null ? String((l as any).status) : null;
+
+        return (
+          (globalStatusId && selectedStatusSet.has(globalStatusId)) ||
+          (projectStatusId && selectedStatusSet.has(projectStatusId)) ||
+          (directStatusId && selectedStatusSet.has(directStatusId))
+        );
+      });
+    }
+
+    // Date Range filtering on created_on
+    if (startDate || endDate) {
+      const filterStart = startDate || endDate;
+      const filterEnd = endDate || startDate;
+      const startMs = filterStart ? new Date(filterStart + "T00:00:00").getTime() : null;
+      const endMs = filterEnd ? new Date(filterEnd + "T23:59:59.999").getTime() : null;
+
+      list = list.filter((l) => {
+        if (!l.created_on) return false;
+        const safe = l.created_on.endsWith("Z") ? l.created_on.slice(0, -1) : l.created_on;
+        const d = new Date(safe.replace(" ", "T"));
+        const time = isNaN(d.getTime()) ? new Date(l.created_on).getTime() : d.getTime();
+        if (isNaN(time)) return true;
+
+        if (startMs !== null && time < startMs) return false;
+        if (endMs !== null && time > endMs) return false;
+        return true;
+      });
+    }
+
     // Exclude Junk and Junk Review statuses from the main Leads view
     if (activeView === 'leads') {
       return list.filter(l => {
         const projectOptions = getProjectStatusOptions(l.project_id, projectLeadStatuses || []);
-        const matchedOption = projectOptions.find((o: any) => o.id === l.project_lead_status_id);
-        const s = masterData?.lead_statuses?.find(st => st.id === matchedOption?.lead_status_id);
-        return s?.code !== 'JUNKPE' && s?.code !== 'JUNKCM';
+        const matchedOption = projectOptions.find(
+          (o: any) => o.id === l.project_lead_status_id || o.lead_status_id === l.project_lead_status_id || o.lead_status_id === l.lead_status_id
+        );
+        const resolvedGlobalStatusId =
+          matchedOption?.lead_status_id ??
+          l.lead_status_id ??
+          l.project_lead_status_id ??
+          (l as any).status;
+
+        const s = (masterData?.lead_statuses || []).find(
+          (st: any) =>
+            st.id === resolvedGlobalStatusId ||
+            st.id === l.project_lead_status_id ||
+            st.id === l.lead_status_id
+        );
+
+        const isJunkCode =
+          s?.code === 'JUNKPE' ||
+          s?.code === 'JUNKCM' ||
+          s?.code === 'JUNK' ||
+          s?.code === 'SPAM';
+
+        const isJunkText =
+          s?.description?.toLowerCase().includes('junk') ||
+          (s as any)?.name?.toLowerCase().includes('junk') ||
+          matchedOption?.label?.toLowerCase().includes('junk');
+
+        const hasJunkReason = Boolean(l.junk_reason && l.junk_reason.trim() !== '');
+
+        return !isJunkCode && !isJunkText && !hasJunkReason;
       });
     }
     return list;
-  }, [isAdmin, adminLeads, isRM, rmLeads, isEM, emLeads, activeView, masterData, debouncedSearch]);
+  }, [isAdmin, adminLeads, isRM, rmLeads, isEM, emLeads, activeView, masterData, projectLeadStatuses, debouncedSearch, statusIds, startDate, endDate]);
 
   const isLoading = isAdmin ? isAdminLoading : (isRM ? isRMLoading : isEMLoading);
   const isFetching = isAdmin ? isAdminFetching : (isRM ? isRMFetching : isEMFetching);
@@ -675,13 +770,18 @@ export const LeadsPage = () => {
   };
 
   const handleUpdateStatus = React.useCallback(async (lead: Lead, newStatusId: number) => {
-    const junkStatus = masterData?.lead_statuses?.find(s => s.code === 'JUNKPE');
+    const junkStatuses = (masterData?.lead_statuses || []).filter(
+      s => s.code === 'JUNKPE' || s.code === 'JUNKCM' || s.code === 'JUNK' || s.description?.toLowerCase().includes('junk')
+    );
     const projectOptions = getProjectStatusOptions(
       lead.project_id,
       projectLeadStatuses || []
     );
-    const selectedOption = projectOptions.find((o: any) => o.id === newStatusId);
-    const isJunkSelected = (junkStatus && newStatusId === junkStatus.id) || (junkStatus && selectedOption && selectedOption.lead_status_id === junkStatus.id);
+    const selectedOption = projectOptions.find((o: any) => o.id === newStatusId || o.lead_status_id === newStatusId);
+    const resolvedLeadStatusId = selectedOption?.lead_status_id || newStatusId;
+    const isJunkSelected = junkStatuses.some(
+      js => js.id === resolvedLeadStatusId || js.id === newStatusId || selectedOption?.label?.toLowerCase().includes('junk')
+    );
 
     if (isJunkSelected) {
       setPendingJunkUpdate({ lead, statusId: newStatusId });
@@ -708,8 +808,8 @@ export const LeadsPage = () => {
         assigned_to_rm: lead.assigned_to_rm || null,
         assigned_to_em: lead.assigned_to_em || null,
         lead_priority_id: lead.lead_priority_id || 1,
-        lead_status_id: newStatusId,
-        project_lead_status_id: newStatusId,
+        lead_status_id: resolvedLeadStatusId,
+        project_lead_status_id: selectedOption?.id || newStatusId,
       };
 
       await updateLead(payload).unwrap();
@@ -724,6 +824,14 @@ export const LeadsPage = () => {
     if (!pendingJunkUpdate) return;
     const { lead, statusId } = pendingJunkUpdate;
     try {
+      const projectOptions = getProjectStatusOptions(
+        lead.project_id,
+        projectLeadStatuses || []
+      );
+      const selectedOption = projectOptions.find((o: any) => o.id === statusId || o.lead_status_id === statusId);
+      const globalStatusId = selectedOption?.lead_status_id || statusId;
+      const projectStatusId = selectedOption?.id || statusId;
+
       const payload: UpdateLeadRequest = {
         uuid: lead.uuid,
         first_name: lead.first_name || '',
@@ -742,8 +850,8 @@ export const LeadsPage = () => {
         assigned_to_rm: lead.assigned_to_rm || null,
         assigned_to_em: lead.assigned_to_em || null,
         lead_priority_id: lead.lead_priority_id || 1,
-        lead_status_id: statusId,
-        project_lead_status_id: statusId,
+        lead_status_id: globalStatusId,
+        project_lead_status_id: projectStatusId,
         junk_reason: reason,
       };
 
@@ -1012,9 +1120,9 @@ export const LeadsPage = () => {
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filter
-                {(statusIds.length + (isAdmin ? rmIds.length : 0)) > 0 && (
+                {(statusIds.length + (isAdmin ? rmIds.length : 0) + (startDate || endDate ? 1 : 0)) > 0 && (
                   <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-white rounded-full">
-                    {statusIds.length + (isAdmin ? rmIds.length : 0)}
+                    {statusIds.length + (isAdmin ? rmIds.length : 0) + (startDate || endDate ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -1068,6 +1176,10 @@ export const LeadsPage = () => {
                 rmIds={isAdmin ? rmIds : (currentUser?.id ? [String(currentUser.id)] : [])}
                 emIds={emIds}
                 rmOptions={rms}
+                startDate={startDate}
+                endDate={endDate}
+                dateQuickSelect={dateQuickSelect}
+                showDateFilter={true}
                 showRmFilter={activeTab !== 0 && isAdmin}
                 showEmFilter={false}
                 showProjectFilter={false}
@@ -1146,11 +1258,23 @@ export const LeadsPage = () => {
             }}
             onApprove={async (reason) => {
               try {
-                const junkStatusId = masterData?.lead_statuses?.find(
-                  (s) => s.code === 'JUNKCM'
-                )?.id;
+                const junkStatus = masterData?.lead_statuses?.find(
+                  (s) => s.code === 'JUNKCM' || s.description?.toLowerCase() === 'junk lead'
+                );
+                const junkStatusId = junkStatus?.id;
 
                 if (!junkStatusId || !selectedJunkLead) return;
+
+                const projectOptions = getProjectStatusOptions(
+                  selectedJunkLead.project_id,
+                  projectLeadStatuses || []
+                );
+                const projectJunkOption = projectOptions.find(
+                  (o: any) =>
+                    (junkStatusId && o.lead_status_id === junkStatusId) ||
+                    o.label?.toLowerCase() === 'junk lead'
+                );
+                const finalProjectStatusId = projectJunkOption?.id || junkStatusId || selectedJunkLead.project_lead_status_id;
 
                 await updateLead({
                   uuid: selectedJunkLead.uuid,
@@ -1170,13 +1294,8 @@ export const LeadsPage = () => {
                   assigned_to_rm: (selectedJunkLead as any).assigned_to_rm || null,
                   assigned_to_em: (selectedJunkLead as any).assigned_to_em || null,
                   lead_priority_id: (selectedJunkLead as any).lead_priority_id || 1,
-                  project_lead_status_id: (() => {
-                    const projectOptions = getProjectStatusOptions(
-                      selectedJunkLead.project_id,
-                      projectLeadStatuses || []
-                    );
-                    return projectOptions.find((o: any) => o.lead_status_id === junkStatusId)?.id || selectedJunkLead.project_lead_status_id;
-                  })(),
+                  lead_status_id: junkStatusId,
+                  project_lead_status_id: finalProjectStatusId,
                   junk_reason: reason || (selectedJunkLead as any).junk_reason,
                 }).unwrap();
 
@@ -1189,11 +1308,33 @@ export const LeadsPage = () => {
             }}
             onRemoveJunk={async () => {
               try {
-                const newLeadStatusId = masterData?.lead_statuses?.find(
-                  (s) => s.code === 'NEWLED'
-                )?.id;
+                const newLeadStatus = (masterData?.lead_statuses || []).find(
+                  (s: any) =>
+                    s.code === 'NEWLED' ||
+                    s.code === 'NLEAD' ||
+                    s.code === 'NEW_LEAD' ||
+                    s.code === 'NEW' ||
+                    s.description?.toLowerCase().replace(/\s+/g, '') === 'newlead' ||
+                    s.description?.toLowerCase() === 'new lead' ||
+                    s.name?.toLowerCase() === 'new lead'
+                );
+                const newLeadStatusId = newLeadStatus?.id;
 
-                if (!newLeadStatusId || !selectedJunkLead) return;
+                const projectOptions = getProjectStatusOptions(
+                  selectedJunkLead.project_id,
+                  projectLeadStatuses || []
+                );
+                const projectNewStatusOption = projectOptions.find(
+                  (o: any) =>
+                    (newLeadStatusId && o.lead_status_id === newLeadStatusId) ||
+                    o.label?.toLowerCase().replace(/\s+/g, '') === 'newlead' ||
+                    o.label?.toLowerCase() === 'new lead'
+                );
+                const projectNewStatusId = projectNewStatusOption?.id;
+                const finalLeadStatusId = newLeadStatusId || projectNewStatusOption?.lead_status_id;
+                const finalProjectStatusId = projectNewStatusId || finalLeadStatusId;
+
+                if (!selectedJunkLead) return;
 
                 const updatedLead = {
                   uuid: selectedJunkLead.uuid,
@@ -1213,13 +1354,8 @@ export const LeadsPage = () => {
                   assigned_to_rm: (selectedJunkLead as any).assigned_to_rm || null,
                   assigned_to_em: (selectedJunkLead as any).assigned_to_em || null,
                   lead_priority_id: (selectedJunkLead as any).lead_priority_id || 1,
-                  project_lead_status_id: (() => {
-                    const projectOptions = getProjectStatusOptions(
-                      selectedJunkLead.project_id,
-                      projectLeadStatuses || []
-                    );
-                    return projectOptions.find((o: any) => o.lead_status_id === newLeadStatusId)?.id || selectedJunkLead.project_lead_status_id;
-                  })(),
+                  lead_status_id: finalLeadStatusId,
+                  project_lead_status_id: finalProjectStatusId,
                   junk_reason: '',
                 };
 
@@ -1246,22 +1382,70 @@ export const LeadsPage = () => {
             rms={rms}
             onClose={() => setShowReassignModal(false)}
             lead={selectedJunkLead as unknown as Lead}
-            onConfirm={(rmId) => {
+            onConfirm={async (rmId) => {
+              if (!selectedJunkLead) return;
+              try {
+                const newLeadStatus = (masterData?.lead_statuses || []).find(
+                  (s: any) =>
+                    s.code === 'NEWLED' ||
+                    s.code === 'NLEAD' ||
+                    s.code === 'NEW_LEAD' ||
+                    s.code === 'NEW' ||
+                    s.description?.toLowerCase().replace(/\s+/g, '') === 'newlead' ||
+                    s.description?.toLowerCase() === 'new lead' ||
+                    s.name?.toLowerCase() === 'new lead'
+                );
+                const newLeadStatusId = newLeadStatus?.id;
 
-              const _leadStatusId = masterData?.lead_statuses?.find(s => s.code === 'NEWLED')?.id;
-              if (_leadStatusId && selectedJunkLead) {
                 const projectOptions = getProjectStatusOptions(
                   selectedJunkLead.project_id,
                   projectLeadStatuses || []
                 );
-                const projectNewStatusId = projectOptions.find((o: any) => o.lead_status_id === _leadStatusId)?.id || selectedJunkLead.project_lead_status_id;
-                const _lead = { ...selectedJunkLead, project_lead_status_id: projectNewStatusId } as unknown as Lead;
-                handleAssignRm(_lead, rmId);
+                const projectNewStatusOption = projectOptions.find(
+                  (o: any) =>
+                    (newLeadStatusId && o.lead_status_id === newLeadStatusId) ||
+                    o.label?.toLowerCase().replace(/\s+/g, '') === 'newlead' ||
+                    o.label?.toLowerCase() === 'new lead'
+                );
+                const projectNewStatusId = projectNewStatusOption?.id;
+                const finalLeadStatusId = newLeadStatusId || projectNewStatusOption?.lead_status_id;
+                const finalProjectStatusId = projectNewStatusId || finalLeadStatusId;
+
+                const updatedLead = {
+                  uuid: selectedJunkLead.uuid,
+                  first_name: (selectedJunkLead as any).first_name || '',
+                  last_name: (selectedJunkLead as any).last_name || '',
+                  phone_number: (selectedJunkLead as any).phone_number || '',
+                  email_address: (selectedJunkLead as any).email_address || '',
+                  occupation: (selectedJunkLead as any).occupation || '',
+                  address: (selectedJunkLead as any).address || '',
+                  city: (selectedJunkLead as any).city || '',
+                  state: (selectedJunkLead as any).state || '',
+                  country: (selectedJunkLead as any).country || '',
+                  zip: (selectedJunkLead as any).zip || '',
+                  source_id: (selectedJunkLead as any).source_id,
+                  source_employee_user_id: (selectedJunkLead as any).source_employee_user_id || null,
+                  project_id: (selectedJunkLead as any).project_id,
+                  assigned_to_rm: rmId,
+                  assigned_to_em: null,
+                  lead_priority_id: (selectedJunkLead as any).lead_priority_id || 1,
+                  lead_status_id: finalLeadStatusId,
+                  project_lead_status_id: finalProjectStatusId,
+                  junk_reason: '',
+                };
+
+                await updateLead(updatedLead).unwrap();
+                toast.success(`Lead successfully reassigned to Sales Executive (ID: ${rmId})`);
+                await handleRefetch();
+                setSelectedJunkLead(null);
+                setShowReassignModal(false);
+
+                // Switch to Assigned Leads tab and return to main leads view
+                dispatch(setActiveTabAction(1));
+                setActiveView('leads');
+              } catch (err: any) {
+                toast.error(err?.data?.message || "Failed to reassign lead");
               }
-
-
-              toast.success(`Lead successfully reassigned to RM ID: ${rmId}`);
-              setActiveView('junk');
             }}
           />
         </>

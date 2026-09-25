@@ -157,7 +157,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
           );
         },
       },
-      {
+      /* {
         key: 'project_id',
         header: 'PROJECT',
         width: '150px',
@@ -166,7 +166,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
             {getProjectLabel(l.project_id)}
           </span>
         ),
-      },
+      }, */
       {
         key: 'lead_status_id',
         header: 'STATUS',
@@ -183,7 +183,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
       },
       {
         key: 'assigned_to_rm',
-        header: 'ASSIGNED RM',
+        header: 'ASSIGNED SALES EXECUTIVE',
         width: '180px',
         render: (l: Lead) => {
           const label = getRmLabel(l.assigned_to_rm);
@@ -196,8 +196,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
           );
         },
       },
-
-      {
+      /* {
         key: 'assigned_to_em',
         header: 'EM NAME',
         width: '180px',
@@ -223,7 +222,7 @@ export const JunkLeadsPage: React.FC<JunkLeadsPageProps> = ({
             </div>
           );
         },
-      },
+      }, */
       {
         key: 'junk_reason',
         header: 'JUNK REASON',

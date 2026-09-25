@@ -285,10 +285,10 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
     {
       start_date: formattedStartDate,
       end_date: formattedEndDate,
-      em_ids: selectedEmId ? [selectedEmId] : emIds,
+      em_ids: selectedEmId ? [selectedEmId] : [],
       project_ids: [Number(activeProjectId)],
     },
-    { skip: emIds.length === 0 || !activeProjectId }
+    { skip: !activeProjectId }
   );
 
   const {
@@ -298,14 +298,14 @@ export const ExperienceManagersPage: React.FC<ExperienceManagersPageProps> = ({ 
     error: todaysError,
   } = useGetEmDashboardTodaysDataQuery(
     {
-      em_ids: selectedEmId ? [selectedEmId] : emIds,
+      em_ids: selectedEmId ? [selectedEmId] : [],
       date: formattedTodayDate,
       project_ids: [Number(activeProjectId)],
     },
-    { skip: emIds.length === 0 || !formattedTodayDate || !activeProjectId }
+    { skip: !formattedTodayDate || !activeProjectId }
   );
 
-  const isLoading = isEmUsersLoading || (emUsers.length > 0 && ((isDateWiseLoading && !dateWiseResponse) || (isTodaysLoading && !todaysResponse)));
+  const isLoading = isEmUsersLoading || ((isDateWiseLoading && !dateWiseResponse) || (isTodaysLoading && !todaysResponse));
   const isFetching = isDateWiseFetching || isTodaysFetching;
   const isError = !!(dateWiseError || todaysError);
 

@@ -77,10 +77,10 @@ export const ReassignRMModal: React.FC<ReassignRMModalProps> = ({
 
           <DialogHeader className="space-y-2 text-left">
             <DialogTitle className="text-2xl font-black text-[#0f3d6b] tracking-tight pr-8">
-              Reassign Sales Head
+              Reassign Sales Executive
             </DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium text-sm flex flex-col gap-1">
-              <span>Select a new Sales Head and provide a reason for reassignment.</span>
+              <span>Select a new Sales Executive and provide a reason for reassignment.</span>
               {lead && (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-[#0f3d6b] dark:text-zinc-300 rounded text-[10px] font-bold">#{lead.lead_id}</span>
@@ -93,20 +93,20 @@ export const ReassignRMModal: React.FC<ReassignRMModalProps> = ({
           <div className="space-y-6">
             <div className="space-y-2.5">
               <label className="text-[10px] font-black text-[#0f3d6b] uppercase tracking-widest pl-1">
-                Select New Sales Head
+                Select New Sales Executive
               </label>
               <Select value={rmId} onValueChange={setRmId}>
                 <SelectTrigger className="w-full h-14 bg-zinc-50/50 dark:bg-zinc-900 border-none px-6 rounded-2xl text-zinc-700 font-bold focus:ring-0 shadow-inner">
-                  <SelectValue placeholder="Choose a Sales Head..." />
+                  <SelectValue placeholder="Choose a Sales Executive..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800 shadow-xl max-h-60 overflow-y-auto bg-white text-black">
+                <SelectContent className="z-[100050] rounded-2xl border-zinc-100 dark:border-zinc-800 shadow-2xl max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 text-black dark:text-white">
                   {projectFilteredRms.length === 0 ? (
                     <div className="py-4 text-center text-xs font-semibold text-zinc-400">
-                      No Sales Heads assigned to this project
+                      No Sales Executives assigned to this project
                     </div>
                   ) : (
                     projectFilteredRms.map((rm) => (
-                      <SelectItem key={rm.id} value={String(rm.id)} className="py-3 font-bold cursor-pointer text-black">
+                      <SelectItem key={rm.id} value={String(rm.id)} className="py-3 font-bold cursor-pointer text-black dark:text-white">
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-bold shrink-0 text-[10px]">
                             {rm.first_name?.[0]}{rm.last_name?.[0]}

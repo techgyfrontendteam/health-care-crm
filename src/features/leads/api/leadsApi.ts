@@ -106,6 +106,32 @@ export const leadsApi = baseApi.injectEndpoints({
                 ),
               );
             }
+            if (key.startsWith("getLeadsByRmId(")) {
+              dispatch(
+                leadsApi.util.updateQueryData(
+                  "getLeadsByRmId",
+                  queries[key].originalArgs,
+                  (draft: any) => {
+                    const list = Array.isArray(draft) ? draft : (Array.isArray(draft?.data) ? draft.data : []);
+                    const index = list.findIndex((l: any) => l.uuid === arg.uuid);
+                    if (index !== -1) Object.assign(list[index], arg);
+                  },
+                ),
+              );
+            }
+            if (key.startsWith("getLeadsByEmId(")) {
+              dispatch(
+                leadsApi.util.updateQueryData(
+                  "getLeadsByEmId",
+                  queries[key].originalArgs,
+                  (draft: any) => {
+                    const list = Array.isArray(draft) ? draft : (Array.isArray(draft?.data) ? draft.data : []);
+                    const index = list.findIndex((l: any) => l.uuid === arg.uuid);
+                    if (index !== -1) Object.assign(list[index], arg);
+                  },
+                ),
+              );
+            }
             if (key.startsWith("getLeadsByCustomerUuid(")) {
               dispatch(
                 leadsApi.util.updateQueryData(

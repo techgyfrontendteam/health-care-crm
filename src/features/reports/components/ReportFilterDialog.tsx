@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, LayoutGrid, Calendar, ChevronLeft, ChevronRight, ChevronDown, Megaphone, Image as ImageIcon } from "lucide-react";
 import { cn, getProjectStatusOptions } from "../../../utils";
 import { useMasterDataLookup } from "../../../shared/hooks/useMasterDataLookup";
@@ -165,6 +166,34 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
   const [tempEndDate, setTempEndDate] = useState<Date | null>(null);
   const [activeMonth, setActiveMonth] = useState<Date>(() => new Date()); // Default current month
   const [quickSelect, setQuickSelect] = useState<string>("All Time");
+
+  const isTodaySelected = useMemo(() => {
+    if (!tempStartDate) return false;
+    const today = new Date();
+    const isStartToday = isSameDay(tempStartDate, today);
+    const isEndToday = !tempEndDate || isSameDay(tempEndDate, today);
+    return isStartToday && isEndToday;
+  }, [tempStartDate, tempEndDate]);
+
+  const isThisMonthSelected = useMemo(() => {
+    if (!tempStartDate || !tempEndDate) return false;
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return isSameDay(tempStartDate, firstDay) && isSameDay(tempEndDate, lastDay);
+  }, [tempStartDate, tempEndDate]);
+
+  const isLast7DaysSelected = useMemo(() => {
+    if (!tempStartDate || !tempEndDate) return false;
+    const today = new Date();
+    const start = new Date();
+    start.setDate(today.getDate() - 7);
+    return isSameDay(tempStartDate, start) && isSameDay(tempEndDate, today);
+  }, [tempStartDate, tempEndDate]);
+
+  const isAllTimeSelected = useMemo(() => {
+    return !tempStartDate && !tempEndDate;
+  }, [tempStartDate, tempEndDate]);
 
   const wasOpenRef = useRef(false);
 
@@ -389,14 +418,19 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
     if (option === "Today") {
       setTempStartDate(today);
       setTempEndDate(today);
+      setActiveMonth(new Date(today.getFullYear(), today.getMonth(), 1));
     } else if (option === "Last 7 Days") {
       const start = new Date();
       start.setDate(today.getDate() - 7);
       setTempStartDate(start);
       setTempEndDate(today);
+      setActiveMonth(new Date(start.getFullYear(), start.getMonth(), 1));
     } else if (option === "This Month") {
-      setTempStartDate(new Date(today.getFullYear(), today.getMonth(), 1));
-      setTempEndDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      setTempStartDate(firstDay);
+      setTempEndDate(lastDay);
+      setActiveMonth(new Date(today.getFullYear(), today.getMonth(), 1));
     } else if (option === "All Time") {
       setTempStartDate(null);
       setTempEndDate(null);
@@ -404,6 +438,13 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
   };
 
   const handleDayClick = (date: Date) => {
+    const today = new Date();
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const clickMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    if (clickMidnight > todayMidnight) {
+      return; // Future dates disabled
+    }
+
     setQuickSelect(""); 
     if (!tempStartDate || (tempStartDate && tempEndDate)) {
       setTempStartDate(date);
@@ -417,11 +458,17 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
     }
   };
 
+  const now = new Date();
+  const isCurrentOrFutureMonth =
+    activeMonth.getFullYear() > now.getFullYear() ||
+    (activeMonth.getFullYear() === now.getFullYear() && activeMonth.getMonth() >= now.getMonth());
+
   const prevMonth = () => {
     setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
+    if (isCurrentOrFutureMonth) return;
     setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 1));
   };
 
@@ -437,11 +484,12 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
   };
 
   const handleApply = () => {
+    const effectiveEnd = tempStartDate && !tempEndDate ? tempStartDate : tempEndDate;
     onApply({
       projectIds: tempProjectIds,
       statusIds: tempStatusIds,
       startDate: tempStartDate,
-      endDate: tempEndDate,
+      endDate: effectiveEnd,
       campaignIds: tempCampaignIds,
       adSetIds: tempAdSetIds,
       creativeIds: tempCreativeIds,
@@ -451,8 +499,13 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white dark:bg-zinc-950 w-full max-w-[760px] rounded-[24px] shadow-2xl overflow-hidden flex flex-col border border-zinc-150 dark:border-zinc-800/80 animate-in zoom-in-95 duration-200">
         
         {/* Header */}
@@ -769,21 +822,30 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                       QUICK SELECTS
                     </span>
                     <div className="space-y-1">
-                      {["Today", "Last 7 Days", "This Month", "All Time"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => handleQuickSelect(opt)}
-                          className={cn(
-                            "w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150",
-                            quickSelect === opt
-                              ? "bg-slate-50 text-slate-850 border border-zinc-150 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700"
-                              : "text-slate-500 hover:text-slate-800 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/40"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
+                      {["Today", "Last 7 Days", "This Month", "All Time"].map((opt) => {
+                        const isOptActive =
+                          quickSelect === opt ||
+                          (quickSelect === "" && opt === "Today" && isTodaySelected) ||
+                          (quickSelect === "" && opt === "This Month" && isThisMonthSelected) ||
+                          (quickSelect === "" && opt === "Last 7 Days" && isLast7DaysSelected) ||
+                          (quickSelect === "" && opt === "All Time" && isAllTimeSelected);
+
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => handleQuickSelect(opt)}
+                            className={cn(
+                              "w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer select-none",
+                              isOptActive
+                                ? "bg-[#0f3d6b] text-white shadow-xs dark:bg-[#1a5b9b]"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/60"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -808,14 +870,21 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                       <button 
                         type="button"
                         onClick={prevMonth}
-                        className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                        className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer text-slate-700 dark:text-zinc-300"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         type="button"
                         onClick={nextMonth}
-                        className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                        disabled={isCurrentOrFutureMonth}
+                        className={cn(
+                          "p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 transition-colors",
+                          isCurrentOrFutureMonth
+                            ? "opacity-30 cursor-not-allowed text-zinc-300 dark:text-zinc-700"
+                            : "hover:bg-zinc-50 dark:hover:bg-zinc-900 cursor-pointer text-slate-700 dark:text-zinc-300"
+                        )}
+                        title={isCurrentOrFutureMonth ? "Future months are disabled" : "Next month"}
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -834,35 +903,45 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                   {/* Days Grid */}
                   <div className="grid grid-cols-7 gap-y-1 text-center">
                     {calendarDays.map(({ date, isCurrentMonth }: { date: Date; isCurrentMonth: boolean }, idx: number) => {
+                      const today = new Date();
+                      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+                      const cellMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+                      const isFuture = cellMidnight > todayMidnight;
+
                       const isSelectedStart = isSameDay(date, tempStartDate);
                       const isSelectedEnd = isSameDay(date, tempEndDate);
                       const isInRange = isWithinRange(date, tempStartDate, tempEndDate);
                       
                       let bgClass = "";
-                      if (isSelectedStart && tempEndDate && !isSelectedEnd) {
-                        bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20 rounded-l-full";
-                      } else if (isSelectedEnd && tempStartDate && !isSelectedStart) {
-                        bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20 rounded-r-full";
-                      } else if (isInRange) {
-                        bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20";
+                      if (!isFuture) {
+                        if (isSelectedStart && tempEndDate && !isSelectedEnd) {
+                          bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20 rounded-l-full";
+                        } else if (isSelectedEnd && tempStartDate && !isSelectedStart) {
+                          bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20 rounded-r-full";
+                        } else if (isInRange) {
+                          bgClass = "bg-[#f4f7fb] dark:bg-blue-950/20";
+                        }
                       }
 
                       return (
                         <div
                           key={idx}
-                          onClick={() => handleDayClick(date)}
+                          onClick={isFuture ? undefined : () => handleDayClick(date)}
                           className={cn(
-                            "relative py-1.5 text-xs font-bold cursor-pointer select-none flex items-center justify-center transition-all duration-150",
-                            isCurrentMonth ? "text-slate-800 dark:text-zinc-200" : "text-slate-300 dark:text-zinc-650",
+                            "relative py-1.5 text-xs font-bold select-none flex items-center justify-center transition-all duration-150",
+                            isFuture
+                              ? "opacity-25 cursor-not-allowed text-slate-300 dark:text-zinc-700 pointer-events-none"
+                              : "cursor-pointer",
+                            !isFuture && (isCurrentMonth ? "text-slate-800 dark:text-zinc-200" : "text-slate-300 dark:text-zinc-650"),
                             bgClass
                           )}
                         >
-                          {(isSelectedStart || isSelectedEnd) && (
+                          {!isFuture && (isSelectedStart || isSelectedEnd) && (
                             <div className="absolute inset-0 m-auto w-7 h-7 rounded-full bg-[#0f3d6b] dark:bg-[#1a5b9b] z-0 shadow-sm animate-in zoom-in-75 duration-150" />
                           )}
                           <span className={cn(
                             "relative z-10",
-                            (isSelectedStart || isSelectedEnd) && "text-white font-bold"
+                            !isFuture && (isSelectedStart || isSelectedEnd) && "text-white font-bold"
                           )}>
                             {date.getDate()}
                           </span>
@@ -904,6 +983,7 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

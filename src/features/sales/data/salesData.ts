@@ -29,12 +29,12 @@ export const leadSourcesData: LeadSourceItem[] = [
 ];
 
 export const departmentLeadsData: DepartmentLeadItem[] = [
-  { department_name: "Cardiology", lead_count: 360, converted_count: 145, revenue: 18500000, color: "#3b82f6" },
-  { department_name: "Orthopedics & Joint Replacement", lead_count: 310, converted_count: 132, revenue: 21200000, color: "#8b5cf6" },
-  { department_name: "Neurology & Neuro Surgery", lead_count: 240, converted_count: 94, revenue: 16800000, color: "#06b6d4" },
-  { department_name: "Obstetrics & Gynecology", lead_count: 210, converted_count: 98, revenue: 9800000, color: "#ec4899" },
-  { department_name: "Oncology & Cancer Care", lead_count: 180, converted_count: 76, revenue: 19400000, color: "#f59e0b" },
-  { department_name: "Pediatrics & Child Care", lead_count: 150, converted_count: 72, revenue: 3800000, color: "#10b981" },
+  { department_id: "DEP-01", department_name: "Cardiology", lead_count: 360, converted_count: 145, revenue: 18500000, color: "#3b82f6" },
+  { department_id: "DEP-02", department_name: "Orthopedics & Joint Replacement", lead_count: 310, converted_count: 132, revenue: 21200000, color: "#8b5cf6" },
+  { department_id: "DEP-03", department_name: "Neurology & Neuro Surgery", lead_count: 240, converted_count: 94, revenue: 16800000, color: "#06b6d4" },
+  { department_id: "DEP-04", department_name: "Obstetrics & Gynecology", lead_count: 210, converted_count: 98, revenue: 9800000, color: "#ec4899" },
+  { department_id: "DEP-05", department_name: "Oncology & Cancer Care", lead_count: 180, converted_count: 76, revenue: 19400000, color: "#f59e0b" },
+  { department_id: "DEP-06", department_name: "Pediatrics & Child Care", lead_count: 150, converted_count: 72, revenue: 3800000, color: "#10b981" },
 ];
 
 export const branchLeadsData: BranchLeadItem[] = [

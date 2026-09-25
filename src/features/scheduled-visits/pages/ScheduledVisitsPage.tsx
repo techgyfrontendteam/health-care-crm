@@ -23,6 +23,7 @@ import {
 } from "../../users/api/usersApi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { cn } from "../../../utils";
+import { ReportFilterDialog } from "../../reports/components/ReportFilterDialog";
 
 // Date formatting helpers
 const formatApiDate = (d: Date | null | undefined) => {
@@ -66,16 +67,29 @@ const formatDisplayTime = (dateString: string) => {
 };
 
 const formatShortDateSpan = (start: Date | null, end: Date | null) => {
-  if (!start) return "Select Date";
+  if (!start) return "All Time";
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const startMonth = months[start.getMonth()];
   const startDay = start.getDate();
-  if (!end) return `${startMonth} ${startDay}`;
+  const startYear = start.getFullYear();
+
+  if (!end || start.getTime() === end.getTime()) {
+    const isToday =
+      start.getDate() === new Date().getDate() &&
+      start.getMonth() === new Date().getMonth() &&
+      start.getFullYear() === new Date().getFullYear();
+    if (isToday) return "Today";
+    return `${startMonth} ${startDay}, ${startYear}`;
+  }
 
   const endMonth = months[end.getMonth()];
   const endDay = end.getDate();
+  const endYear = end.getFullYear();
 
-  if (start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()) {
+  if (startYear !== endYear) {
+    return `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
+  }
+  if (start.getMonth() !== end.getMonth()) {
     return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
   }
 
@@ -275,30 +289,9 @@ export const ScheduledVisitsPage = () => {
 
   // 3. Date Range Filter State
   const today = useMemo(() => new Date(), []);
-  const next7Days = useMemo(() => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + 7);
-    return d;
-  }, [today]);
-  const last7Days = useMemo(() => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - 6);
-    return d;
-  }, [today]);
-
-  const [startDate, setStartDate] = useState<Date>(today);
-  const [endDate, setEndDate] = useState<Date>(today);
-  const [tempStartDate, setTempStartDate] = useState<Date | null>(today);
-  const [tempEndDate, setTempEndDate] = useState<Date | null>(today);
-  const [activeMonth, setActiveMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [quickSelect, setQuickSelect] = useState<string>("Today");
-  const [appliedQuickSelect, setAppliedQuickSelect] = useState<string>("Today");
+  const [startDate, setStartDate] = useState<Date | null>(today);
+  const [endDate, setEndDate] = useState<Date | null>(today);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-  const dateDropdownRef = useRef<HTMLDivElement>(null);
-
-  const calendarDays = useMemo(() => {
-    return getDaysInMonth(activeMonth.getFullYear(), activeMonth.getMonth());
-  }, [activeMonth]);
 
   // 4. Search Filter
   const [searchTerm, setSearchTerm] = useState("");
@@ -311,9 +304,6 @@ export const ScheduledVisitsPage = () => {
       }
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setIsStatusDropdownOpen(false);
-      }
-      if (dateDropdownRef.current && !dateDropdownRef.current.contains(event.target as Node)) {
-        setIsDateModalOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -341,50 +331,6 @@ export const ScheduledVisitsPage = () => {
     setSelectedEmIds((prev) =>
       prev.includes(emId) ? prev.filter((id) => id !== emId) : [...prev, emId]
     );
-  };
-
-  // Date Modal Handlers
-  const handleQuickSelect = (option: string) => {
-    setQuickSelect(option);
-    if (option === "Today") {
-      setTempStartDate(today);
-      setTempEndDate(today);
-    } else if (option === "Next 7 Days") {
-      setTempStartDate(today);
-      setTempEndDate(next7Days);
-    } else if (option === "Last 7 Days") {
-      setTempStartDate(last7Days);
-      setTempEndDate(today);
-    } else if (option === "This Month") {
-      setTempStartDate(new Date(today.getFullYear(), today.getMonth(), 1));
-      setTempEndDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
-    }
-  };
-
-  const handleDayClick = (dayDate: Date) => {
-    setQuickSelect("");
-    if (!tempStartDate || (tempStartDate && tempEndDate)) {
-      setTempStartDate(dayDate);
-      setTempEndDate(null);
-    } else {
-      if (dayDate < tempStartDate) {
-        setTempStartDate(dayDate);
-      } else {
-        setTempEndDate(dayDate);
-      }
-    }
-  };
-
-  const handleApplyDateRange = () => {
-    if (tempStartDate && tempEndDate) {
-      setStartDate(tempStartDate);
-      setEndDate(tempEndDate);
-    } else if (tempStartDate) {
-      setStartDate(tempStartDate);
-      setEndDate(tempStartDate);
-    }
-    setAppliedQuickSelect(quickSelect);
-    setIsDateModalOpen(false);
   };
 
   // ═══════════════════════════════════════════════════════
@@ -688,16 +634,14 @@ export const ScheduledVisitsPage = () => {
           </div>
 
           {/* 3. CALENDAR DATE RANGE PICKER */}
-          <div className="relative" ref={dateDropdownRef}>
+          <div>
             <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 block mb-1 uppercase tracking-wider">
               DATE RANGE
             </span>
             <button
               type="button"
               onClick={() => {
-                setTempStartDate(startDate);
-                setTempEndDate(endDate);
-                setIsDateModalOpen(!isDateModalOpen);
+                setIsDateModalOpen(true);
                 setIsEmDropdownOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
@@ -705,118 +649,10 @@ export const ScheduledVisitsPage = () => {
             >
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-3.5 h-3.5 text-[#063669] dark:text-blue-400 shrink-0" />
-                <span>{appliedQuickSelect ? appliedQuickSelect : formatShortDateSpan(startDate, endDate)}</span>
+                <span>{formatShortDateSpan(startDate, endDate)}</span>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
-
-            {isDateModalOpen && (
-              <div className="absolute left-0 mt-1.5 w-[330px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl p-4 z-30 space-y-3">
-                {/* Quick select buttons */}
-                <div className="grid grid-cols-2 gap-1.5">
-                  {["Today", "Next 7 Days", "Last 7 Days", "This Month"].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleQuickSelect(preset)}
-                      className={cn(
-                        "py-1.5 px-2 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer",
-                        quickSelect === preset
-                          ? "bg-[#063669] text-white border-[#063669]"
-                          : "border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900"
-                      )}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="h-px bg-slate-100 dark:border-zinc-800" />
-
-                {/* Mini Calendar Month Grid */}
-                <div>
-                  <div className="flex items-center justify-between pb-2">
-                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                      {activeMonth.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() - 1, 1))
-                        }
-                        className="px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 1))
-                        }
-                        className="px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded"
-                      >
-                        &gt;
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
-                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                      <span key={i}>{d}</span>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1">
-                    {calendarDays.map((item, idx) => {
-                      const isStart =
-                        tempStartDate && item.date.toDateString() === tempStartDate.toDateString();
-                      const isEnd = tempEndDate && item.date.toDateString() === tempEndDate.toDateString();
-                      const inRange =
-                        tempStartDate &&
-                        tempEndDate &&
-                        item.date >= tempStartDate &&
-                        item.date <= tempEndDate;
-
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleDayClick(item.date)}
-                          className={cn(
-                            "h-7 w-7 text-xs rounded-lg flex items-center justify-center font-medium transition-all mx-auto cursor-pointer",
-                            !item.isCurrentMonth && "text-slate-300 dark:text-zinc-700",
-                            item.isCurrentMonth && "text-slate-700 dark:text-zinc-200",
-                            inRange && "bg-blue-50 text-[#063669] dark:bg-blue-950/60 dark:text-blue-300",
-                            (isStart || isEnd) && "bg-[#063669] text-white font-bold"
-                          )}
-                        >
-                          {item.date.getDate()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Apply Button */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsDateModalOpen(false)}
-                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApplyDateRange}
-                    className="px-4 py-1.5 bg-[#063669] hover:bg-[#052b53] text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
-                  >
-                    Apply Range
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -1013,6 +849,27 @@ export const ScheduledVisitsPage = () => {
           </div>
         </div>
       )}
+      {/* Reused Date Range Filter Dialog */}
+      <ReportFilterDialog
+        open={isDateModalOpen}
+        onClose={() => setIsDateModalOpen(false)}
+        tabs={["date"]}
+        onApply={(filters) => {
+          setStartDate(filters.startDate);
+          setEndDate(filters.endDate);
+          setIsDateModalOpen(false);
+        }}
+        onReset={() => {
+          setStartDate(null);
+          setEndDate(null);
+          setIsDateModalOpen(false);
+        }}
+        projectOptions={[]}
+        appliedProjectIds={[]}
+        appliedStartDate={startDate}
+        appliedEndDate={endDate}
+        initialTab="date"
+      />
     </div>
   );
 };

@@ -235,6 +235,23 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fetchedCallIds = useRef<Set<number>>(new Set());
   const [checklistFilters, setChecklistFilters] = useState<Record<number, 'all' | 'covered' | 'missed'>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleOverallRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (refetch) {
+        await refetch();
+      }
+    } catch (err) {
+      console.error('Error refreshing calls:', err);
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 600);
+    }
+  };
 
   const processUnanalyzedCall = async (call: LeadCall, isManualRetry = false) => {
     const rawCallId = (call as any).call_id || call.id;
@@ -598,6 +615,17 @@ export const LeadCallsTab = ({ calls, leadPhoneNumber, objections, masterObjecti
                 Call History
               </h4>
             </div>
+
+            <button
+              type="button"
+              onClick={handleOverallRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#063669] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all duration-200 text-xs font-semibold shadow-xs disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              title="Refresh Call History"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5 text-[#063669]", isRefreshing && "animate-spin")} />
+              <span>Refresh</span>
+            </button>
           </div>
           {(!calls || calls.length === 0) ? (
             <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-12 text-center">

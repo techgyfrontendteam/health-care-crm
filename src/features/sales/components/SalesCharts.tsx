@@ -74,7 +74,7 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
               Daily Calls Logged & New Leads Volume
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              10-day tracking of phone outreach vs incoming lead acquisition
+              Tracking of phone outreach vs incoming lead acquisition
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs font-bold">
@@ -88,51 +88,61 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
         </div>
 
         <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dailyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="calls"
-                name="Calls Logged"
-                stroke="#3b82f6"
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#colorCalls)"
-              />
-              <Area
-                type="monotone"
-                dataKey="new_leads"
-                name="New Leads"
-                stroke="#10b981"
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#colorLeads)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {dailyTrends.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-zinc-400 font-medium italic">
+              No calls or leads trend data available for the selected period.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dailyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="calls"
+                  name="Calls Logged"
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorCalls)"
+                  dot={{ r: 3, fill: "#3b82f6" }}
+                  activeDot={{ r: 5 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="new_leads"
+                  name="New Leads"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorLeads)"
+                  dot={{ r: 3, fill: "#10b981" }}
+                  activeDot={{ r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -149,27 +159,33 @@ export const SalesCharts: React.FC<SalesChartsProps> = ({
         </div>
 
         <div className="flex flex-1 flex-col justify-evenly py-2">
-          {leadSources.map((item) => (
-            <div key={item.source} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[160px]">
-                  {item.source}
-                </span>
-                <span className="text-zinc-900 dark:text-zinc-100">
-                  {item.count} leads ({item.percentage}%)
-                </span>
-              </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, Math.max(0, item.percentage))}%`,
-                    backgroundColor: item.color,
-                  }}
-                />
-              </div>
+          {leadSources.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-zinc-400 font-medium italic">
+              No lead sources data available.
             </div>
-          ))}
+          ) : (
+            leadSources.map((item) => (
+              <div key={item.source} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[160px]">
+                    {item.source}
+                  </span>
+                  <span className="text-zinc-900 dark:text-zinc-100">
+                    {item.count} leads ({item.percentage}%)
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, item.percentage))}%`,
+                      backgroundColor: item.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

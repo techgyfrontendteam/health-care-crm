@@ -80,26 +80,26 @@ export const LeadJunkReviewPage: React.FC<LeadJunkReviewPageProps> = ({
 
   const fallback = (val: any) => val || <span className="text-zinc-400 italic">Not provided</span>;
 
-  // Map initials for Sales Head
+  // Map initials for Sales Executive
   const rmLabel = getRmLabel(lead?.assigned_to_rm);
   const initials = rmLabel !== '--' ? rmLabel.split(' ').map(n => n[0]).join('') : 'UN';
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-12 max-w-[1400px] mx-auto">
+    <div className="w-full space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-12">
       <div className="flex items-center justify-between">
         <Button
           type="button"
           variant="ghost"
           onClick={onBack}
-          className="gap-2 text-zinc-500 hover:text-[#0f3d6b] transition-colors p-0 hover:bg-transparent"
+          className="gap-2 text-zinc-500 hover:text-[#0f3d6b] transition-colors p-0 hover:bg-transparent cursor-pointer"
         >
           <ChevronLeft size={20} />
           <span className="font-bold text-sm">Back to Queue</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-        <div className="lg:col-span-6 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+        <div className="lg:col-span-8 space-y-6">
           {/* Lead Header Card */}
           <div className="bg-white dark:bg-zinc-950 p-8 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-[0_2px_15px_rgba(0,0,0,0.03)]">
             <div className="space-y-5">
@@ -188,7 +188,7 @@ export const LeadJunkReviewPage: React.FC<LeadJunkReviewPageProps> = ({
 
             <div className="space-y-1">
               <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">{rmLabel === '--' ? 'Unassigned' : rmLabel}</h3>
-              <p className="text-zinc-400 font-bold text-[10px] uppercase tracking-widest">Sales Head</p>
+              <p className="text-zinc-400 font-bold text-[10px] uppercase tracking-widest">Sales Executive</p>
             </div>
           </div>
 
@@ -212,7 +212,7 @@ export const LeadJunkReviewPage: React.FC<LeadJunkReviewPageProps> = ({
                 className="w-full bg-[#0f3d6b] hover:bg-[#1e293b] text-white font-black py-5 rounded-xl gap-2 text-sm shadow transition-all active:scale-[0.98]"
               >
                 <UserPlus size={18} strokeWidth={2.5} />
-                Reassign to Sales Head
+                Reassign to Sales Executive
               </Button>
               <Button
                 type="button"
@@ -248,7 +248,7 @@ export const LeadJunkReviewPage: React.FC<LeadJunkReviewPageProps> = ({
           setIsReassignDialogOpen(false);
         }}
         title="Reassignment Reason"
-        description="Why is this lead being reassigned back to a Sales Head?"
+        description="Why is this lead being reassigned back to a Sales Executive?"
         isLoading={isUpdating}
       />
     </div>

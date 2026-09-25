@@ -197,6 +197,8 @@ export interface GetLeadsRequest {
   is_rm_assigned?: number;
   is_em_assigned?: number;
   offset: number;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface PaginatedLeadsResponse {
@@ -234,6 +236,8 @@ export interface GetLeadsByRmIdRequest {
   project?: number[];
   em?: number[];
   search_text?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface GetLeadsByEmIdRequest {
@@ -243,6 +247,8 @@ export interface GetLeadsByEmIdRequest {
   project?: number[];
   rm?: number[];
   search_text?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface AddLeadActivityRequest {

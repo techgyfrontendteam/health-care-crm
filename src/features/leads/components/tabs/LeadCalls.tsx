@@ -5,10 +5,11 @@ import { LeadCallsTab } from "./LeadCallsTab";
 interface LeadCallsProps {
   calls: LeadCall[];
   leadUuid?: string;
+  refetch?: () => void;
 }
 
-const LeadCalls: React.FC<LeadCallsProps> = ({ calls }) => {
-  return <LeadCallsTab calls={calls} />;
+const LeadCalls: React.FC<LeadCallsProps> = ({ calls, refetch }) => {
+  return <LeadCallsTab calls={calls} refetch={refetch} />;
 };
 
 export default LeadCalls;

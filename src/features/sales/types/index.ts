@@ -1,5 +1,10 @@
 export interface SalesStatsRequest {
   offset?: number;
+  start_date?: string;
+  end_date?: string;
+  startDate?: string;
+  endDate?: string;
+  [key: string]: any;
 }
 
 export interface SalesStatsResponse {
@@ -17,6 +22,11 @@ export interface SalesStatsResponse {
 
 export interface CallsLoggedAndNewLeadsRequest {
   present_date?: string;
+  start_date?: string;
+  end_date?: string;
+  startDate?: string;
+  endDate?: string;
+  [key: string]: any;
 }
 
 export interface CallsLoggedAndNewLeadsResponse {
@@ -28,6 +38,10 @@ export interface CallsLoggedAndNewLeadsResponse {
 }
 
 export interface LeadSourceBreakDownRequest {
+  start_date?: string;
+  end_date?: string;
+  startDate?: string;
+  endDate?: string;
   [key: string]: any;
 }
 
@@ -40,6 +54,10 @@ export interface LeadSourceBreakDownResponse {
 }
 
 export interface BranchLeadPerformanceRequest {
+  start_date?: string;
+  end_date?: string;
+  startDate?: string;
+  endDate?: string;
   [key: string]: any;
 }
 
@@ -53,6 +71,10 @@ export interface BranchLeadPerformanceResponse {
 
 export interface DepartmentLeadBreakDownRequest {
   offset?: number;
+  start_date?: string;
+  end_date?: string;
+  startDate?: string;
+  endDate?: string;
   [key: string]: any;
 }
 
@@ -86,10 +108,12 @@ export interface LeadSourceItem {
 }
 
 export interface DepartmentLeadItem {
+  department_id?: string | number;
+  depertment_id?: string | number;
   department_name: string;
   lead_count: number;
-  converted_count: number;
-  revenue: number;
+  converted_count?: number;
+  revenue?: number;
   color: string;
 }
 

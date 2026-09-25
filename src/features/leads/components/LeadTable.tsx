@@ -622,17 +622,13 @@ export const LeadTable = ({
           const rawLeadStatuses = masterData?.lead_statuses;
           const options: { id: number; label: string; lead_status_id: number; code?: string }[] =
             rawLeadStatuses && rawLeadStatuses.length > 0
-              ? rawLeadStatuses
-                  .filter((s: any) => s.code !== 'JUNK' && s.description !== 'Junk Lead')
-                  .map((s: any) => ({
-                    id: s.id,
-                    label: s.description || s.code || `Status ${s.id}`,
-                    lead_status_id: s.id,
-                    code: s.code,
-                  }))
-              : getProjectStatusOptions(l.project_id, projectLeadStatuses).filter(
-                  (o: { id: number; label: string; lead_status_id: number }) => o.label !== 'Junk Lead'
-                );
+              ? rawLeadStatuses.map((s: any) => ({
+                  id: s.id,
+                  label: s.description || s.code || `Status ${s.id}`,
+                  lead_status_id: s.id,
+                  code: s.code,
+                }))
+              : getProjectStatusOptions(l.project_id, projectLeadStatuses);
 
           return (
             <StatusCell
@@ -643,7 +639,13 @@ export const LeadTable = ({
                 const statusMaster = masterData?.lead_statuses?.find(
                   (s: any) => s.id === (option?.lead_status_id || newStatusId)
                 );
-                if (statusMaster?.code === 'JUNKPE') {
+                if (
+                  statusMaster?.code === 'JUNKPE' ||
+                  statusMaster?.code === 'JUNKCM' ||
+                  statusMaster?.code === 'JUNK' ||
+                  statusMaster?.description?.toLowerCase().includes('junk') ||
+                  option?.label?.toLowerCase().includes('junk')
+                ) {
                   setJunkConfirm({ lead, newStatusId, isLoading: true });
 
                   getLeadById({ uuid: lead.uuid }).unwrap()
